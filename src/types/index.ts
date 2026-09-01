@@ -65,12 +65,39 @@ export interface StatsSummary {
 
 export type TabType = 'dashboard' | 'record' | 'history' | 'statistics' | 'settings';
 
+export interface IstighfarRecord {
+  id: string;
+  date: string; // YYYY-MM-DD
+  count: number; // number of istighfar completed this session
+  timestamp: number;
+}
+
+export interface IstighfarData {
+  hasCompletedSetup: boolean;
+  startAge: number; // age when started istighfar
+  currentAge: number;
+  dailyTarget: number; // default 70
+  totalEstimated: number; // calculated: years * 365 * dailyTarget
+  completed: number; // total compensated so far
+  remaining: number; // totalEstimated - completed
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IstighfarStats {
+  totalCount: number;
+  completedDays: number;
+  dailyAverage: number;
+}
+
 export interface BackupData {
   version: string;
   exportedAt: string;
   settings: UserSettings;
   counters: PrayerCounters;
   records: DailyRecord[];
+  istighfarRecords?: IstighfarRecord[];
+  istighfarData?: IstighfarData;
 }
 
 export const PRAYERS_LIST: PrayerMeta[] = [

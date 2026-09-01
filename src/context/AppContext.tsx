@@ -3,6 +3,9 @@ import confetti from 'canvas-confetti';
 import {
   BackupData,
   DailyRecord,
+  IstighfarData,
+  IstighfarRecord,
+  IstighfarStats,
   PrayerCounters,
   PrayerKey,
   StatsSummary,
@@ -14,11 +17,15 @@ import {
   exportAllData,
   getCounters,
   getDailyRecords,
+  getIstighfarData,
+  getIstighfarRecords,
   getSettings,
   importAllData,
   resetAllData,
   saveCounters,
   saveDailyRecord,
+  saveIstighfarData,
+  saveIstighfarRecord,
   saveSettings,
 } from '../storage/indexedDb';
 import { calculateMissedPrayers, createInitialCounters } from '../utils/calculator';
@@ -67,6 +74,16 @@ interface AppContextType {
     currentAge: number,
     prayerFrequency: number
   ) => Promise<void>;
+  istighfarRecords: IstighfarRecord[];
+  todayIstighfarCount: number;
+  istighfarStats: IstighfarStats;
+  incrementIstighfar: () => Promise<void>;
+  decrementIstighfar: () => Promise<void>;
+  istighfarData: IstighfarData | null;
+  setupIstighfar: (startAge: number, currentAge: number, dailyTarget: number) => Promise<void>;
+  recordIstighfarCompensation: (count: number) => Promise<boolean>;
+  updateIstighfarEstimate: (newTotal: number) => Promise<void>;
+  recalculateIstighfar: (startAge: number, currentAge: number, dailyTarget: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -75,6 +92,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [counters, setCounters] = useState<PrayerCounters | null>(null);
   const [records, setRecords] = useState<DailyRecord[]>([]);
+  const [istighfarRecords, setIstighfarRecords] = useState<IstighfarRecord[]>([]);
+  const [istighfarData, setIstighfarData] = useState<IstighfarData | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [loading, setLoading] = useState<boolean>(true);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -84,10 +103,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [savedSettings, savedCounters, savedRecords] = await Promise.all([
+      const [savedSettings, savedCounters, savedRecords, savedIstighfar, savedIstighfarData] = await Promise.all([
         getSettings(),
         getCounters(),
         getDailyRecords(),
+        getIstighfarRecords(),
+        getIstighfarData(),
       ]);
 
       if (savedSettings) {
@@ -103,6 +124,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       setCounters(savedCounters);
       setRecords(savedRecords);
+      setIstighfarRecords(savedIstighfar);
+      setIstighfarData(savedIstighfarData);
     } catch (error) {
       console.error('Failed to load local data:', error);
     } finally {
@@ -162,19 +185,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     settings?.hapticsEnabled,
   ]);
 
-  // Sync theme
+  // Sync theme immediately and listen for system changes in auto mode
   useEffect(() => {
     if (!settings) return;
-    const isDark =
-      settings.theme === 'dark' ||
-      (settings.theme === 'auto' &&
-        typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    const applyTheme = () => {
+      const isDark =
+        settings.theme === 'dark' ||
+        (settings.theme === 'auto' &&
+          typeof window !== 'undefined' &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyTheme();
+
+    // Listen for system preference changes when in auto mode
+    if (settings.theme === 'auto' && typeof window !== 'undefined') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = () => applyTheme();
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
     }
   }, [settings?.theme]);
 
@@ -199,6 +235,199 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const stats = useMemo(() => {
     return computeStatsSummary(counters, records);
   }, [counters, records]);
+
+  // Setup istighfar historical tracking
+  const setupIstighfar = async (startAge: number, currentAge: number, dailyTarget: number) => {
+    const years = currentAge - startAge;
+    const totalEstimated = years * 365 * dailyTarget;
+    const data: IstighfarData = {
+      hasCompletedSetup: true,
+      startAge,
+      currentAge,
+      dailyTarget,
+      totalEstimated,
+      completed: 0,
+      remaining: totalEstimated,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await saveIstighfarData(data);
+    setIstighfarData(data);
+  };
+
+  // Record istighfar compensation
+  const recordIstighfarCompensation = async (count: number): Promise<boolean> => {
+    if (!istighfarData) return false;
+    if (typeof count !== 'number' || isNaN(count) || !Number.isInteger(count) || count <= 0) {
+      showToast('يرجى إدخال عدد صحيح أكبر من صفر', 'error');
+      return false;
+    }
+    if (count > istighfarData.remaining) {
+      showToast(`لا يمكنك تسجيل أكثر من المتبقي (${istighfarData.remaining})`, 'error');
+      return false;
+    }
+
+    const newCompleted = istighfarData.completed + count;
+    const newRemaining = istighfarData.totalEstimated - newCompleted;
+    const updated: IstighfarData = {
+      ...istighfarData,
+      completed: newCompleted,
+      remaining: newRemaining,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveIstighfarData(updated);
+    setIstighfarData(updated);
+
+    // Also add to daily istighfar records
+    const todayStr = getTodayDateString();
+    const existing = istighfarRecords.find((r) => r.date === todayStr);
+    const dailyRecord: IstighfarRecord = {
+      id: existing ? existing.id : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      date: todayStr,
+      count: (existing ? existing.count : 0) + count,
+      timestamp: Date.now(),
+    };
+    setIstighfarRecords((prev) => {
+      const filtered = prev.filter((r) => r.date !== todayStr);
+      return [dailyRecord, ...filtered];
+    });
+    try {
+      await saveIstighfarRecord(dailyRecord);
+    } catch (err) {
+      console.warn('Storage sync error:', err);
+    }
+
+    if (settings?.soundEnabled) playSoftClickSound();
+    if (settings?.hapticsEnabled) triggerHaptic();
+
+    showToast(`تم تسجيل ${count} استغفار بنجاح`, 'success');
+    return true;
+  };
+
+  // Update istighfar estimate manually
+  const updateIstighfarEstimate = async (newTotal: number) => {
+    if (!istighfarData) return;
+    if (typeof newTotal !== 'number' || isNaN(newTotal) || newTotal < 0) return;
+    const updated: IstighfarData = {
+      ...istighfarData,
+      totalEstimated: newTotal,
+      remaining: newTotal - istighfarData.completed,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveIstighfarData(updated);
+    setIstighfarData(updated);
+    showToast('تم تحديث تقدير الاستغفار', 'success');
+  };
+
+  // Recalculate istighfar
+  const recalculateIstighfar = async (startAge: number, currentAge: number, dailyTarget: number) => {
+    const years = currentAge - startAge;
+    const totalEstimated = years * 365 * dailyTarget;
+    const updated: IstighfarData = {
+      ...istighfarData!,
+      startAge,
+      currentAge,
+      dailyTarget,
+      totalEstimated,
+      remaining: totalEstimated - (istighfarData?.completed || 0),
+      updatedAt: new Date().toISOString(),
+    };
+    await saveIstighfarData(updated);
+    setIstighfarData(updated);
+    showToast('تمت إعادة حساب الاستغفار', 'success');
+  };
+
+  // Compute today's istighfar count
+  const todayIstighfarCount = useMemo(() => {
+    const todayStr = getTodayDateString();
+    const todayRecord = istighfarRecords.find((r) => r.date === todayStr);
+    return todayRecord ? todayRecord.count : 0;
+  }, [istighfarRecords]);
+
+  // Compute istighfar stats
+  const istighfarStats = useMemo((): IstighfarStats => {
+    const totalCount = istighfarRecords.reduce((sum, r) => sum + r.count, 0);
+    const completedDays = istighfarRecords.filter((r) => r.count >= 70).length;
+    const uniqueDays = new Set(istighfarRecords.filter((r) => r.count > 0).map((r) => r.date)).size;
+    const dailyAverage = uniqueDays > 0 ? Number((totalCount / uniqueDays).toFixed(1)) : 0;
+    return { totalCount, completedDays, dailyAverage };
+  }, [istighfarRecords]);
+
+  // Increment istighfar counter
+  const incrementIstighfar = async () => {
+    if (todayIstighfarCount >= 70) return;
+
+    const todayStr = getTodayDateString();
+    const newCount = todayIstighfarCount + 1;
+    const existing = istighfarRecords.find((r) => r.date === todayStr);
+
+    const record: IstighfarRecord = {
+      id: existing ? existing.id : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      date: todayStr,
+      count: newCount,
+      timestamp: Date.now(),
+    };
+
+    setIstighfarRecords((prev) => {
+      const filtered = prev.filter((r) => r.date !== todayStr);
+      return [record, ...filtered];
+    });
+
+    if (settings?.soundEnabled) playSoftClickSound();
+    if (settings?.hapticsEnabled) triggerHaptic();
+
+    try {
+      await saveIstighfarRecord(record);
+    } catch (err) {
+      console.warn('Storage sync error:', err);
+    }
+
+    if (newCount === 70) {
+      showToast('أكملت 70 استغفارًا اليوم 🤍', 'success');
+    }
+  };
+
+  // Decrement istighfar counter
+  const decrementIstighfar = async () => {
+    if (todayIstighfarCount <= 0) return;
+
+    const todayStr = getTodayDateString();
+    const newCount = todayIstighfarCount - 1;
+    const existing = istighfarRecords.find((r) => r.date === todayStr);
+
+    if (!existing) return;
+
+    const record: IstighfarRecord = {
+      id: existing.id,
+      date: todayStr,
+      count: newCount,
+      timestamp: Date.now(),
+    };
+
+    setIstighfarRecords((prev) => {
+      const filtered = prev.filter((r) => r.date !== todayStr);
+      if (newCount > 0) {
+        return [record, ...filtered];
+      }
+      return filtered;
+    });
+
+    try {
+      if (newCount > 0) {
+        await saveIstighfarRecord(record);
+      } else {
+        // Remove record if count goes to 0
+        const local = localStorage.getItem('qada_istighfar');
+        if (local) {
+          const list: IstighfarRecord[] = JSON.parse(local);
+          localStorage.setItem('qada_istighfar', JSON.stringify(list.filter((r) => r.id !== existing.id)));
+        }
+      }
+    } catch (err) {
+      console.warn('Storage sync error:', err);
+    }
+  };
 
   // Complete Initial Onboarding
   const completeOnboarding = async (
@@ -537,6 +766,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSettings(null);
     setCounters(null);
     setRecords([]);
+    setIstighfarRecords([]);
+    setIstighfarData(null);
     setActiveTab('dashboard');
     showToast('تمت إعادة ضبط جميع البيانات بنجاح', 'info');
   };
@@ -591,6 +822,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         importBackup,
         resetAll,
         recalculatePrayers,
+        istighfarRecords,
+        todayIstighfarCount,
+        istighfarStats,
+        incrementIstighfar,
+        decrementIstighfar,
+        istighfarData,
+        setupIstighfar,
+        recordIstighfarCompensation,
+        updateIstighfarEstimate,
+        recalculateIstighfar,
       }}
     >
       {children}

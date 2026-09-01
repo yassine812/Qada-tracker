@@ -5,7 +5,7 @@ import { PRAYERS_LIST, PrayerKey } from '../types';
 import { formatArabicNumber } from '../utils/calculator';
 
 export const RecordPage: React.FC = () => {
-  const { counters, recordTodayPrayers, recordQuickPrayer, setActiveTab, showToast } = useApp();
+  const { counters, recordTodayPrayers, recordQuickPrayer, setActiveTab, showToast, istighfarData, recordIstighfarCompensation } = useApp();
 
   // Multi-prayer state for Section 1: "قضاء اليوم"
   const [dailyCounts, setDailyCounts] = useState<{ [key in PrayerKey]: number }>({
@@ -301,6 +301,53 @@ export const RecordPage: React.FC = () => {
             : 'تأكيد القضاء السريع'}
         </button>
       </section>
+      {/* SECTION 3: ISTIGHFAR COMPENSATION */}
+      {istighfarData?.hasCompletedSetup && istighfarData.remaining > 0 && (
+        <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 space-y-4 border border-[#E8E4D9] dark:border-[#3D3E37] shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#C97C5D]/15 text-[#C97C5D] flex items-center justify-center">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0]">
+                تسجيل استغفار سابق
+              </h3>
+              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
+                المتبقي: {formatArabicNumber(istighfarData.remaining)} من أصل {formatArabicNumber(istighfarData.totalEstimated)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {[10, 50, 100, 500].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => recordIstighfarCompensation(amount)}
+                disabled={amount > istighfarData.remaining}
+                className="flex-1 py-3 rounded-2xl bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#5A5A40] dark:text-[#C8C7B9] text-xs font-bold disabled:opacity-30 hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-all active:scale-95"
+              >
+                +{amount}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const amount = prompt('أدخل عدد الاستغفار:');
+              if (amount) {
+                const num = parseInt(amount, 10);
+                if (!isNaN(num) && num > 0) recordIstighfarCompensation(num);
+              }
+            }}
+            disabled={istighfarData.remaining <= 0}
+            className="w-full bg-[#C97C5D] hover:bg-[#b86e51] disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-sm py-3.5 rounded-full transition-all active:scale-98 shadow-xs"
+          >
+            تسجيل عدد مخصص من الاستغفار
+          </button>
+        </section>
+      )}
     </div>
   );
 };

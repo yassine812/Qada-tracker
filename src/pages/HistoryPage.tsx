@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { History as HistoryIcon, Trash2, Calendar, AlertCircle } from 'lucide-react';
+import { History as HistoryIcon, Trash2, Calendar, AlertCircle, Heart } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatArabicDate } from '../utils/streak';
 import { PRAYERS_LIST, PrayerKey } from '../types';
+import { formatArabicNumber } from '../utils/calculator';
 
 export const HistoryPage: React.FC = () => {
-  const { records, deleteRecord } = useApp();
+  const { records, deleteRecord, istighfarRecords } = useApp();
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
 
   const prayerNames: Record<PrayerKey, string> = {
@@ -57,6 +58,10 @@ export const HistoryPage: React.FC = () => {
               ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as PrayerKey[]
             ).filter((key) => record[key] > 0);
 
+            // Find istighfar record for this date
+            const istighfarForDate = istighfarRecords.find((r) => r.date === record.date);
+            const istighfarCount = istighfarForDate ? istighfarForDate.count : 0;
+
             return (
               <div
                 key={record.id}
@@ -103,18 +108,32 @@ export const HistoryPage: React.FC = () => {
                 </div>
 
                 {/* Prayers Breakdown Pills */}
-                <div className="flex flex-wrap gap-2">
-                  {activePrayers.map((key) => (
-                    <span
-                      key={key}
-                      className="inline-flex items-center gap-1.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] px-3 py-1 rounded-full text-xs font-medium text-[#2D2D2A] dark:text-[#EAE7E0] border border-[#E8E4D9] dark:border-[#3D3E37]"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9]" />
-                      <span>
-                        {prayerNames[key]}: <strong>{record[key]}</strong>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {activePrayers.map((key) => (
+                      <span
+                        key={key}
+                        className="inline-flex items-center gap-1.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] px-3 py-1 rounded-full text-xs font-medium text-[#2D2D2A] dark:text-[#EAE7E0] border border-[#E8E4D9] dark:border-[#3D3E37]"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9]" />
+                        <span>
+                          {prayerNames[key]}: <strong>{record[key]}</strong>
+                        </span>
                       </span>
-                    </span>
-                  ))}
+                    ))}
+                  </div>
+
+                  {/* Istighfar for this date */}
+                  {istighfarCount > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 bg-[#C97C5D]/10 dark:bg-[#C97C5D]/15 px-3 py-1 rounded-full text-xs font-medium text-[#C97C5D] border border-[#C97C5D]/20">
+                        <Heart className="w-3 h-3 fill-current" />
+                        <span>
+                          الاستغفار: <strong>{formatArabicNumber(istighfarCount)} / 70</strong>
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

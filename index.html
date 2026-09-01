@@ -16,8 +16,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="قضاء" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg?v=2" />
+    <link rel="apple-touch-icon" href="/icon.svg?v=2" />
 
     <!-- Fonts: Arabic & Natural Tones Serif -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,6 +25,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-[#F5F5F0] dark:bg-[#1C1D1A] text-[#2D2D2A] dark:text-[#EAE7E0] antialiased min-h-screen selection:bg-[#E8E4D9] selection:text-[#2D2D2A]">
+    <!-- Apply saved theme immediately to prevent flash -->
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('qada_settings');
+          if (raw) {
+            var s = JSON.parse(raw);
+            var theme = s && s.theme;
+            var isDark = theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>

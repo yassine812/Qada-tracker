@@ -25,6 +25,9 @@ import { useApp } from '../context/AppContext';
 import { EditCountersModal } from '../components/EditCountersModal';
 import { RecalculateModal } from '../components/RecalculateModal';
 import { InstallModal } from '../components/InstallModal';
+import { IstighfarSetupModal } from '../components/IstighfarSetupModal';
+import { IstighfarEditModal } from '../components/IstighfarEditModal';
+import { formatArabicNumber } from '../utils/calculator';
 import {
   formatArabicTime,
   getNotificationPermission,
@@ -34,12 +37,14 @@ import {
 } from '../utils/notifications';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, exportBackup, importBackup, resetAll, showToast } = useApp();
+  const { settings, updateSettings, exportBackup, importBackup, resetAll, showToast, istighfarData, setupIstighfar, updateIstighfarEstimate, recalculateIstighfar } = useApp();
 
   const [isEditCountersOpen, setIsEditCountersOpen] = useState(false);
   const [isRecalculateOpen, setIsRecalculateOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isIstighfarSetupOpen, setIsIstighfarSetupOpen] = useState(false);
+  const [isIstighfarEditOpen, setIsIstighfarEditOpen] = useState(false);
   const [permState, setPermState] = useState<NotificationPermissionState>('default');
   const [isTestingNotification, setIsTestingNotification] = useState(false);
 
@@ -191,6 +196,83 @@ export const SettingsPage: React.FC = () => {
           <ChevronLeft className="w-4 h-4 text-[#8E8E80] dark:text-[#A6A699] group-hover:text-[#5A5A40] dark:group-hover:text-[#C8C7B9] transition-colors" />
         </button>
       </section>
+
+      {/* ISTIGHFAR CONFIGURATION */}
+      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-3 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
+        <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider mb-2">
+          الاستغفار السابق
+        </h3>
+
+        {istighfarData?.hasCompletedSetup ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699]">البيانات الحالية</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">العمر عند البدء: <strong>{istighfarData.startAge}</strong></div>
+                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">العمر الحالي: <strong>{istighfarData.currentAge}</strong></div>
+                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">الهدف اليومي: <strong>{istighfarData.dailyTarget}</strong></div>
+                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">الإجمالي: <strong>{formatArabicNumber(istighfarData.totalEstimated)}</strong></div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsIstighfarEditOpen(true)}
+                className="flex-1 py-2.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-colors"
+              >
+                تعديل التقدير يدوياً
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsIstighfarSetupOpen(true)}
+                className="flex-1 py-2.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-colors"
+              >
+                إعادة الحساب
+              </button>
+            </div>
+
+            <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
+              هذا تقدير شخصي لعدد مرات الاستغفار التي فاتتك. يُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
+              قيّم عدد مرات الاستغفار التي فاتتك وتابع تعويضها
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsIstighfarSetupOpen(true)}
+              className="w-full py-3 bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-bold text-sm rounded-2xl transition-colors shadow-md"
+            >
+              إعداد الاستغفار السابق
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* Istighfar Setup Modal */}
+      {isIstighfarSetupOpen && (
+        <IstighfarSetupModal
+          isOpen={isIstighfarSetupOpen}
+          onClose={() => setIsIstighfarSetupOpen(false)}
+          existingData={istighfarData}
+          onSave={istighfarData?.hasCompletedSetup ? recalculateIstighfar : setupIstighfar}
+        />
+      )}
+
+      {/* Istighfar Edit Modal */}
+      {isIstighfarEditOpen && (
+        <IstighfarEditModal
+          isOpen={isIstighfarEditOpen}
+          onClose={() => setIsIstighfarEditOpen(false)}
+          data={istighfarData!}
+          onUpdate={updateIstighfarEstimate}
+        />
+      )}
 
       {/* GROUP 2: DAILY REMINDER (التنبيه اليومي لتسجيل الصلوات) */}
       <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-4 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">

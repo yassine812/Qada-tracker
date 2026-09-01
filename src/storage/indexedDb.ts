@@ -1,12 +1,14 @@
-import { BackupData, DailyRecord, PrayerCounters, UserSettings } from '../types';
+import { BackupData, DailyRecord, IstighfarData, IstighfarRecord, PrayerCounters, UserSettings } from '../types';
 
 const DB_NAME = 'QadaTrackerDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORES = {
   SETTINGS: 'settings',
   COUNTERS: 'counters',
   RECORDS: 'dailyRecords',
+  ISTIGHFAR: 'istighfarRecords',
+  ISTIGHFAR_DATA: 'istighfarData',
 };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -35,6 +37,14 @@ export function getDB(): Promise<IDBDatabase> {
         const recordStore = db.createObjectStore(STORES.RECORDS, { keyPath: 'id' });
         recordStore.createIndex('date', 'date', { unique: false });
         recordStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(STORES.ISTIGHFAR)) {
+        const istighfarStore = db.createObjectStore(STORES.ISTIGHFAR, { keyPath: 'id' });
+        istighfarStore.createIndex('date', 'date', { unique: false });
+        istighfarStore.createIndex('timestamp', 'timestamp', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(STORES.ISTIGHFAR_DATA)) {
+        db.createObjectStore(STORES.ISTIGHFAR_DATA);
       }
     };
 
@@ -198,21 +208,105 @@ export async function deleteDailyRecord(id: string): Promise<void> {
   }
 }
 
+export async function getIstighfarRecords(): Promise<IstighfarRecord[]> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.ISTIGHFAR, 'readonly');
+      const store = tx.objectStore(STORES.ISTIGHFAR);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = (req.result || []) as IstighfarRecord[];
+        list.sort((a, b) => b.timestamp - a.timestamp);
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (error) {
+    console.error('Error fetching istighfar records from IndexedDB:', error);
+    const local = localStorage.getItem('qada_istighfar');
+    return local ? JSON.parse(local) : [];
+  }
+}
+
+export async function saveIstighfarRecord(record: IstighfarRecord): Promise<void> {
+  try {
+    const local = localStorage.getItem('qada_istighfar');
+    const existingList: IstighfarRecord[] = local ? JSON.parse(local) : [];
+    const updatedList = [record, ...existingList.filter((r) => r.id !== record.id)];
+    localStorage.setItem('qada_istighfar', JSON.stringify(updatedList));
+
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORES.ISTIGHFAR, 'readwrite');
+        const store = tx.objectStore(STORES.ISTIGHFAR);
+        const req = store.put(record);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        reject(txErr);
+      }
+    });
+  } catch (error) {
+    console.warn('Fallback: Saved istighfar record in localStorage', error);
+  }
+}
+
+export async function getIstighfarData(): Promise<IstighfarData | null> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.ISTIGHFAR_DATA, 'readonly');
+      const store = tx.objectStore(STORES.ISTIGHFAR_DATA);
+      const req = store.get('current');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (error) {
+    console.error('Error fetching istighfar data from IndexedDB:', error);
+    const local = localStorage.getItem('qada_istighfar_data');
+    return local ? JSON.parse(local) : null;
+  }
+}
+
+export async function saveIstighfarData(data: IstighfarData): Promise<void> {
+  try {
+    localStorage.setItem('qada_istighfar_data', JSON.stringify(data));
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORES.ISTIGHFAR_DATA, 'readwrite');
+        const store = tx.objectStore(STORES.ISTIGHFAR_DATA);
+        const req = store.put(data, 'current');
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        reject(txErr);
+      }
+    });
+  } catch (error) {
+    console.warn('Fallback: Saved istighfar data in localStorage', error);
+  }
+}
+
 export async function exportAllData(): Promise<BackupData> {
   const settings = await getSettings();
   const counters = await getCounters();
   const records = await getDailyRecords();
+  const istighfarRecords = await getIstighfarRecords();
 
   if (!settings || !counters) {
     throw new Error('لا توجد بيانات كافية للتصدير');
   }
 
   return {
-    version: '1.0',
+    version: '1.1',
     exportedAt: new Date().toISOString(),
     settings,
     counters,
     records,
+    istighfarRecords,
   };
 }
 
@@ -256,6 +350,16 @@ export function validateBackupData(data: unknown): data is BackupData {
     }
   }
 
+  // Validate istighfar records if present (optional, backward compatible)
+  if (d.istighfarRecords !== undefined) {
+    if (!Array.isArray(d.istighfarRecords)) return false;
+    for (const rec of d.istighfarRecords) {
+      if (!rec || typeof rec !== 'object') return false;
+      if (typeof rec.id !== 'string' || typeof rec.date !== 'string' || typeof rec.count !== 'number') return false;
+      if (rec.count < 0 || rec.count > 70 || !Number.isInteger(rec.count)) return false;
+    }
+  }
+
   return true;
 }
 
@@ -281,6 +385,27 @@ export async function importAllData(data: unknown): Promise<void> {
       await saveDailyRecord(record);
     }
   }
+
+  // Import istighfar records (backward compatible - old backups have none)
+  const istighfarRecords = (data as Record<string, any>).istighfarRecords as IstighfarRecord[] | undefined;
+  if (Array.isArray(istighfarRecords) && istighfarRecords.length > 0) {
+    const txI = db.transaction(STORES.ISTIGHFAR, 'readwrite');
+    const storeI = txI.objectStore(STORES.ISTIGHFAR);
+    await new Promise<void>((resolve, reject) => {
+      const clearReq = storeI.clear();
+      clearReq.onsuccess = () => resolve();
+      clearReq.onerror = () => reject(clearReq.error);
+    });
+    for (const record of istighfarRecords) {
+      await saveIstighfarRecord(record);
+    }
+  }
+
+  // Import istighfar data (backward compatible)
+  const istighfarData = (data as Record<string, any>).istighfarData as IstighfarData | undefined;
+  if (istighfarData && typeof istighfarData === 'object') {
+    await saveIstighfarData(istighfarData);
+  }
 }
 
 export async function resetAllData(): Promise<void> {
@@ -288,12 +413,16 @@ export async function resetAllData(): Promise<void> {
     localStorage.removeItem('qada_settings');
     localStorage.removeItem('qada_counters');
     localStorage.removeItem('qada_records');
+    localStorage.removeItem('qada_istighfar');
+    localStorage.removeItem('qada_istighfar_data');
 
     const db = await getDB();
-    const tx = db.transaction([STORES.SETTINGS, STORES.COUNTERS, STORES.RECORDS], 'readwrite');
+    const tx = db.transaction([STORES.SETTINGS, STORES.COUNTERS, STORES.RECORDS, STORES.ISTIGHFAR, STORES.ISTIGHFAR_DATA], 'readwrite');
     tx.objectStore(STORES.SETTINGS).clear();
     tx.objectStore(STORES.COUNTERS).clear();
     tx.objectStore(STORES.RECORDS).clear();
+    tx.objectStore(STORES.ISTIGHFAR).clear();
+    tx.objectStore(STORES.ISTIGHFAR_DATA).clear();
 
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();

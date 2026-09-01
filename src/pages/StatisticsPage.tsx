@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Award,
   Hourglass,
+  Heart,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatArabicNumber } from '../utils/calculator';
@@ -15,7 +16,7 @@ import { PRAYERS_LIST } from '../types';
 import { InteractiveProgressCharts } from '../components/InteractiveProgressCharts';
 
 export const StatisticsPage: React.FC = () => {
-  const { stats, records, counters } = useApp();
+  const { stats, records, counters, istighfarStats, istighfarData } = useApp();
 
   // Compute 7-day activity data for the bar chart
   const getLast7DaysData = () => {
@@ -246,6 +247,66 @@ export const StatisticsPage: React.FC = () => {
           </div>
         )}
       </section>
+
+      {/* Istighfar Statistics Section */}
+      {istighfarData?.hasCompletedSetup && (
+        <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-3 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-7 h-7 rounded-lg bg-[#C97C5D]/15 text-[#C97C5D] flex items-center justify-center">
+              <Heart className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0]">
+              إحصائيات الاستغفار السابق
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#C97C5D]">
+                {formatArabicNumber(istighfarData.totalEstimated)}
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold mt-0.5">
+                الإجمالي التقديرى
+              </div>
+            </div>
+
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                {formatArabicNumber(istighfarData.completed)}
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold mt-0.5">
+                المقضي
+              </div>
+            </div>
+
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#C97C5D]">
+                {istighfarData.totalEstimated > 0 ? Math.round((istighfarData.completed / istighfarData.totalEstimated) * 100) : 0}%
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold mt-0.5">
+                نسبة الإنجاز
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[#8E8E80] dark:text-[#A6A699]">المتبقي</span>
+              <span className="font-bold text-[#C97C5D]">{formatArabicNumber(istighfarData.remaining)}</span>
+            </div>
+            <div className="w-full h-2 bg-[#E8E4D9] dark:bg-[#3D3E37] rounded-full overflow-hidden mt-2">
+              <div
+                className="h-full rounded-full transition-all duration-500 bg-[#5A5A40] dark:bg-[#C8C7B9]"
+                style={{ width: `${istighfarData.totalEstimated > 0 ? Math.min(100, (istighfarData.completed / istighfarData.totalEstimated) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+
+          <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center">
+            هذا تقدير شخصي وليس حكم شرعي
+          </p>
+        </section>
+      )}
 
       {/* Prayer Distribution Breakdown */}
       {counters && (

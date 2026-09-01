@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus,
+  Minus,
   CheckCircle2,
   Clock,
   Sunrise,
@@ -13,6 +14,7 @@ import {
   Bell,
   ArrowLeft,
   Flame,
+  Heart,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PRAYERS_LIST, PrayerKey } from '../types';
@@ -22,7 +24,7 @@ import { formatArabicTime } from '../utils/notifications';
 import { DailyDhikrCard } from '../components/DailyDhikrCard';
 
 export const DashboardPage: React.FC = () => {
-  const { counters, stats, records, settings, setActiveTab, recordQuickPrayer } = useApp();
+  const { counters, stats, records, settings, setActiveTab, recordQuickPrayer, todayIstighfarCount, incrementIstighfar, decrementIstighfar, istighfarData, recordIstighfarCompensation } = useApp();
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isAlertDismissed, setIsAlertDismissed] = useState<boolean>(false);
 
@@ -170,6 +172,106 @@ export const DashboardPage: React.FC = () => {
 
       {/* Daily Dhikr & Spiritual Remembrance Section */}
       <DailyDhikrCard />
+
+      {/* Istighfar Compensation Section */}
+      {istighfarData?.hasCompletedSetup && (
+        <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] shadow-[0_4px_16px_rgba(90,90,64,0.04)] relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-xl bg-[#C97C5D]/15 text-[#C97C5D] flex items-center justify-center border border-[#C97C5D]/20">
+              <Heart className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0]">
+                الاستغفار السابق
+              </h3>
+              <span className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
+                تقدير شخصي وليس حكم شرعي
+              </span>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#C97C5D]">
+                {formatArabicNumber(istighfarData.totalEstimated)}
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold">
+                الإجمالي
+              </div>
+            </div>
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                {formatArabicNumber(istighfarData.completed)}
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold">
+                المقضي
+              </div>
+            </div>
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+              <div className="text-lg font-extrabold font-brand-serif text-[#C97C5D]">
+                {formatArabicNumber(istighfarData.remaining)}
+              </div>
+              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] font-semibold">
+                المتبقي
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="w-full h-2 bg-[#E8E4D9] dark:bg-[#3D3E37] rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300 bg-[#5A5A40] dark:bg-[#C8C7B9]"
+                style={{ width: `${istighfarData.totalEstimated > 0 ? Math.min(100, (istighfarData.completed / istighfarData.totalEstimated) * 100) : 0}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Quick Add Buttons */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
+              سجّل استغفار:
+            </span>
+            <div className="flex items-center gap-2">
+              {[10, 50, 100].map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => recordIstighfarCompensation(amount)}
+                  disabled={istighfarData.remaining <= 0}
+                  className="px-4 py-2 rounded-full bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#5A5A40] dark:text-[#C8C7B9] text-xs font-bold disabled:opacity-30 hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-all active:scale-95"
+                >
+                  +{amount}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const amount = prompt('أدخل عدد الاستغفار:');
+                  if (amount) {
+                    const num = parseInt(amount, 10);
+                    if (!isNaN(num) && num > 0) recordIstighfarCompensation(num);
+                  }
+                }}
+                disabled={istighfarData.remaining <= 0}
+                className="px-4 py-2 rounded-full bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] text-xs font-bold disabled:opacity-30 transition-all active:scale-95 shadow-sm"
+              >
+                مخصص
+              </button>
+            </div>
+          </div>
+
+          {/* Completion State */}
+          {istighfarData.remaining <= 0 && (
+            <div className="mt-3 text-center">
+              <span className="text-sm font-semibold text-[#5A5A40] dark:text-[#C8C7B9]">
+                أكملت جميع الاستغفار السابق 🤍
+              </span>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 5 Prayer Cards Grid */}
       <section className="space-y-3.5">
