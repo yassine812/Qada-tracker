@@ -37,7 +37,7 @@ import {
 } from '../utils/notifications';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, exportBackup, importBackup, resetAll, showToast, istighfarData, setupIstighfar, updateIstighfarEstimate, recalculateIstighfar } = useApp();
+  const { settings, updateSettings, exportBackup, importBackup, resetAll, showToast, istighfarData, setupIstighfar, updateIstighfarEstimate, recalculateIstighfar, dhikrReminderTimes, updateDhikrReminderTimes, toggleDhikrReminders } = useApp();
 
   const [isEditCountersOpen, setIsEditCountersOpen] = useState(false);
   const [isRecalculateOpen, setIsRecalculateOpen] = useState(false);
@@ -400,6 +400,115 @@ export const SettingsPage: React.FC = () => {
                 <span>تجربة التنبيه</span>
               </button>
             </div>
+          </div>
+        )}
+      </section>
+
+      {/* GROUP: DHIKR REMINDERS */}
+      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-4 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
+              <Bell className="w-4 h-4" />
+            </div>
+            <div className="text-right">
+              <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider">
+                التذكيرات
+              </h3>
+              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
+                تذكيرات الأذكار والأدعية
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const next = !settings?.dhikrRemindersEnabled;
+              if (next) {
+                const granted = await requestNotificationPermission();
+                const currentPerm = getNotificationPermission();
+                setPermState(currentPerm);
+                await toggleDhikrReminders(true);
+                if (granted) {
+                  showToast('تم تفعيل تذكيرات الأذكار', 'success');
+                } else {
+                  showToast('السماح بالإشعارات يساعدك على تذكرك بالأذكار والأدعية خلال اليوم.', 'info');
+                }
+              } else {
+                await toggleDhikrReminders(false);
+                showToast('تم إيقاف تذكيرات الأذكار', 'info');
+              }
+            }}
+            aria-label="تفعيل تذكيرات الأذكار"
+            className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
+              settings?.dhikrRemindersEnabled ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                settings?.dhikrRemindersEnabled ? 'left-5' : 'left-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {settings?.dhikrRemindersEnabled && (
+          <div className="space-y-3 pt-2 border-t border-[#E8E4D9] dark:border-[#3D3E37] animate-in fade-in duration-200">
+            {/* Permission Status */}
+            {permState === 'unsupported' && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl">
+                <p className="text-xs text-amber-800 dark:text-amber-200 text-center">
+                  الإشعارات غير مدعومة في هذا المتصفح. التطبيق سيظل يعمل بشكل طبيعي.
+                </p>
+              </div>
+            )}
+
+            {/* Reminder Times */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699]">
+                أوقات التذكير:
+              </span>
+              {dhikrReminderTimes.map((reminder, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={reminder.time}
+                    onChange={(e) => {
+                      const newTimes = [...dhikrReminderTimes];
+                      newTimes[index] = { ...newTimes[index], time: e.target.value };
+                      updateDhikrReminderTimes(newTimes);
+                    }}
+                    className="bg-white dark:bg-[#252622] text-[#2D2D2A] dark:text-[#EAE7E0] border border-[#D1CDC2] dark:border-[#3D3E37] text-xs font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A5A40] cursor-pointer"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newTimes = dhikrReminderTimes.filter((_, i) => i !== index);
+                      updateDhikrReminderTimes(newTimes);
+                    }}
+                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const newTimes = [...dhikrReminderTimes, { time: '12:00', enabled: true }];
+                  updateDhikrReminderTimes(newTimes);
+                }}
+                className="w-full py-2.5 border border-dashed border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-semibold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors"
+              >
+                + إضافة تذكير
+              </button>
+            </div>
+
+            <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
+              كل تذكير يحتوي على ذكر أو دعاء أصلي مع المصدر.
+            </p>
           </div>
         )}
       </section>

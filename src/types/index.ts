@@ -23,6 +23,11 @@ export interface PrayerCounters {
   isha: PrayerCountItem;
 }
 
+export interface DhikrReminderItem {
+  time: string; // HH:mm (24h format)
+  enabled: boolean;
+}
+
 export interface UserSettings {
   hasCompletedOnboarding: boolean;
   pubertyAge: number;
@@ -34,6 +39,9 @@ export interface UserSettings {
   reminderEnabled: boolean;
   reminderTime: string; // HH:mm (24h format, e.g. "21:00")
   lastReminderDate?: string; // YYYY-MM-DD
+  dhikrRemindersEnabled: boolean;
+  dhikrReminderTimes: DhikrReminderItem[];
+  lastDhikrReminderDates?: Record<string, string>; // time -> date last sent
   createdAt: string;
   updatedAt: string;
 }

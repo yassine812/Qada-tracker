@@ -5,7 +5,7 @@ import { calculateMissedPrayers, createInitialCounters, formatArabicNumber } fro
 import { PRAYERS_LIST, PrayerCounters, PrayerKey } from '../types';
 
 export const OnboardingPage: React.FC = () => {
-  const { completeOnboarding } = useApp();
+  const { completeOnboarding, setupIstighfar } = useApp();
 
   const [pubertyAge, setPubertyAge] = useState<number>(14);
   const [currentAge, setCurrentAge] = useState<number>(25);
@@ -13,6 +13,11 @@ export const OnboardingPage: React.FC = () => {
   const [showCustomBreakdown, setShowCustomBreakdown] = useState(false);
   const [customCounts, setCustomCounts] = useState<{ [key in PrayerKey]?: number }>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Istighfar setup state
+  const [istighfarStartAge, setIstighfarStartAge] = useState<number>(14);
+  const [istighfarDailyTarget, setIstighfarDailyTarget] = useState<number>(70);
+  const [setupIstighfarNow, setSetupIstighfarNow] = useState<boolean>(true);
 
   // Dynamic live calculation
   const calc = calculateMissedPrayers(pubertyAge, currentAge, frequency);
@@ -88,6 +93,11 @@ export const OnboardingPage: React.FC = () => {
       await completeOnboarding(pubertyAge, currentAge, frequency, finalCounters);
     } else {
       await completeOnboarding(pubertyAge, currentAge, frequency);
+    }
+
+    // Setup istighfar if user chose to
+    if (setupIstighfarNow && istighfarStartAge < currentAge) {
+      await setupIstighfar(istighfarStartAge, currentAge, istighfarDailyTarget);
     }
   };
 
@@ -251,6 +261,121 @@ export const OnboardingPage: React.FC = () => {
           <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] bg-[#F0EEE6] dark:bg-[#1C1D1A] p-2.5 rounded-xl mt-3 leading-relaxed border border-[#E8E4D9] dark:border-[#3D3E37]">
             "هذا تقدير شخصي لعدد الصلوات التي كنت تؤديها خلال هذه الفترة."
           </p>
+        </div>
+
+        {/* Istighfar Setup Section */}
+        <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-xl bg-[#C97C5D]/15 text-[#C97C5D] flex items-center justify-center">
+              <span className="text-sm">🤍</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0]">
+                الاستغفار
+              </h3>
+              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
+                يمكنك استخدام هذا القسم لتتبع عدد الاستغفار الذي تريد تعويضه شخصيًا.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-3 mb-3">
+            <span className="text-xs font-semibold text-[#2D2D2A] dark:text-[#EAE7E0]">
+              إعداد الاستغفار السابق
+            </span>
+            <button
+              type="button"
+              onClick={() => setSetupIstighfarNow(!setupIstighfarNow)}
+              className={`w-11 h-6 rounded-full transition-colors relative ${
+                setupIstighfarNow ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                  setupIstighfarNow ? 'left-5' : 'left-0.5'
+                }`}
+              />
+            </button>
+          </div>
+
+          {setupIstighfarNow && (
+            <div className="space-y-3 animate-in fade-in duration-200">
+              {/* Start Age */}
+              <div>
+                <label className="block text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699] mb-1">
+                  متى بدأت تريد الالتزام بالاستغفار؟
+                </label>
+                <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
+                  <button
+                    type="button"
+                    onClick={() => setIstighfarStartAge((v) => Math.max(7, v - 1))}
+                    className="w-10 h-10 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center shadow-sm"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-bold text-2xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                      {istighfarStartAge}
+                    </span>
+                    <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">سنة</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIstighfarStartAge((v) => Math.min(currentAge - 1, v + 1))}
+                    className="w-10 h-10 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Daily Target */}
+              <div>
+                <label className="block text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699] mb-1">
+                  الهدف اليومي
+                </label>
+                <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
+                  <button
+                    type="button"
+                    onClick={() => setIstighfarDailyTarget((v) => Math.max(1, v - 10))}
+                    className="w-10 h-10 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center shadow-sm"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-bold text-2xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                      {istighfarDailyTarget}
+                    </span>
+                    <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">مرة يومياً</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIstighfarDailyTarget((v) => v + 10)}
+                    className="w-10 h-10 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Calculation Preview */}
+              <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+                <div className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-1">
+                  الاستغفار السابق (تقدير شخصي):
+                </div>
+                <div className="font-bold text-xl font-brand-serif text-[#C97C5D]">
+                  {formatArabicNumber((currentAge - istighfarStartAge) * 365 * istighfarDailyTarget)} استغفار
+                </div>
+                <div className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] mt-1">
+                  ({currentAge - istighfarStartAge} سنوات × 365 يوم × {istighfarDailyTarget} مرة)
+                </div>
+              </div>
+
+              <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
+                هذا تقدير شخصي وليس حكم شرعي. يُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Calculation Live Banner */}

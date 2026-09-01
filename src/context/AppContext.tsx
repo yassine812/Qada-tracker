@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import {
   BackupData,
   DailyRecord,
+  DhikrReminderItem,
   IstighfarData,
   IstighfarRecord,
   IstighfarStats,
@@ -36,6 +37,7 @@ import {
   triggerHaptic,
 } from '../utils/streak';
 import { sendNotification } from '../utils/notifications';
+import { ADHKAR_LIST } from '../data/adhkar';
 
 interface ToastState {
   message: string;
@@ -84,6 +86,9 @@ interface AppContextType {
   recordIstighfarCompensation: (count: number) => Promise<boolean>;
   updateIstighfarEstimate: (newTotal: number) => Promise<void>;
   recalculateIstighfar: (startAge: number, currentAge: number, dailyTarget: number) => Promise<void>;
+  dhikrReminderTimes: DhikrReminderItem[];
+  updateDhikrReminderTimes: (times: DhikrReminderItem[]) => Promise<void>;
+  toggleDhikrReminders: (enabled: boolean) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -94,6 +99,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [records, setRecords] = useState<DailyRecord[]>([]);
   const [istighfarRecords, setIstighfarRecords] = useState<IstighfarRecord[]>([]);
   const [istighfarData, setIstighfarData] = useState<IstighfarData | null>(null);
+  const [dhikrReminderTimes, setDhikrReminderTimes] = useState<DhikrReminderItem[]>([
+    { time: '08:00', enabled: true },
+    { time: '12:00', enabled: true },
+    { time: '16:00', enabled: true },
+    { time: '20:00', enabled: true },
+  ]);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [loading, setLoading] = useState<boolean>(true);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -117,6 +128,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...savedSettings,
           reminderEnabled: savedSettings.reminderEnabled ?? false,
           reminderTime: savedSettings.reminderTime || '21:00',
+          dhikrRemindersEnabled: savedSettings.dhikrRemindersEnabled ?? false,
+          dhikrReminderTimes: savedSettings.dhikrReminderTimes ?? [
+            { time: '08:00', enabled: true },
+            { time: '12:00', enabled: true },
+            { time: '16:00', enabled: true },
+            { time: '20:00', enabled: true },
+          ],
         };
         setSettings(sanitized);
       } else {
@@ -126,6 +144,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRecords(savedRecords);
       setIstighfarRecords(savedIstighfar);
       setIstighfarData(savedIstighfarData);
+      // Load dhikr reminder times from settings
+      if (savedSettings?.dhikrReminderTimes && Array.isArray(savedSettings.dhikrReminderTimes)) {
+        setDhikrReminderTimes(savedSettings.dhikrReminderTimes);
+      }
     } catch (error) {
       console.error('Failed to load local data:', error);
     } finally {
@@ -213,6 +235,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return () => mq.removeEventListener('change', handler);
     }
   }, [settings?.theme]);
+
+  // Update dhikr reminder times
+  const updateDhikrReminderTimes = async (times: DhikrReminderItem[]) => {
+    setDhikrReminderTimes(times);
+    if (settings) {
+      const updated: UserSettings = {
+        ...settings,
+        dhikrReminderTimes: times,
+        updatedAt: new Date().toISOString(),
+      };
+      await saveSettings(updated);
+      setSettings(updated);
+    }
+  };
+
+  // Toggle dhikr reminders
+  const toggleDhikrReminders = async (enabled: boolean) => {
+    if (settings) {
+      const updated: UserSettings = {
+        ...settings,
+        dhikrRemindersEnabled: enabled,
+        lastDhikrReminderDates: {},
+        updatedAt: new Date().toISOString(),
+      };
+      await saveSettings(updated);
+      setSettings(updated);
+    }
+  };
+
+  // Dhikr reminder background check
+  useEffect(() => {
+    if (!settings || !settings.dhikrRemindersEnabled || !dhikrReminderTimes.length) return;
+
+    const checkDhikrReminders = async () => {
+      const now = new Date();
+      const currentHour = String(now.getHours()).padStart(2, '0');
+      const currentMinute = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentHour}:${currentMinute}`;
+      const todayDate = getTodayDateString();
+      const lastDates = settings.lastDhikrReminderDates || {};
+
+      for (const reminder of dhikrReminderTimes) {
+        if (!reminder.enabled) continue;
+        if (lastDates[reminder.time] === todayDate) continue;
+        if (currentTimeStr >= reminder.time) {
+          // Pick a random dhikr
+          const dhikr = ADHKAR_LIST[Math.floor(Math.random() * ADHKAR_LIST.length)];
+          const bodyText = `${dhikr.text}\n(${dhikr.source})`;
+
+          await sendNotification('أذكار 🤲', bodyText, `dhikr-${reminder.time}`);
+
+          if (settings.soundEnabled) playSoftClickSound();
+          if (settings.hapticsEnabled) triggerHaptic();
+        }
+      }
+    };
+
+    checkDhikrReminders();
+    const interval = setInterval(checkDhikrReminders, 30000);
+    return () => clearInterval(interval);
+  }, [settings?.dhikrRemindersEnabled, dhikrReminderTimes, settings?.lastDhikrReminderDates]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -454,6 +537,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       soundEnabled: true,
       reminderEnabled: false,
       reminderTime: '21:00',
+      dhikrRemindersEnabled: false,
+      dhikrReminderTimes: [
+        { time: '08:00', enabled: true },
+        { time: '12:00', enabled: true },
+        { time: '16:00', enabled: true },
+        { time: '20:00', enabled: true },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -832,6 +922,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recordIstighfarCompensation,
         updateIstighfarEstimate,
         recalculateIstighfar,
+        dhikrReminderTimes,
+        updateDhikrReminderTimes,
+        toggleDhikrReminders,
       }}
     >
       {children}
