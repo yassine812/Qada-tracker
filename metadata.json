@@ -1,0 +1,6 @@
+{
+  "name": "قضاء - متابعة الصلوات الفائتة",
+  "description": "تطبيق ويب تقدمي (PWA) يعمل محلياً لمتابعة وحساب قضاء الصلوات الفائتة وتتبع الإنجاز اليومي بدون إنترنت وبدون خادم خارجي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

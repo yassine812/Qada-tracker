@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c5252"/>
+      <stop offset="100%" stop-color="#2d6a6a"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c0ecda"/>
+      <stop offset="100%" stop-color="#95d1d1"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <!-- Islamic Arch / Mosque Dome Motif -->
+  <path d="M 256 100 C 270 150 330 180 370 240 C 390 270 390 350 390 400 L 122 400 C 122 350 122 270 142 240 C 182 180 242 150 256 100 Z" fill="none" stroke="url(#goldGrad)" stroke-width="20" stroke-linejoin="round"/>
+  <!-- Minaret crescent top -->
+  <path d="M 256 70 L 256 100" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="256" cy="65" r="16" fill="url(#goldGrad)"/>
+  <!-- Inner Mihrab Door Arch -->
+  <path d="M 256 220 C 290 260 310 290 310 395 L 202 395 C 202 290 222 260 256 220 Z" fill="url(#goldGrad)" opacity="0.25"/>
+  <!-- Subtle decorative stars -->
+  <circle cx="256" cy="275" r="12" fill="url(#goldGrad)"/>
+  <circle cx="256" cy="325" r="6" fill="url(#goldGrad)"/>
+</svg>

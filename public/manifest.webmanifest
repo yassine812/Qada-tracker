@@ -1,0 +1,23 @@
+{
+  "name": "قضاء - متابعة الصلوات الفائتة",
+  "short_name": "قضاء",
+  "description": "تطبيق محلي لتسجيل وحساب قضاء الصلوات الفائتة وتتبع الإنجاز اليومي",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F5F0",
+  "theme_color": "#5A5A40",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["lifestyle", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
