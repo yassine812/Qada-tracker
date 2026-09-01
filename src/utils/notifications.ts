@@ -47,8 +47,8 @@ export async function sendNotification(
         const registration = await navigator.serviceWorker.ready;
         await registration.showNotification(title, {
           body,
-          icon: '/icon.svg',
-          badge: '/icon.svg',
+          icon: '/icons/icon-192.png?v=3',
+          badge: '/icons/icon-192.png?v=3',
           tag,
           dir: 'rtl',
           lang: 'ar',
@@ -58,7 +58,7 @@ export async function sendNotification(
         // Fallback to standard Notification constructor
         new Notification(title, {
           body,
-          icon: '/icon.svg',
+          icon: '/icons/icon-192.png?v=3',
           tag,
           dir: 'rtl',
           lang: 'ar',
