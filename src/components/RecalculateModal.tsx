@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, Minus, AlertTriangle } from 'lucide-react';
+import { X, Plus, Minus, AlertTriangle, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { calculateMissedPrayers, formatArabicNumber } from '../utils/calculator';
+import { calculateMissedPrayers, formatArabicNumber, MenstruationInfo } from '../utils/calculator';
+import { Gender } from '../types';
 
 interface RecalculateModalProps {
   isOpen: boolean;
@@ -12,22 +13,30 @@ export const RecalculateModal: React.FC<RecalculateModalProps> = ({ isOpen, onCl
   const { settings, recalculatePrayers } = useApp();
   const [pubertyAge, setPubertyAge] = useState<number>(settings?.pubertyAge || 14);
   const [currentAge, setCurrentAge] = useState<number>(settings?.currentAge || 25);
-  const [frequency, setFrequency] = useState<number>(settings?.prayerFrequency || 0);
+  const [frequency, setFrequency] = useState<number>(settings?.prayerFrequency || 60);
+  const [gender, setGender] = useState<Gender>(settings?.gender || 'male');
+  const [averageMenstruationDays, setAverageMenstruationDays] = useState<number>(settings?.averageMenstruationDays || 7);
   const [isConfirming, setIsConfirming] = useState(false);
 
   if (!isOpen) return null;
 
-  const previewCalc = calculateMissedPrayers(pubertyAge, currentAge, frequency);
+  const menstruationInfo: MenstruationInfo | undefined = gender === 'female'
+    ? { gender: 'female', menstruationCalculationMode: 'average', averageMenstruationDays }
+    : undefined;
+
+  const previewCalc = calculateMissedPrayers(pubertyAge, currentAge, frequency, menstruationInfo);
 
   const handleApply = async () => {
-    if (pubertyAge >= currentAge) {
-      return;
-    }
+    if (pubertyAge >= currentAge) return;
     if (!isConfirming) {
       setIsConfirming(true);
       return;
     }
-    await recalculatePrayers(pubertyAge, currentAge, frequency);
+    await recalculatePrayers(pubertyAge, currentAge, frequency, {
+      gender,
+      menstruationCalculationMode: 'average',
+      averageMenstruationDays,
+    });
     setIsConfirming(false);
     onClose();
   };
@@ -53,6 +62,32 @@ export const RecalculateModal: React.FC<RecalculateModalProps> = ({ isOpen, onCl
         </div>
 
         <div className="space-y-4">
+          {/* Gender Selection */}
+          <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-4 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
+            <span className="text-sm font-semibold text-[#2D2D2A] dark:text-[#EAE7E0] block mb-2">
+              الجنس
+            </span>
+            <div className="flex gap-2">
+              {([
+                { id: 'male' as Gender, label: 'رجل' },
+                { id: 'female' as Gender, label: 'امرأة' },
+              ]).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setGender(g.id)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    gender === g.id
+                      ? 'bg-[#5A5A40] text-white shadow-sm dark:bg-[#C8C7B9] dark:text-[#1C1D1A]'
+                      : 'bg-white dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0]'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Puberty Age */}
           <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-4 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
             <div className="flex justify-between items-center mb-2">
@@ -140,6 +175,60 @@ export const RecalculateModal: React.FC<RecalculateModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
+          {/* Menstruation Days (women only) */}
+          {gender === 'female' && (
+            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-4 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] animate-in fade-in duration-200">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-semibold text-[#2D2D2A] dark:text-[#EAE7E0]">
+                  متوسط أيام الحيض في الشهر
+                </span>
+                <span className="text-sm font-bold font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                  {averageMenstruationDays} يوم
+                </span>
+              </div>
+              <div className="flex items-center justify-between bg-[#FAF9F5] dark:bg-[#252622] rounded-xl p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
+                <button
+                  type="button"
+                  onClick={() => setAverageMenstruationDays((v) => Math.max(1, v - 1))}
+                  className="w-10 h-10 rounded-lg bg-[#F0EEE6] dark:bg-[#1C1D1A] flex items-center justify-center text-[#2D2D2A] dark:text-white"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="font-bold text-lg font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                  {averageMenstruationDays} يوم/شهر
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAverageMenstruationDays((v) => Math.min(15, v + 1))}
+                  className="w-10 h-10 rounded-lg bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] mt-2 leading-relaxed flex items-start gap-1.5">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>الصلاة لا تُقضى عن أيام الحيض. هذا الحساب تقديري لتنظيم الصلوات التي كانت الصلاة مطلوبة فيها.</span>
+              </p>
+              {previewCalc.menstruationDaysExcluded > 0 && (
+                <div className="mt-2 p-2 bg-white dark:bg-[#252622] rounded-xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
+                  <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
+                    أيام الحيض المستثناة: <strong className="text-[#5A5A40] dark:text-[#C8C7B9]">{formatArabicNumber(previewCalc.menstruationDaysExcluded)}</strong> يوم
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Confirmation message */}
+          {isConfirming && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                سيتم إعادة حساب العدد التقديري للصلوات الفائتة. لن يتم حذف سجل الصلوات التي قمت بقضائها.
+              </p>
+            </div>
+          )}
+
           {/* Live Preview of Calculation */}
           <div className="bg-[#FAF9F5] dark:bg-[#252622] p-4 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
             <span className="text-xs text-[#8E8E80] dark:text-[#A6A699] font-medium block">
@@ -149,18 +238,13 @@ export const RecalculateModal: React.FC<RecalculateModalProps> = ({ isOpen, onCl
               {formatArabicNumber(previewCalc.estimatedMissed)} صلاة
             </div>
             <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] mt-1">
-              ({previewCalc.years} سنوات = {formatArabicNumber(previewCalc.days)} يوم × 5 صلوات)
+              ({previewCalc.years} سنوات = {formatArabicNumber(previewCalc.days)} يوم
+              {gender === 'female' && previewCalc.menstruationDaysExcluded > 0
+                ? ` - ${formatArabicNumber(previewCalc.menstruationDaysExcluded)} أيام حيض`
+                : ''}
+              {' '}× 5 صلوات)
             </p>
           </div>
-
-          {isConfirming && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
-                تنبيه: سيتم إعادة تعيين عداد الصلوات المتبقية إلى التقدير الجديد ({formatArabicNumber(previewCalc.estimatedMissed)}). هل تريد المتابعة؟
-              </p>
-            </div>
-          )}
 
           <div className="flex gap-2 pt-2">
             <button

@@ -28,14 +28,29 @@ export interface DhikrReminderItem {
   enabled: boolean;
 }
 
+export type Gender = 'male' | 'female';
+
+export interface PeriodEntry {
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+}
+
 export interface UserSettings {
   hasCompletedOnboarding: boolean;
+  userName?: string;
+  gender: Gender;
   pubertyAge: number;
   currentAge: number;
   prayerFrequency: number; // 0 to 100 %
+  // Menstruation settings (women only)
+  menstruationCalculationMode?: 'average' | 'detailed';
+  averageMenstruationDays?: number; // days per month (default 7)
+  periodHistory?: PeriodEntry[];
+  // Theme
   theme: 'light' | 'dark' | 'auto';
   hapticsEnabled: boolean;
   soundEnabled: boolean;
+  // Reminders
   reminderEnabled: boolean;
   reminderTime: string; // HH:mm (24h format, e.g. "21:00")
   lastReminderDate?: string; // YYYY-MM-DD

@@ -29,7 +29,7 @@ import {
   saveIstighfarRecord,
   saveSettings,
 } from '../storage/indexedDb';
-import { calculateMissedPrayers, createInitialCounters } from '../utils/calculator';
+import { calculateMissedPrayers, createInitialCounters, MenstruationInfo } from '../utils/calculator';
 import {
   computeStatsSummary,
   getTodayDateString,
@@ -61,7 +61,14 @@ interface AppContextType {
     pubertyAge: number,
     currentAge: number,
     prayerFrequency: number,
-    customCounters?: PrayerCounters
+    options?: {
+      userName?: string;
+      gender?: 'male' | 'female';
+      customCounters?: PrayerCounters;
+      menstruationCalculationMode?: 'average' | 'detailed';
+      averageMenstruationDays?: number;
+      periodHistory?: Array<{ startDate: string; endDate: string }>;
+    }
   ) => Promise<void>;
   recordTodayPrayers: (counts: Record<PrayerKey, number>) => Promise<boolean>;
   recordQuickPrayer: (prayerKey: PrayerKey, count: number) => Promise<boolean>;
@@ -74,7 +81,13 @@ interface AppContextType {
   recalculatePrayers: (
     pubertyAge: number,
     currentAge: number,
-    prayerFrequency: number
+    prayerFrequency: number,
+    options?: {
+      gender?: 'male' | 'female';
+      menstruationCalculationMode?: 'average' | 'detailed';
+      averageMenstruationDays?: number;
+      periodHistory?: Array<{ startDate: string; endDate: string }>;
+    }
   ) => Promise<void>;
   istighfarRecords: IstighfarRecord[];
   todayIstighfarCount: number;
@@ -126,6 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Ensure reminder defaults for backward compatibility
         const sanitized: UserSettings = {
           ...savedSettings,
+          gender: savedSettings.gender || 'male',
           reminderEnabled: savedSettings.reminderEnabled ?? false,
           reminderTime: savedSettings.reminderTime || '21:00',
           dhikrRemindersEnabled: savedSettings.dhikrRemindersEnabled ?? false,
@@ -517,21 +531,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pubertyAge: number,
     currentAge: number,
     prayerFrequency: number,
-    customCounters?: PrayerCounters
+    options?: {
+      userName?: string;
+      gender?: 'male' | 'female';
+      customCounters?: PrayerCounters;
+      menstruationCalculationMode?: 'average' | 'detailed';
+      averageMenstruationDays?: number;
+      periodHistory?: Array<{ startDate: string; endDate: string }>;
+    }
   ) => {
+    const gender = options?.gender || 'male';
+
     let initialCounters: PrayerCounters;
-    if (customCounters) {
-      initialCounters = customCounters;
+    if (options?.customCounters) {
+      initialCounters = options.customCounters;
     } else {
-      const calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency);
+      const menstruationInfo: MenstruationInfo | undefined = gender === 'female'
+        ? {
+            gender: 'female',
+            menstruationCalculationMode: options?.menstruationCalculationMode || 'average',
+            averageMenstruationDays: options?.averageMenstruationDays || 7,
+            periodHistory: options?.periodHistory,
+          }
+        : undefined;
+      const calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency, menstruationInfo);
       initialCounters = createInitialCounters(calc.perPrayer);
     }
 
     const newSettings: UserSettings = {
       hasCompletedOnboarding: true,
+      userName: options?.userName || undefined,
+      gender,
       pubertyAge,
       currentAge,
       prayerFrequency,
+      menstruationCalculationMode: options?.menstruationCalculationMode || 'average',
+      averageMenstruationDays: options?.averageMenstruationDays || 7,
+      periodHistory: options?.periodHistory || [],
       theme: 'light',
       hapticsEnabled: true,
       soundEnabled: true,
@@ -866,9 +902,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const recalculatePrayers = async (
     pubertyAge: number,
     currentAge: number,
-    prayerFrequency: number
+    prayerFrequency: number,
+    options?: {
+      gender?: 'male' | 'female';
+      menstruationCalculationMode?: 'average' | 'detailed';
+      averageMenstruationDays?: number;
+      periodHistory?: Array<{ startDate: string; endDate: string }>;
+    }
   ) => {
-    const calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency);
+    const gender = options?.gender || settings?.gender || 'male';
+    const menstruationInfo: MenstruationInfo | undefined = gender === 'female'
+      ? {
+          gender: 'female',
+          menstruationCalculationMode: options?.menstruationCalculationMode || settings?.menstruationCalculationMode || 'average',
+          averageMenstruationDays: options?.averageMenstruationDays ?? settings?.averageMenstruationDays ?? 7,
+          periodHistory: options?.periodHistory ?? settings?.periodHistory,
+        }
+      : undefined;
+
+    const calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency, menstruationInfo);
     const newCounters = createInitialCounters(calc.perPrayer);
 
     if (settings) {
@@ -877,6 +929,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pubertyAge,
         currentAge,
         prayerFrequency,
+        gender,
+        ...(gender === 'female' ? {
+          menstruationCalculationMode: options?.menstruationCalculationMode || settings?.menstruationCalculationMode || 'average',
+          averageMenstruationDays: options?.averageMenstruationDays ?? settings?.averageMenstruationDays ?? 7,
+          periodHistory: options?.periodHistory ?? settings?.periodHistory,
+        } : {}),
         updatedAt: new Date().toISOString(),
       };
       await saveSettings(updatedSettings);
