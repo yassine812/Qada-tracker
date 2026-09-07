@@ -12,42 +12,38 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Force muted + playsInline as early as possible so Safari treats
-    // this as a non-user-facing background element (autoplay allowed).
+    // Configure the video element for iOS autoplay.
+    // Safari will only autoplay muted + playsinline videos, so set these
+    // before play() is ever called.
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
-    video.setAttribute('muted', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('disablepictureinpicture', '');
-    video.setAttribute('aria-hidden', 'true');
 
     let cancelled = false;
 
     const attemptPlay = async () => {
       if (cancelled) return;
-      // iOS Safari autoplay restriction: only muted+inline autoplay is allowed.
-      // Ensure muted is set immediately before every play() call.
+      // Always re-mute immediately before play() — iOS can reset this
+      // when sources are swapped during responsive source selection.
       video.muted = true;
       try {
         await video.play();
       } catch (err) {
-        // iOS may reject if the media hasn't loaded metadata yet.
-        // We retry on loadedmetadata / canplay / canplaythrough below.
-        console.warn('QADA background video autoplay failed:', err);
+        console.error('QADA iOS VIDEO ERROR:', err);
       }
     };
 
-    // Try immediately — if metadata is already loaded this will succeed.
+    // Try right away — if the first source's metadata is already loaded
+    // this will start the loop immediately.
     attemptPlay();
 
-    // Retry when the browser has enough info to play.
+    // The browser may pick a different <source> after layout. Retry when
+    // metadata or playback readiness changes so we catch that moment.
     video.addEventListener('loadedmetadata', attemptPlay);
     video.addEventListener('canplay', attemptPlay);
     video.addEventListener('canplaythrough', attemptPlay);
 
-    // If the tab was hidden (iOS may pause media when backgrounded),
-    // resume when visible again.
+    // iOS sometimes pauses media when the tab is hidden. Resume on return.
     const onVisibilityChange = () => {
       if (cancelled) return;
       if (document.visibilityState === 'visible') {
@@ -78,11 +74,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
       className="relative w-full min-h-screen h-[100svh] overflow-hidden flex items-center select-none"
     >
       {/* 1. CINEMATIC FULLSCREEN BACKGROUND VIDEO — pure auto-playing loop only.
-          No controls attribute, no custom play button. It is decorative. */}
+          No controls attribute, no custom play button. It is decorative.
+
+          Mobile (iPhone / small screens) gets an optimized H.264 Main @ Level 4.0
+          1920px-wide only, no audio, faststart MP4 so Safari can read metadata from
+          the first bytes and autoplay without downloading the full 4K original.
+
+          Desktop / larger screens get the full-resolution original. */}
       <video
         ref={videoRef}
         className="hero-video absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-        src="/qada-garden.mp4"
         autoPlay
         muted
         loop
@@ -91,7 +92,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
         disablePictureInPicture
         controls={false}
         aria-hidden="true"
-      />
+      >
+        {/* Mobile-first: small screens load the optimized mobile video. */}
+        <source
+          src="/qada-garden-mobile.mp4"
+          type="video/mp4"
+          media="(max-width: 768px)"
+        />
+
+        {/* Desktop / larger screens load the full-resolution original. */}
+        <source
+          src="/qada-garden.mp4"
+          type="video/mp4"
+        />
+      </video>
 
       {/* 2. CINEMATIC GRADIENT OVERLAYS (Preserves garden & characters on right) */}
       <div className="absolute inset-0 z-10 pointer-events-none hero-cinematic-overlay" />
