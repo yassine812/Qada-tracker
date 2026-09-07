@@ -20,7 +20,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
     >
       {/* 1. CINEMATIC FULLSCREEN VIDEO BACKGROUND */}
       <video
-        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+        className="hero-video absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
         src="/qada-garden.mp4"
         autoPlay
         muted
