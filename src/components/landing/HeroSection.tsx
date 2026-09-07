@@ -8,30 +8,38 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Guarantee background autoplay + continuous loop on all devices/browsers.
-  // The `muted` React prop alone does not always set the DOM muted property,
-  // which browsers (especially iOS Safari) check when granting autoplay.
+  // iOS Safari autoplay: the video must be muted BEFORE play() and be
+  // playsInline, otherwise iPhone shows a native play button / poster and
+  // never auto-starts. No user interaction is ever required.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.defaultMuted = true;
+
     video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
     video.setAttribute('muted', '');
-    video.setAttribute('autoplay', '');
-    const attemptPlay = () => {
-      video.play().catch(() => undefined);
+    video.setAttribute('playsinline', '');
+
+    const startVideo = () => {
+      video.play().catch(() => {});
     };
-    attemptPlay();
-    const doc = document as Document;
-    const loaded = () => attemptPlay();
-    video.addEventListener('loadeddata', loaded);
+
+    requestAnimationFrame(startVideo);
+    startVideo();
+
+    video.addEventListener('loadedmetadata', startVideo);
+    video.addEventListener('canplay', startVideo);
+
     const resumed = () => {
-      if (document.visibilityState === 'visible') attemptPlay();
+      if (document.visibilityState === 'visible') startVideo();
     };
-    doc.addEventListener('visibilitychange', resumed);
+    document.addEventListener('visibilitychange', resumed);
+
     return () => {
-      video.removeEventListener('loadeddata', loaded);
-      doc.removeEventListener('visibilitychange', resumed);
+      video.removeEventListener('loadedmetadata', startVideo);
+      video.removeEventListener('canplay', startVideo);
+      document.removeEventListener('visibilitychange', resumed);
     };
   }, []);
 
@@ -58,11 +66,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
         loop
         playsInline
         preload="auto"
-        aria-hidden="true"
-        tabIndex={-1}
-        controlsList="nodownload noplaybackrate noplay"
         disablePictureInPicture
-        disableRemotePlayback
+        controls={false}
+        aria-hidden="true"
       />
 
       {/* 2. CINEMATIC GRADIENT OVERLAYS (Preserves garden & characters on right) */}
