@@ -8,38 +8,60 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // iOS Safari autoplay: the video must be muted BEFORE play() and be
-  // playsInline, otherwise iPhone shows a native play button / poster and
-  // never auto-starts. No user interaction is ever required.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
+    // Force muted + playsInline as early as possible so Safari treats
+    // this as a non-user-facing background element (autoplay allowed).
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
+    video.setAttribute('disablepictureinpicture', '');
+    video.setAttribute('aria-hidden', 'true');
 
-    const startVideo = () => {
-      video.play().catch(() => {});
+    let cancelled = false;
+
+    const attemptPlay = async () => {
+      if (cancelled) return;
+      // iOS Safari autoplay restriction: only muted+inline autoplay is allowed.
+      // Ensure muted is set immediately before every play() call.
+      video.muted = true;
+      try {
+        await video.play();
+      } catch (err) {
+        // iOS may reject if the media hasn't loaded metadata yet.
+        // We retry on loadedmetadata / canplay / canplaythrough below.
+        console.warn('QADA background video autoplay failed:', err);
+      }
     };
 
-    requestAnimationFrame(startVideo);
-    startVideo();
+    // Try immediately — if metadata is already loaded this will succeed.
+    attemptPlay();
 
-    video.addEventListener('loadedmetadata', startVideo);
-    video.addEventListener('canplay', startVideo);
+    // Retry when the browser has enough info to play.
+    video.addEventListener('loadedmetadata', attemptPlay);
+    video.addEventListener('canplay', attemptPlay);
+    video.addEventListener('canplaythrough', attemptPlay);
 
-    const resumed = () => {
-      if (document.visibilityState === 'visible') startVideo();
+    // If the tab was hidden (iOS may pause media when backgrounded),
+    // resume when visible again.
+    const onVisibilityChange = () => {
+      if (cancelled) return;
+      if (document.visibilityState === 'visible') {
+        attemptPlay();
+      }
     };
-    document.addEventListener('visibilitychange', resumed);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      video.removeEventListener('loadedmetadata', startVideo);
-      video.removeEventListener('canplay', startVideo);
-      document.removeEventListener('visibilitychange', resumed);
+      cancelled = true;
+      video.removeEventListener('loadedmetadata', attemptPlay);
+      video.removeEventListener('canplay', attemptPlay);
+      video.removeEventListener('canplaythrough', attemptPlay);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
