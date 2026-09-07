@@ -47,7 +47,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
       id="hero"
       className="relative w-full min-h-screen h-[100svh] overflow-hidden flex items-center select-none"
     >
-      {/* 1. CINEMATIC FULLSCREEN BACKGROUND VIDEO — pure auto-playing loop only */}
+      {/* 1. CINEMATIC FULLSCREEN BACKGROUND VIDEO — pure auto-playing loop only.
+          No controls attribute, no custom play button. It is decorative. */}
       <video
         ref={videoRef}
         className="hero-video absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
@@ -57,6 +58,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
         loop
         playsInline
         preload="auto"
+        aria-hidden="true"
+        tabIndex={-1}
+        controlsList="nodownload noplaybackrate noplay"
+        disablePictureInPicture
+        disableRemotePlayback
       />
 
       {/* 2. CINEMATIC GRADIENT OVERLAYS (Preserves garden & characters on right) */}
