@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
 
 interface HeroSectionProps {
@@ -7,6 +7,7 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -18,23 +19,55 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
 
-    const attemptPlay = () => {
-      video.muted = true;
-      video.play().catch(() => {});
+    const handlePlaying = () => {
+      setIsPlaying(true);
     };
 
+    const attemptPlay = () => {
+      video.muted = true;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            // Autoplay blocked by iOS (e.g. Low Power Mode).
+            // The video stays opacity-0 so WebKit's native play button overlay is NEVER visible,
+            // while the cinematic poster remains seamless in the background.
+          });
+      }
+    };
+
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('timeupdate', handlePlaying);
     video.addEventListener('loadedmetadata', attemptPlay);
     video.addEventListener('canplay', attemptPlay);
     document.addEventListener('visibilitychange', attemptPlay);
     window.addEventListener('pageshow', attemptPlay);
 
+    // Seamlessly start playback on first touch/interaction (e.g. when in Low Power Mode)
+    const onUserInteraction = () => {
+      attemptPlay();
+    };
+    window.addEventListener('touchstart', onUserInteraction, { passive: true, once: true });
+    window.addEventListener('touchend', onUserInteraction, { passive: true, once: true });
+    window.addEventListener('click', onUserInteraction, { passive: true, once: true });
+    window.addEventListener('scroll', onUserInteraction, { passive: true, once: true });
+
     attemptPlay();
 
     return () => {
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('timeupdate', handlePlaying);
       video.removeEventListener('loadedmetadata', attemptPlay);
       video.removeEventListener('canplay', attemptPlay);
       document.removeEventListener('visibilitychange', attemptPlay);
       window.removeEventListener('pageshow', attemptPlay);
+      window.removeEventListener('touchstart', onUserInteraction);
+      window.removeEventListener('touchend', onUserInteraction);
+      window.removeEventListener('click', onUserInteraction);
+      window.removeEventListener('scroll', onUserInteraction);
     };
   }, []);
 
@@ -50,10 +83,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
       id="hero"
       className="relative w-full min-h-screen h-[100svh] overflow-hidden flex items-center select-none"
     >
-      {/* CINEMATIC FULLSCREEN BACKGROUND VIDEO */}
+      {/* 1. CINEMATIC POSTER FALLBACK (Always behind video, exact same framing) */}
+      <img
+        src="/qada-garden-poster.jpg"
+        alt=""
+        aria-hidden="true"
+        className="hero-video absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+      />
+
+      {/* 2. CINEMATIC FULLSCREEN BACKGROUND VIDEO */}
       <video
         ref={videoRef}
-        className="hero-video absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
+        className={`hero-video absolute inset-0 w-full h-full object-cover pointer-events-none z-0 transition-opacity duration-700 ${
+          isPlaying ? 'opacity-100' : 'opacity-0'
+        }`}
         autoPlay
         muted
         loop
