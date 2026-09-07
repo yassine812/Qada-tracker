@@ -12,51 +12,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Configure the video element for iOS autoplay.
-    // Safari will only autoplay muted + playsinline videos, so set these
-    // before play() is ever called.
+    // Ensure muted & playsInline for mobile iOS autoplay
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
 
-    let cancelled = false;
-
-    const attemptPlay = async () => {
-      if (cancelled) return;
-      // Always re-mute immediately before play() — iOS can reset this
-      // when sources are swapped during responsive source selection.
+    const playVideo = () => {
       video.muted = true;
-      try {
-        await video.play();
-      } catch (err) {
-        console.error('QADA iOS VIDEO ERROR:', err);
+      const promise = video.play();
+      if (promise !== undefined) {
+        promise.catch(() => {});
       }
     };
 
-    // Try right away — if the first source's metadata is already loaded
-    // this will start the loop immediately.
-    attemptPlay();
+    playVideo();
+    video.addEventListener('loadeddata', playVideo);
+    video.addEventListener('canplay', playVideo);
 
-    // The browser may pick a different <source> after layout. Retry when
-    // metadata or playback readiness changes so we catch that moment.
-    video.addEventListener('loadedmetadata', attemptPlay);
-    video.addEventListener('canplay', attemptPlay);
-    video.addEventListener('canplaythrough', attemptPlay);
-
-    // iOS sometimes pauses media when the tab is hidden. Resume on return.
     const onVisibilityChange = () => {
-      if (cancelled) return;
       if (document.visibilityState === 'visible') {
-        attemptPlay();
+        playVideo();
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      cancelled = true;
-      video.removeEventListener('loadedmetadata', attemptPlay);
-      video.removeEventListener('canplay', attemptPlay);
-      video.removeEventListener('canplaythrough', attemptPlay);
+      video.removeEventListener('loadeddata', playVideo);
+      video.removeEventListener('canplay', playVideo);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
@@ -73,38 +58,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
       id="hero"
       className="relative w-full min-h-screen h-[100svh] overflow-hidden flex items-center select-none"
     >
-      {/* 1. CINEMATIC FULLSCREEN BACKGROUND VIDEO — pure auto-playing loop only.
-          No controls attribute, no custom play button. It is decorative.
-
-          Mobile (iPhone / small screens) gets an optimized H.264 Main @ Level 4.0
-          1920px-wide only, no audio, faststart MP4 so Safari can read metadata from
-          the first bytes and autoplay without downloading the full 4K original.
-
-          Desktop / larger screens get the full-resolution original. */}
+      {/* CINEMATIC FULLSCREEN BACKGROUND VIDEO */}
       <video
         ref={videoRef}
-        className="hero-video absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+        className="hero-video absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
         autoPlay
         muted
         loop
         playsInline
         preload="auto"
-        disablePictureInPicture
         controls={false}
         aria-hidden="true"
       >
-        {/* Mobile-first: small screens load the optimized mobile video. */}
-        <source
-          src="/qada-garden-mobile.mp4"
-          type="video/mp4"
-          media="(max-width: 768px)"
-        />
-
-        {/* Desktop / larger screens load the full-resolution original. */}
-        <source
-          src="/qada-garden.mp4"
-          type="video/mp4"
-        />
+        <source src="/qada-garden.mp4" type="video/mp4" />
       </video>
 
       {/* 2. CINEMATIC GRADIENT OVERLAYS (Preserves garden & characters on right) */}

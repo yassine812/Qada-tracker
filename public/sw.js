@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qada-tracker-v5';
+const CACHE_NAME = 'qada-tracker-v6';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -6,9 +6,7 @@ const STATIC_ASSETS = [
   '/icons/icon-192.png?v=5',
   '/icons/icon-512.png?v=5',
   '/icons/icon-512-maskable.png?v=5',
-  '/apple-touch-icon.png?v=5',
-  '/qada-garden.mp4',
-  '/qada-garden-mobile.mp4'
+  '/apple-touch-icon.png?v=5'
 ];
 
 self.addEventListener('install', (event) => {
@@ -36,6 +34,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Let browser handle media directly to preserve HTTP 206 range requests on Safari / iOS
+  if (event.request.destination === 'video' || event.request.url.includes('.mp4')) {
+    return;
+  }
+
   // Navigation requests: serve cached index.html if network fails
   if (event.request.mode === 'navigate') {
     event.respondWith(
