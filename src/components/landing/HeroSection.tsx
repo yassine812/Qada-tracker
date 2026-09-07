@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
 
 interface HeroSectionProps {
@@ -6,6 +6,35 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Guarantee background autoplay + continuous loop on all devices/browsers.
+  // The `muted` React prop alone does not always set the DOM muted property,
+  // which browsers (especially iOS Safari) check when granting autoplay.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.defaultMuted = true;
+    video.muted = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
+    const attemptPlay = () => {
+      video.play().catch(() => undefined);
+    };
+    attemptPlay();
+    const doc = document as Document;
+    const loaded = () => attemptPlay();
+    video.addEventListener('loadeddata', loaded);
+    const resumed = () => {
+      if (document.visibilityState === 'visible') attemptPlay();
+    };
+    doc.addEventListener('visibilitychange', resumed);
+    return () => {
+      video.removeEventListener('loadeddata', loaded);
+      doc.removeEventListener('visibilitychange', resumed);
+    };
+  }, []);
+
   const scrollToFeatures = () => {
     const element = document.getElementById('features');
     if (element) {
@@ -18,8 +47,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
       id="hero"
       className="relative w-full min-h-screen h-[100svh] overflow-hidden flex items-center select-none"
     >
-      {/* 1. CINEMATIC FULLSCREEN VIDEO BACKGROUND */}
+      {/* 1. CINEMATIC FULLSCREEN BACKGROUND VIDEO — pure auto-playing loop only */}
       <video
+        ref={videoRef}
         className="hero-video absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
         src="/qada-garden.mp4"
         autoPlay
