@@ -12,37 +12,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Ensure muted & playsInline for mobile iOS autoplay
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
-    video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
 
-    const playVideo = () => {
+    const attemptPlay = () => {
       video.muted = true;
-      const promise = video.play();
-      if (promise !== undefined) {
-        promise.catch(() => {});
-      }
+      video.play().catch(() => {});
     };
 
-    playVideo();
-    video.addEventListener('loadeddata', playVideo);
-    video.addEventListener('canplay', playVideo);
+    video.addEventListener('loadedmetadata', attemptPlay);
+    video.addEventListener('canplay', attemptPlay);
+    document.addEventListener('visibilitychange', attemptPlay);
+    window.addEventListener('pageshow', attemptPlay);
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        playVideo();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    attemptPlay();
 
     return () => {
-      video.removeEventListener('loadeddata', playVideo);
-      video.removeEventListener('canplay', playVideo);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      video.removeEventListener('loadedmetadata', attemptPlay);
+      video.removeEventListener('canplay', attemptPlay);
+      document.removeEventListener('visibilitychange', attemptPlay);
+      window.removeEventListener('pageshow', attemptPlay);
     };
   }, []);
 
@@ -67,7 +59,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
         loop
         playsInline
         preload="auto"
-        controls={false}
         aria-hidden="true"
       >
         <source src="/qada-garden.mp4" type="video/mp4" />

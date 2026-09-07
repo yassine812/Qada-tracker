@@ -687,13 +687,22 @@ input[type=range]::-webkit-slider-thumb:active {
 }
 
 
-/* Mobile-only hero video framing: shift the crop toward the RIGHT side
-   of the original footage so the seated Muslim figure is fully visible.
-   Desktop/tablet keeps the default 50% center positioning unchanged. */
-@media (max-width: 767px) {
+/* Mobile hero video framing: preserve the garden and people on the right side */
+@media (max-width: 768px) {
   .hero-video {
-    object-position: 70% center;
+    object-position: 65% center;
   }
+}
+
+/* Ensure zero native playback UI or play button overlay on iOS Safari / WebKit */
+.hero-video::-webkit-media-controls,
+.hero-video::-webkit-media-controls-start-playback-button,
+.hero-video::-webkit-media-controls-play-button,
+.hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Cinematic Video Overlay: Asymmetric darkening on the left where text lives */
