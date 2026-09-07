@@ -1,79 +1,112 @@
 import React from 'react';
-import { Flame, Download, Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Flame, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { StarEightPoint } from './landing/IslamicOrnaments';
 
 interface HeaderProps {
   onOpenInstall?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenInstall }) => {
-  const { stats, settings, updateSettings } = useApp();
+  const { settings, updateSettings, stats } = useApp();
+
+  const isDark =
+    settings?.theme === 'dark' ||
+    (settings?.theme === 'auto' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const toggleTheme = () => {
     if (!settings) return;
-    const next = settings.theme === 'dark' ? 'light' : 'dark';
+    const next = isDark ? 'light' : 'dark';
     updateSettings({ theme: next });
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const goToLanding = () => {
+    try {
+      window.history.pushState(null, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch {
+      window.location.href = '/';
+    }
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-[#F5F5F0]/90 dark:bg-[#1C1D1A]/90 backdrop-blur-md border-b border-[#E8E4D9] dark:border-[#3D3E37] transition-colors">
+    <header
+      className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
+      style={{
+        background: isDark ? 'rgba(24, 35, 28, 0.85)' : 'rgba(250, 247, 242, 0.88)',
+        borderColor: 'var(--qada-border)',
+      }}
+      dir="rtl"
+    >
       <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-        {/* Brand Logo & Title */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#F0EEE6] dark:bg-[#2A2B26] border border-[#E8E4D9] dark:border-[#3D3E37] flex items-center justify-center text-[#5A5A40] dark:text-[#C8C7B9]">
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Islamic Arch icon */}
-              <path d="M12 3c-4 4-8 8-8 14a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4c0-6-4-10-8-14z" />
-              <path d="M12 3v4" />
-            </svg>
+        {/* Right (start in RTL): Brand Identity matching landing page */}
+        <button
+          type="button"
+          onClick={goToLanding}
+          className="flex items-center gap-2 group cursor-pointer"
+          title="العودة للصفحة الرئيسية"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#26352A]/10 dark:bg-[#C6A15B]/15 border border-[#C6A15B]/30 flex items-center justify-center text-[#C6A15B] transition-transform group-hover:scale-105">
+            <StarEightPoint size={14} color="#C6A15B" />
           </div>
-          <div>
-            <h1 className="font-bold text-xl font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0] leading-tight">
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-bold text-lg font-landing-display tracking-tight text-[#1D211E] dark:text-[#F6F1E7]">
               قضاء
-            </h1>
+            </span>
+            <span className="text-[9px] uppercase tracking-widest text-[#7E8C7F] dark:text-[#A9B7A3] font-mono">
+              QADA
+            </span>
           </div>
-        </div>
+        </button>
 
-        {/* Action badges: Streak & Theme Toggle */}
+        {/* Left (end in RTL): Controls & Streak badge */}
         <div className="flex items-center gap-2">
-          {stats.currentStreak > 0 && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F0EEE6] dark:bg-[#2A2B26] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#5A5A40] dark:text-[#EAE7E0] text-xs font-semibold">
-              <Flame className="w-3.5 h-3.5 text-[#C97C5D] fill-[#C97C5D]" />
-              <span>{stats.currentStreak} أيام</span>
+          {/* Streak indicator if user has an active streak */}
+          {stats && stats.currentStreak > 0 && (
+            <div
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: 'rgba(198, 161, 91, 0.15)',
+                color: 'var(--qada-accent)',
+                border: '1px solid rgba(198, 161, 91, 0.25)',
+              }}
+              title={`أيام الالتزام المتتالية: ${stats.currentStreak}`}
+            >
+              <Flame className="w-3.5 h-3.5 text-[#C6A15B]" />
+              <span>{stats.currentStreak}</span>
             </div>
           )}
 
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+            title={isDark ? 'تبديل إلى المظهر النهاري' : 'تبديل إلى المظهر الليلي'}
+            aria-label="تبديل المظهر"
+          >
+            {isDark ? <Sun className="w-4 h-4 text-[#C6A15B]" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Install or PWA quick trigger */}
           {onOpenInstall && (
             <button
+              type="button"
               onClick={onOpenInstall}
-              className="p-1.5 rounded-xl hover:bg-[#EAE7E0] dark:hover:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] transition-colors"
-              title="تثبيت التطبيق"
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+              title="تثبيت التطبيق على جهازك"
               aria-label="تثبيت التطبيق"
             >
-              <Download className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-[#C6A15B]" />
             </button>
           )}
-
-          <button
-            onClick={toggleTheme}
-            className="p-1.5 rounded-xl hover:bg-[#EAE7E0] dark:hover:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] transition-colors"
-            title="تبديل الوضع الليلي"
-            aria-label="تبديل الوضع الليلي"
-          >
-            {settings?.theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-[#E09578]" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#5A5A40]" />
-            )}
-          </button>
         </div>
       </div>
     </header>

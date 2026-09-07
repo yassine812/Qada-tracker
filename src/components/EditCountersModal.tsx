@@ -133,7 +133,7 @@ export const EditCountersModal: React.FC<EditCountersModalProps> = ({ isOpen, on
                 className={`flex-1 py-3 font-semibold text-sm rounded-2xl text-white transition-all shadow-md ${
                   confirmStep
                     ? 'bg-amber-600 hover:bg-amber-700'
-                    : 'bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] dark:text-[#1C1D1A]'
+                    : 'bg-[#26352A] hover:bg-[#18231C] dark:bg-[#C6A15B] dark:hover:bg-[#D4B26F] dark:text-[#18231C]'
                 }`}
               >
                 {confirmStep ? 'تأكيد التعديل' : 'حفظ التعديل'}
@@ -159,7 +159,7 @@ export const EditCountersModal: React.FC<EditCountersModalProps> = ({ isOpen, on
                   </div>
                   <button
                     onClick={() => handleStartEdit(prayer.key)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#5A5A40] dark:text-[#C8C7B9] text-xs font-semibold hover:opacity-80 transition-opacity"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white dark:bg-[#26352A] border border-[#C6A15B]/30 text-[#26352A] dark:text-[#C6A15B] text-xs font-semibold hover:opacity-80 transition-opacity"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     <span>تعديل</span>
@@ -171,7 +171,7 @@ export const EditCountersModal: React.FC<EditCountersModalProps> = ({ isOpen, on
             <div className="pt-3">
               <button
                 onClick={onClose}
-                className="w-full py-3 bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-semibold text-sm rounded-2xl transition-colors shadow-md"
+                className="w-full py-3 bg-[#26352A] hover:bg-[#18231C] dark:bg-[#C6A15B] dark:hover:bg-[#D4B26F] text-white dark:text-[#18231C] font-semibold text-sm rounded-2xl transition-colors shadow-md"
               >
                 تم
               </button>

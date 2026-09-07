@@ -129,7 +129,8 @@ export function createInitialCounters(perPrayer: CalculationResult['perPrayer'])
   };
 }
 
+import { formatNumber } from './formatters';
+
 export function formatArabicNumber(num: number): string {
-  if (isNaN(num)) return '0';
-  return num.toLocaleString('en-US'); // Displays standard arabic numerals with comma separators like 20,075 as in mockup
+  return formatNumber(num);
 }

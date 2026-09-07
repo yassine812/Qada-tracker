@@ -1,12 +1,12 @@
-const CACHE_NAME = 'qada-tracker-v3';
+const CACHE_NAME = 'qada-tracker-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/icons/icon-192.png?v=3',
-  '/icons/icon-512.png?v=3',
-  '/icons/icon-512-maskable.png?v=3',
-  '/apple-touch-icon.png?v=3'
+  '/icons/icon-192.png?v=4',
+  '/icons/icon-512.png?v=4',
+  '/icons/icon-512-maskable.png?v=4',
+  '/apple-touch-icon.png?v=4'
 ];
 
 self.addEventListener('install', (event) => {

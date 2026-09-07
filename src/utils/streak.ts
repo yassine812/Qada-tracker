@@ -1,4 +1,5 @@
 import { DailyRecord, PrayerCounters, StatsSummary } from '../types';
+import { toWesternDigits } from './formatters';
 
 export function getTodayDateString(): string {
   const now = new Date();
@@ -24,12 +25,13 @@ export function formatArabicDate(dateStr: string): string {
   try {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
-    return date.toLocaleDateString('ar-EG', {
+    const formatted = date.toLocaleDateString('ar-u-nu-latn', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+    return toWesternDigits(formatted);
   } catch {
     return dateStr;
   }

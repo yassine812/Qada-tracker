@@ -3,51 +3,118 @@
 
 @layer base {
   :root {
-    --font-arabic: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    /* === UNIFIED ISLAMIC COLOR SYSTEM === */
+    --font-arabic: 'Noto Sans Arabic', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-serif: 'Amiri', 'Georgia', serif;
-    --color-primary: #5A5A40;
-    --color-primary-container: #4A4A33;
-    --color-on-primary: #ffffff;
-    --color-on-primary-container: #EAE7E0;
-    --color-accent: #C97C5D;
-    --color-secondary: #7D7D62;
-    --color-secondary-container: #F0EEE6;
-    --color-on-secondary-container: #5A5A40;
-    --color-surface: #F5F5F0;
-    --color-surface-container: #FAF9F5;
-    --color-surface-container-low: #F0EEE6;
-    --color-surface-container-high: #EAE7E0;
-    --color-surface-container-lowest: #ffffff;
-    --color-on-surface: #2D2D2A;
-    --color-on-surface-variant: #5A5A40;
-    --color-outline: #8E8E80;
-    --color-outline-variant: #E8E4D9;
-    --color-border-heavy: #D1CDC2;
-    --color-error: #ba1a1a;
-    --color-error-container: #ffdad6;
+
+    /* Core Palette */
+    --qada-olive: #26352A;
+    --qada-olive-light: #344839;
+    --qada-olive-dark: #18231C;
+    --qada-sand: #E8DDD0;
+    --qada-gold: #C6A15B;
+    --qada-gold-light: #D4B26F;
+    --qada-ivory: #F6F1E7;
+    --qada-charcoal: #1D211E;
+
+    /* Semantic - Light Mode: Warm Ivory & Deep Olive */
+    --qada-primary: #26352A;
+    --qada-primary-soft: rgba(38, 53, 42, 0.08);
+    --qada-accent: #C6A15B;
+    --qada-accent-soft: rgba(198, 161, 91, 0.12);
+
+    /* Surface System */
+    --qada-bg: #FAF7F2;
+    --qada-surface-1: #FFFFFF;
+    --qada-surface-2: #F6F1E7;
+    --qada-surface-3: #ECE6D8;
+    --qada-surface-elevated: #FFFFFF;
+
+    /* Text */
+    --qada-text: #1D211E;
+    --qada-text-secondary: #4A584C;
+    --qada-text-muted: #7E8C7F;
+
+    /* Functional */
+    --qada-success: #3C6E47;
+    --qada-success-soft: rgba(60, 110, 71, 0.12);
+    --qada-warning: #B8893A;
+    --qada-warning-soft: rgba(184, 137, 58, 0.12);
+    --qada-error: #9E3A3A;
+    --qada-error-soft: rgba(158, 58, 58, 0.12);
+
+    /* Misc */
+    --qada-border: rgba(38, 53, 42, 0.08);
+    --qada-border-strong: rgba(198, 161, 91, 0.25);
+    --qada-shadow-sm: 0 1px 2px rgba(24,35,28,0.04);
+    --qada-shadow-md: 0 4px 14px rgba(24,35,28,0.06);
+    --qada-shadow-lg: 0 8px 24px rgba(24,35,28,0.08);
+    --qada-shadow-glow: 0 0 35px rgba(198,161,91,0.12);
+    --qada-pattern-opacity: 0.035;
+    --qada-pattern-color: #26352A;
+    --qada-pattern-dot: rgba(198,161,91,0.08);
+
+    /* === DEDICATED MUSHAF SYSTEM (paper surface, never inherits app theme) === */
+    --mushaf-bg-top: #FAF8F3;
+    --mushaf-bg-bottom: #F5F0E8;
+    --mushaf-text: #1D211E;
+    --mushaf-muted: #7E8C7F;
+    --mushaf-border: rgba(198,161,91,0.38);
+    --mushaf-border-soft: rgba(198,161,91,0.2);
+    --mushaf-accent: #C6A15B;
+    --mushaf-badge-bg: rgba(250,247,242,0.92);
+    --mushaf-pill-bg: rgba(38,53,42,0.05);
+    --mushaf-shadow: 0 6px 36px rgba(24,35,28,0.13);
   }
 
   .dark {
-    --color-primary: #C8C7B9;
-    --color-primary-container: #5A5A40;
-    --color-on-primary: #1C1D1A;
-    --color-on-primary-container: #FAF9F5;
-    --color-accent: #E09578;
-    --color-secondary: #A2A282;
-    --color-secondary-container: #2A2B26;
-    --color-on-secondary-container: #EAE7E0;
-    --color-surface: #1C1D1A;
-    --color-surface-container: #252622;
-    --color-surface-container-low: #20211D;
-    --color-surface-container-high: #32332D;
-    --color-surface-container-lowest: #141512;
-    --color-on-surface: #EAE7E0;
-    --color-on-surface-variant: #A6A699;
-    --color-outline: #8E8E80;
-    --color-outline-variant: #3D3E37;
-    --color-border-heavy: #484941;
-    --color-error: #ffb4ab;
-    --color-error-container: #93000a;
+    /* Semantic - Dark Mode: Deep Forest & Restrained Antique Gold */
+    --qada-primary: #C6A15B;
+    --qada-primary-soft: rgba(198, 161, 91, 0.14);
+    --qada-accent: #C6A15B;
+    --qada-accent-soft: rgba(198, 161, 91, 0.18);
+
+    --qada-bg: #18231C;
+    --qada-surface-1: #1F2E24;
+    --qada-surface-2: #26352A;
+    --qada-surface-3: #2E4033;
+    --qada-surface-elevated: #223328;
+
+    --qada-text: #F6F1E7;
+    --qada-text-secondary: #A9B7A3;
+    --qada-text-muted: #7A8C75;
+
+    --qada-success: #6BA06B;
+    --qada-success-soft: rgba(107, 160, 107, 0.14);
+    --qada-warning: #D4A84A;
+    --qada-warning-soft: rgba(212, 168, 74, 0.14);
+    --qada-error: #CC6666;
+    --qada-error-soft: rgba(204, 102, 102, 0.14);
+
+    --qada-border: rgba(246, 241, 231, 0.08);
+    --qada-border-strong: rgba(198, 161, 91, 0.22);
+    --qada-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --qada-shadow-md: 0 4px 16px rgba(0,0,0,0.35);
+    --qada-shadow-lg: 0 10px 30px rgba(0,0,0,0.45);
+    --qada-shadow-glow: 0 0 40px rgba(198,161,91,0.08);
+    --qada-pattern-opacity: 0.03;
+    --qada-pattern-color: #A9B7A3;
+    --qada-pattern-dot: rgba(198,161,91,0.06);
+
+    /* === DEDICATED MUSHAF SYSTEM — DARK: deep warm parchment paper === */
+    /* The Mushaf stays a physical paper surface: warm dark brown-olive paper
+       with high-contrast warm ivory Quran text. The surrounding app is dark,
+       the Mushaf is NOT — it must never inherit the app's dark text colors. */
+    --mushaf-bg-top: #2E2C22;
+    --mushaf-bg-bottom: #27251D;
+    --mushaf-text: #F3EBDD;
+    --mushaf-muted: #A9B7A3;
+    --mushaf-border: rgba(198,161,91,0.32);
+    --mushaf-border-soft: rgba(198,161,91,0.16);
+    --mushaf-accent: #C6A15B;
+    --mushaf-badge-bg: rgba(39,37,29,0.96);
+    --mushaf-pill-bg: rgba(243,235,221,0.07);
+    --mushaf-shadow: 0 10px 44px rgba(0,0,0,0.55);
   }
 
   body {
@@ -57,79 +124,748 @@
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
+    background-color: var(--qada-bg);
+    color: var(--qada-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  .font-brand-serif {
-    font-family: var(--font-serif);
-  }
+  * { text-rendering: optimizeLegibility; }
+  .font-brand-serif { font-family: var(--font-serif); }
+  ::selection { background: var(--qada-primary-soft); color: var(--qada-text); }
 }
 
-/* Glassmorphic & Natural card classes */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid #E8E4D9;
+/* ============================================================
+   COLOR BRIDGE: remap old hardcoded Tailwind colors to the new
+   CSS variable system so un-migrated pages auto-adapt.
+   ============================================================ */
+
+/* Backgrounds */
+.bg-\[\#FAF9F5\] { background-color: var(--qada-surface-1) !important; }
+.bg-\[\#F5F5F0\] { background-color: var(--qada-bg) !important; }
+.bg-\[\#F0EEE6\] { background-color: var(--qada-surface-2) !important; }
+.bg-\[\#EAE7E0\] { background-color: var(--qada-surface-3) !important; }
+.bg-\[\#FAF4ED\] { background-color: var(--qada-warning-soft) !important; }
+
+.dark .bg-\[\#252622\] { background-color: var(--qada-surface-1) !important; }
+.dark .bg-\[\#1C1D1A\] { background-color: var(--qada-surface-2) !important; }
+.dark .bg-\[\#2A2B26\] { background-color: var(--qada-surface-3) !important; }
+.dark .bg-\[\#32332D\] { background-color: var(--qada-surface-3) !important; }
+
+/* Text */
+.text-\[\#2D2D2A\] { color: var(--qada-text) !important; }
+.text-\[\#5A5A40\] { color: var(--qada-primary) !important; }
+.text-\[\#C97C5D\] { color: var(--qada-accent) !important; }
+.text-\[\#8E8E80\] { color: var(--qada-text-muted) !important; }
+.text-\[\#A05335\] { color: var(--qada-warning) !important; }
+
+.dark .text-\[\#EAE7E0\] { color: var(--qada-text) !important; }
+.dark .text-\[\#C8C7B9\] { color: var(--qada-primary) !important; }
+.dark .text-\[\#E09578\] { color: var(--qada-accent) !important; }
+.dark .text-\[\#A6A699\] { color: var(--qada-text-secondary) !important; }
+.dark .text-\[\#FAF9F5\] { color: var(--qada-text) !important; }
+.dark .text-\[\#F3B39B\] { color: var(--qada-accent) !important; }
+
+/* Borders */
+.border-\[\#E8E4D9\] { border-color: var(--qada-border) !important; }
+.border-\[\#D1CDC2\] { border-color: var(--qada-border-strong) !important; }
+
+.dark .border-\[\#3D3E37\] { border-color: var(--qada-border) !important; }
+
+/* Transparent bg variants */
+.bg-\[\#5A5A40\]\/10 { background-color: var(--qada-primary-soft) !important; }
+.dark .bg-\[\#C8C7B9\]\/15 { background-color: var(--qada-primary-soft) !important; }
+.bg-\[\#C97C5D\]\/15 { background-color: var(--qada-accent-soft) !important; }
+.bg-\[\#C97C5D\]\/20 { background-color: var(--qada-warning-soft) !important; }
+.bg-\[\#C97C5D\]\/10 { background-color: var(--qada-accent-soft) !important; }
+
+.bg-\[\#5A5A40\] { background-color: var(--qada-primary) !important; }
+.bg-\[\#484833\] { background-color: var(--qada-olive-dark) !important; }
+.bg-\[\#C97C5D\] { background-color: var(--qada-accent) !important; }
+.bg-\[\#b86e51\] { background-color: var(--qada-accent) !important; }
+
+.dark .bg-\[\#C8C7B9\] { background-color: var(--qada-primary) !important; }
+.dark .bg-\[\#B8B7A8\] { background-color: var(--qada-primary) !important; }
+.dark .bg-\[\#4A4A33\] { background-color: var(--qada-olive-dark) !important; }
+
+/* Hover backgrounds */
+.hover\:bg-\[\#EAE7E0\]:hover { background-color: var(--qada-surface-3) !important; }
+.dark .hover\:bg-\[\#2A2B26\]:hover { background-color: var(--qada-surface-3) !important; }
+.dark .hover\:bg-\[\#B8B7A8\]:hover { background-color: var(--qada-primary) !important; }
+.dark .hover\:bg-\[\#484833\]:hover { background-color: var(--qada-olive-dark) !important; }
+.dark .hover\:bg-\[\#4A4A33\]:hover { background-color: var(--qada-olive-dark) !important; }
+.dark .hover\:bg-\[\#b0afa0\]:hover { background-color: var(--qada-primary) !important; }
+
+/* Shadows */
+.shadow-\[\[0_4px_16px_rgba\(90\,90\,64\,0\.04\)\]\] { box-shadow: var(--qada-shadow-sm) !important; }
+.shadow-\[\[0_4px_16px_rgba\(90\,90\,64\,0\.03\)\]\] { box-shadow: var(--qada-shadow-sm) !important; }
+.shadow-\[\[0_4px_16px_rgba\(90\,90\,64\,0\.06\)\]\] { box-shadow: var(--qada-shadow-md) !important; }
+.shadow-\[\[0_12px_32px_rgba\(90\,90\,64\,0\.22\)\]\] { box-shadow: var(--qada-shadow-lg) !important; }
+.shadow-\[\[0_8px_20px_-6px_rgba\(201\,124\,93\,0\.4\)\]\] { box-shadow: var(--qada-shadow-md) !important; }
+.shadow-\[\[0_8px_24px_rgba\(90\,90\,64\,0\.12\)\]\] { box-shadow: var(--qada-shadow-md) !important; }
+.shadow-\[\[0_4px_20px_rgba\(0\,0\,0\,0\.2\)\]\] { box-shadow: var(--qada-shadow-lg) !important; }
+
+/* Rounded */
+.rounded-\[28px\] { border-radius: 1rem !important; }
+.rounded-\[24px\] { border-radius: 0.875rem !important; }
+
+/* Selection */
+.selection\:bg-\[\#D1CDC2\]::selection { background: var(--qada-primary-soft) !important; }
+.selection\:text-\[\#2D2D2A\]::selection { color: var(--qada-text) !important; }
+
+/* ============================================================
+   END COLOR BRIDGE
+   ============================================================ */
+
+/* === ISLAMIC GEOMETRIC PATTERN BACKGROUND === */
+.islamic-pattern-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--qada-pattern-opacity);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--qada-pattern-dot) 1px, transparent 0);
+  background-size: 32px 32px;
 }
 
-.dark .glass-panel {
-  background: rgba(37, 38, 34, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+/* === SECTION DIVIDERS === */
+.qada-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--qada-border-strong), transparent);
 }
 
-/* Custom Range Slider for Natural Tones */
+/* === ORNAMENTAL CORNER SVG === */
+.ornament-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  opacity: 0.12;
+  color: var(--qada-gold);
+  pointer-events: none;
+}
+.ornament-corner-tl { top: 0; left: 0; }
+.ornament-corner-tr { top: 0; right: 0; transform: scaleX(-1); }
+.ornament-corner-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.ornament-corner-br { bottom: 0; right: 0; transform: scale(-1, -1); }
+
+/* === PRAYER TIMELINE CONNECTOR === */
+.prayer-timeline {
+  position: relative;
+  padding-right: 1rem;
+}
+.prayer-timeline::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  right: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--qada-border), var(--qada-border-strong), var(--qada-border));
+  border-radius: 1px;
+}
+.prayer-timeline-dot {
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--qada-primary);
+  background: var(--qada-bg);
+  z-index: 1;
+}
+.prayer-timeline-dot.completed {
+  background: var(--qada-success);
+  border-color: var(--qada-success);
+}
+
+/* === ARCH FRAME === */
+.arch-frame {
+  position: relative;
+  background: var(--qada-surface-1);
+  border: 1px solid var(--qada-border);
+  overflow: hidden;
+}
+.arch-frame::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 120px;
+  border-radius: 0 0 50% 50%;
+  background: var(--qada-primary-soft);
+  pointer-events: none;
+}
+
+/* === CUSTOM RANGE SLIDER === */
 input[type=range] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   background: transparent;
-  margin: 12px 0;
+  margin: 8px 0;
 }
-
-input[type=range]:focus {
-  outline: none;
-}
-
+input[type=range]:focus { outline: none; }
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
-  height: 8px;
+  height: 6px;
   cursor: pointer;
-  background: #E8E4D9;
+  background: var(--qada-surface-3);
   border-radius: 9999px;
 }
-
-.dark input[type=range]::-webkit-slider-runnable-track {
-  background: #3D3E37;
-}
-
 input[type=range]::-webkit-slider-thumb {
-  height: 26px;
-  width: 26px;
+  height: 22px;
+  width: 22px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 3px solid #5A5A40;
+  background: var(--qada-surface-1);
+  border: 2.5px solid var(--qada-primary);
   cursor: pointer;
   -webkit-appearance: none;
-  margin-top: -9px;
-  box-shadow: 0 3px 8px rgba(90, 90, 64, 0.25);
-  transition: transform 0.1s ease;
+  margin-top: -8px;
+  box-shadow: var(--qada-shadow-sm);
+  transition: transform 0.15s ease;
 }
-
-.dark input[type=range]::-webkit-slider-thumb {
-  background: #252622;
-  border: 3px solid #C8C7B9;
-}
-
 input[type=range]::-webkit-slider-thumb:active {
   transform: scale(1.15);
 }
 
-/* Circular Progress Animation */
+/* === PROGRESS RING === */
 .progress-ring__circle {
-  transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
+}
+
+/* === GLASSMORPHISM === */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--qada-border);
+}
+.dark .glass-panel {
+  background: rgba(26, 28, 24, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--qada-border);
+}
+
+/* === ENTRANCE ANIMATIONS === */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+@keyframes starFloat {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+  50% { transform: translateY(-4px) rotate(180deg); opacity: 1; }
+  100% { transform: translateY(0) rotate(360deg); opacity: 0.6; }
+}
+@keyframes numberChange {
+  0% { transform: translateY(0); opacity: 1; }
+  30% { transform: translateY(-8px); opacity: 0; }
+  60% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes checkPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.anim-fade-slide-up { animation: fadeSlideUp 0.5s ease-out both; }
+.anim-fade-in { animation: fadeIn 0.4s ease-out both; }
+.anim-scale-in { animation: scaleIn 0.4s ease-out both; }
+.anim-slide-right { animation: slideInFromRight 0.4s ease-out both; }
+.anim-number-change { animation: numberChange 0.35s ease-in-out; }
+.anim-check-pop { animation: checkPop 0.3s ease-out both; }
+.anim-star-float { animation: starFloat 3s ease-in-out infinite; }
+
+/* Stagger children */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* === CUSTOM SCROLLBAR === */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--qada-border-strong); border-radius: 999px; }
+
+/* === PRAYER ROW PRESS === */
+.prayer-row {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.prayer-row:active { transform: scale(0.985); }
+
+/* === BUTTON PRESS === */
+.btn-press {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.btn-press:active { transform: scale(0.96); }
+
+/* === ISTIGHFAR SPARKLE === */
+@keyframes sparkle {
+  0% { transform: scale(0) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1) rotate(180deg); opacity: 0.8; }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; }
+}
+.sparkle-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--qada-gold);
+  border-radius: 50%;
+  animation: sparkle 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* === AVATAR / NAMED AVATAR COLORS === */
+.avatar-m { background: var(--qada-primary-soft); color: var(--qada-primary); }
+.avatar-f { background: var(--qada-accent-soft); color: var(--qada-accent); }
+
+/* === SECTION DIFFERENTIATION === */
+
+/* Featured section - for progress hero */
+.section-featured {
+  background: var(--qada-surface-1);
+  border: 1px solid var(--qada-border);
+  box-shadow: var(--qada-shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.section-featured::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 5%, var(--qada-primary) 30%, var(--qada-gold) 70%, transparent 95%);
+  opacity: 0.4;
+}
+
+/* Parchment section - for dua/dhikr */
+.section-parchment {
+  background: linear-gradient(135deg, var(--qada-surface-1), var(--qada-surface-2));
+  border: 1px solid var(--qada-border);
+  box-shadow: var(--qada-shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.section-parchment::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 80%, var(--qada-accent-soft), transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--qada-primary-soft), transparent 50%);
+  pointer-events: none;
+}
+
+/* Timeline section - for prayer list */
+.section-timeline {
+  position: relative;
+}
+.section-timeline::before {
+  content: '';
+  position: absolute;
+  top: 48px;
+  bottom: 8px;
+  right: 22px;
+  width: 1.5px;
+  background: linear-gradient(to bottom, var(--qada-primary) 0%, var(--qada-border-strong) 40%, var(--qada-border-strong) 60%, transparent 100%);
+  opacity: 0.3;
+}
+
+/* Section decorative divider line */
+.islamic-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  opacity: 0.3;
+}
+.islamic-divider::before,
+.islamic-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--qada-border-strong), transparent);
+}
+
+/* 8-point star decoration (inline) */
+.star-decoration {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--qada-gold);
+  opacity: 0.25;
+  flex-shrink: 0;
+}
+
+/* Section label style */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+.section-label-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  background: var(--qada-primary-soft);
+}
+.section-label-text {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--qada-text);
+}
+.section-label-sub {
+  font-size: 0.625rem;
+  color: var(--qada-text-muted);
+  font-weight: 500;
+}
+
+/* Info button (circular ⓘ) */
+.info-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--qada-text-muted);
+  background: var(--qada-surface-2);
+  border: 1px solid var(--qada-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.info-btn:active { transform: scale(0.9); }
+
+/* Prayer row enhanced */
+.prayer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.prayer-item:active {
+  transform: scale(0.985);
+  background: var(--qada-surface-2);
+}
+
+/* Pulse for success feedback */
+@keyframes successPulse {
+  0% { box-shadow: 0 0 0 0 rgba(74, 122, 74, 0.3); }
+  70% { box-shadow: 0 0 0 8px rgba(74, 122, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 122, 74, 0); }
+}
+.success-pulse {
+  animation: successPulse 0.6s ease-out;
+}
+
+/* Floating Islamic star decoration */
+@keyframes floatStar {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(15deg); }
+}
+.float-star {
+  animation: floatStar 4s ease-in-out infinite;
+}
+
+/* Gradient text for important numbers */
+.text-gradient-primary {
+  background: linear-gradient(135deg, var(--qada-primary), var(--qada-primary-light, var(--qada-primary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold accent text */
+.text-gold {
+  color: var(--qada-gold);
+}
+
+/* Dark mode variant for Islamic decorative elements */
+.dark .section-featured::before {
+  opacity: 0.25;
+}
+.dark .section-timeline::before {
+  opacity: 0.15;
+}
+
+/* ==========================================================================
+   LANDING PAGE CINEMATIC SYSTEM & ISLAMIC REFINEMENTS
+   ========================================================================== */
+
+:root {
+  --landing-deep-olive: #26352A;
+  --landing-dark-forest: #18231C;
+  --landing-warm-ivory: #F6F1E7;
+  --landing-soft-sage: #A9B7A3;
+  --landing-antique-gold: #C6A15B;
+  --landing-charcoal: #1D211E;
+  --landing-gold-glow: rgba(198, 161, 91, 0.25);
+}
+
+.font-landing-display {
+  font-family: 'Noto Sans Arabic', 'IBM Plex Sans Arabic', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-spiritual-serif {
+  font-family: 'Amiri', 'Georgia', serif;
+}
+
+/* Dedicated Sacred Quran Typography & Container */
+.font-quran {
+  font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', 'Traditional Arabic', serif;
+  direction: rtl;
+  unicode-bidi: plaintext;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.quran-text-container {
+  direction: rtl;
+  unicode-bidi: plaintext;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+
+/* Cinematic Video Overlay: Asymmetric darkening on the left where text lives */
+.hero-cinematic-overlay {
+  background:
+    /* Horizontal gradient: stronger on the left for text contrast, fading out to right */
+    linear-gradient(
+      90deg,
+      rgba(24, 35, 28, 0.88) 0%,
+      rgba(24, 35, 28, 0.78) 35%,
+      rgba(24, 35, 28, 0.45) 55%,
+      rgba(24, 35, 28, 0.15) 75%,
+      rgba(24, 35, 28, 0.05) 100%
+    ),
+    /* Vertical gentle depth at top (nav) and bottom (scroll cue) */
+    linear-gradient(
+      180deg,
+      rgba(24, 35, 28, 0.6) 0%,
+      rgba(24, 35, 28, 0) 25%,
+      rgba(24, 35, 28, 0) 70%,
+      rgba(24, 35, 28, 0.8) 100%
+    );
+}
+
+/* Mobile responsive overlay: text moves toward center-left, soft base tint */
+@media (max-width: 768px) {
+  .hero-cinematic-overlay {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(24, 35, 28, 0.75) 0%,
+        rgba(24, 35, 28, 0.4) 30%,
+        rgba(24, 35, 28, 0.75) 60%,
+        rgba(24, 35, 28, 0.95) 100%
+      );
+  }
+}
+
+/* Subtle Vignette */
+.hero-vignette {
+  background: radial-gradient(
+    ellipse at 65% 50%,
+    transparent 45%,
+    rgba(24, 35, 28, 0.35) 85%,
+    rgba(24, 35, 28, 0.6) 100%
+  );
+}
+
+/* Islamic Geometric Low-Opacity Background Pattern */
+.islamic-pattern-subtle {
+  background-image: radial-gradient(#C6A15B 0.75px, transparent 0.75px),
+                    radial-gradient(#26352A 0.75px, #F6F1E7 0.75px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+  opacity: 0.04;
+}
+
+/* Subtle 8-point star float */
+@keyframes landingFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(8deg);
+  }
+}
+
+.landing-star-float {
+  animation: landingFloat 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Animated downward bounce for scroll cue */
+@keyframes scrollCueBounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+.scroll-cue-animated {
+  animation: scrollCueBounce 2.4s ease-in-out infinite;
+}
+
+/* Smooth Entrance Sequence */
+@keyframes heroFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-seq-1 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+.anim-seq-2 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+}
+.anim-seq-3 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+}
+.anim-seq-4 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both;
+}
+.anim-seq-5 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both;
+}
+.anim-seq-6 {
+  animation: heroFadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.85s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-seq-1, .anim-seq-2, .anim-seq-3, .anim-seq-4, .anim-seq-5, .anim-seq-6,
+  .landing-star-float, .scroll-cue-animated {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ============================================================
+   ADHKAR (الأذكار) UTILITIES
+   ============================================================ */
+
+/* Thin, elegant scrollbar for the reader's long-text area and home lists */
+.qada-scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198, 161, 91, 0.4) transparent;
+}
+.qada-scroll-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.qada-scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.qada-scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(198, 161, 91, 0.35);
+  border-radius: 999px;
+}
+.qada-scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 161, 91, 0.6);
+}
+
+/* Mushaf-style typography for Quranic items inside adhkar collections */
+.qada-mushaf-text {
+  font-family: var(--font-mushaf, var(--font-serif));
+  line-height: 2;
+}
+
+/* Sleep/night reader: deep, calm gradient wash used behind the star field.
+   Never pure black — always the forest-ink range of the QADA palette. */
+.qada-night-sky {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(143, 163, 160, 0.10) 0%, transparent 55%),
+    linear-gradient(160deg, #18202e 0%, #0e1520 100%);
+}
+
+/* Gentle drifting moon glow for the sleep collection hero */
+.qada-moon-glow {
+  box-shadow:
+    0 0 24px rgba(232, 221, 208, 0.35),
+    0 0 64px rgba(198, 161, 91, 0.12);
+}
+
+/* Hides the native clear button of time inputs on narrow rows */
+input[type='time']::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qada-scroll-thin {
+    transition: none;
+  }
 }
 

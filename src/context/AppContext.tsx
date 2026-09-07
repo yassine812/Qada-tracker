@@ -2,6 +2,9 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import confetti from 'canvas-confetti';
 import {
   BackupData,
+  AdhkarCategory,
+  AdhkarReminderSetting,
+  AdhkarReminderSettings,
   DailyRecord,
   DhikrReminderItem,
   IstighfarData,
@@ -39,6 +42,12 @@ import {
 import { sendNotification } from '../utils/notifications';
 import { ADHKAR_LIST } from '../data/adhkar';
 
+const DEFAULT_ADHKAR_REMINDERS: AdhkarReminderSettings = {
+  morning: { enabled: false, time: '07:00' },
+  evening: { enabled: false, time: '17:00' },
+  sleep: { enabled: false, time: '22:00' },
+};
+
 interface ToastState {
   message: string;
   type: 'success' | 'error' | 'info';
@@ -51,6 +60,8 @@ interface AppContextType {
   stats: StatsSummary;
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
+  ibadatSubTab: 'prayers' | 'fasting' | 'zakat';
+  setIbadatSubTab: (tab: 'prayers' | 'fasting' | 'zakat') => void;
   loading: boolean;
   toast: ToastState | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -102,6 +113,10 @@ interface AppContextType {
   dhikrReminderTimes: DhikrReminderItem[];
   updateDhikrReminderTimes: (times: DhikrReminderItem[]) => Promise<void>;
   toggleDhikrReminders: (enabled: boolean) => Promise<void>;
+  adhkarReminders: AdhkarReminderSettings;
+  updateAdhkarReminder: (category: AdhkarCategory, setting: AdhkarReminderSetting) => Promise<void>;
+  adhkarFocus: AdhkarCategory | null;
+  setAdhkarFocus: (category: AdhkarCategory | null) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -118,7 +133,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     { time: '16:00', enabled: true },
     { time: '20:00', enabled: true },
   ]);
+  const [adhkarReminders, setAdhkarReminders] = useState<AdhkarReminderSettings>(DEFAULT_ADHKAR_REMINDERS);
+  const [adhkarFocus, setAdhkarFocus] = useState<AdhkarCategory | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [ibadatSubTab, setIbadatSubTab] = useState<'prayers' | 'fasting' | 'zakat'>('prayers');
   const [loading, setLoading] = useState<boolean>(true);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [showReminderDialog, setShowReminderDialog] = useState<boolean>(false);
@@ -149,6 +167,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             { time: '16:00', enabled: true },
             { time: '20:00', enabled: true },
           ],
+          adhkarReminders: {
+            ...DEFAULT_ADHKAR_REMINDERS,
+            ...(savedSettings.adhkarReminders || {}),
+          },
         };
         setSettings(sanitized);
       } else {
@@ -161,6 +183,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Load dhikr reminder times from settings
       if (savedSettings?.dhikrReminderTimes && Array.isArray(savedSettings.dhikrReminderTimes)) {
         setDhikrReminderTimes(savedSettings.dhikrReminderTimes);
+      }
+      if (savedSettings?.adhkarReminders) {
+        setAdhkarReminders({
+          ...DEFAULT_ADHKAR_REMINDERS,
+          ...savedSettings.adhkarReminders,
+        });
       }
     } catch (error) {
       console.error('Failed to load local data:', error);
@@ -310,6 +338,91 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const interval = setInterval(checkDhikrReminders, 30000);
     return () => clearInterval(interval);
   }, [settings?.dhikrRemindersEnabled, dhikrReminderTimes, settings?.lastDhikrReminderDates]);
+
+  // Adhkar reminder background check (independent per-category toggles)
+  useEffect(() => {
+    if (!settings) return;
+
+    const ADHKAR_NOTIFICATION_META: Record<
+      AdhkarCategory,
+      { title: string; label: string }
+    > = {
+      morning: { title: 'أذكار الصباح 🌅', label: 'صباحك ذكر، فابدأ يومك بطمأنينة.' },
+      evening: { title: 'أذكار المساء 🌇', label: 'حان وقت أذكار المساء، اختم يومك بسلام.' },
+      sleep: { title: 'أذكار النوم 🌙', label: 'احفظ ذكرك قبل النوم، ونم على طمأنينة.' },
+    };
+
+    const checkAdhkarReminders = async () => {
+      const now = new Date();
+      const currentHour = String(now.getHours()).padStart(2, '0');
+      const currentMinute = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentHour}:${currentMinute}`;
+      const todayDate = getTodayDateString();
+      const lastDates = settings.lastAdhkarReminderDates || {};
+      let changed = false;
+      const changedDates = { ...lastDates };
+
+      const categories: AdhkarCategory[] = ['morning', 'evening', 'sleep'];
+      for (const category of categories) {
+        const reminder = (settings.adhkarReminders || {})[category];
+        if (!reminder || !reminder.enabled) continue;
+        if (changedDates[category] === todayDate) continue;
+        if (currentTimeStr < reminder.time) continue;
+
+        sendNotification(
+          ADHKAR_NOTIFICATION_META[category].title,
+          ADHKAR_NOTIFICATION_META[category].label,
+          `adhkar-${category}`
+        );
+        if (settings.soundEnabled) playSoftClickSound();
+        if (settings.hapticsEnabled) triggerHaptic();
+        changedDates[category] = todayDate;
+        changed = true;
+      }
+
+      if (changed) {
+        const updatedSettings: UserSettings = {
+          ...settings,
+          lastAdhkarReminderDates: changedDates,
+          updatedAt: new Date().toISOString(),
+        };
+        await saveSettings(updatedSettings);
+        setSettings(updatedSettings);
+      }
+    };
+
+    checkAdhkarReminders();
+    const interval = setInterval(checkAdhkarReminders, 30000);
+    return () => clearInterval(interval);
+  }, [settings?.adhkarReminders, settings?.lastAdhkarReminderDates, settings?.soundEnabled, settings?.hapticsEnabled]);
+
+  // Update a single adhkar category reminder setting
+  const updateAdhkarReminder = async (category: AdhkarCategory, setting: AdhkarReminderSetting) => {
+    if (!settings) return;
+    const updatedReminders: AdhkarReminderSettings = {
+      ...(settings.adhkarReminders || DEFAULT_ADHKAR_REMINDERS),
+      [category]: setting,
+    };
+    const updatedSettings: UserSettings = {
+      ...settings,
+      adhkarReminders: updatedReminders,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveSettings(updatedSettings);
+    setSettings(updatedSettings);
+    setAdhkarReminders(updatedReminders);
+    showToast(setting.enabled ? 'تم تفعيل تذكير الأذكار' : 'تم إيقاف تذكير الأذكار', 'success');
+  };
+
+  // Sync adhkar reminders state with settings whenever settings change
+  useEffect(() => {
+    if (settings?.adhkarReminders) {
+      setAdhkarReminders({
+        ...DEFAULT_ADHKAR_REMINDERS,
+        ...settings.adhkarReminders,
+      });
+    }
+  }, [settings?.adhkarReminders]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
@@ -580,6 +693,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         { time: '16:00', enabled: true },
         { time: '20:00', enabled: true },
       ],
+      adhkarReminders: DEFAULT_ADHKAR_REMINDERS,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -954,6 +1068,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         stats,
         activeTab,
         setActiveTab,
+        ibadatSubTab,
+        setIbadatSubTab,
         loading,
         toast,
         showToast,
@@ -983,6 +1099,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dhikrReminderTimes,
         updateDhikrReminderTimes,
         toggleDhikrReminders,
+        adhkarReminders,
+        updateAdhkarReminder,
+        adhkarFocus,
+        setAdhkarFocus,
       }}
     >
       {children}

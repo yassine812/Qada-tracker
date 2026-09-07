@@ -10,7 +10,7 @@ export const DailyReminderModal: React.FC = () => {
 
   const handleGoToRecord = () => {
     setShowReminderDialog(false);
-    setActiveTab('record');
+    setActiveTab('ibadat');
   };
 
   const reminderTimeDisplay = settings?.reminderTime
@@ -29,20 +29,20 @@ export const DailyReminderModal: React.FC = () => {
         </button>
 
         {/* Icon with warm natural badge */}
-        <div className="w-16 h-16 rounded-3xl bg-[#5A5A40]/10 dark:bg-[#C8C7B9]/15 text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center mx-auto mb-4 border border-[#E8E4D9] dark:border-[#3D3E37]">
-          <Bell className="w-8 h-8 animate-bounce" />
+        <div className="w-16 h-16 rounded-3xl bg-[#26352A]/10 dark:bg-[#C6A15B]/15 text-[#26352A] dark:text-[#C6A15B] flex items-center justify-center mx-auto mb-4 border border-[#C6A15B]/30">
+          <Bell className="w-8 h-8 animate-bounce text-[#C6A15B]" />
         </div>
 
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] border border-[#E8E4D9] dark:border-[#3D3E37] mb-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#26352A]/5 dark:bg-[#C6A15B]/10 text-[#26352A] dark:text-[#C6A15B] border border-[#C6A15B]/20 mb-2">
           <Clock className="w-3.5 h-3.5" />
           <span>تذكير وقت {reminderTimeDisplay}</span>
         </span>
 
-        <h3 className="font-bold text-xl font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0] mt-1 mb-2">
+        <h3 className="font-bold text-xl font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mt-1 mb-2">
           موعد تسجيل صلواتك المقضية
         </h3>
 
-        <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] leading-relaxed mb-6">
+        <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3] leading-relaxed mb-6">
           تقبل الله طاعاتك. خذ دقيقة لتسجيل ما قضيته من الصلوات اليومية لمواصلة مسيرة القضاء وتحقيق هدفك.
         </p>
 
@@ -50,7 +50,7 @@ export const DailyReminderModal: React.FC = () => {
           <button
             type="button"
             onClick={handleGoToRecord}
-            className="w-full py-3.5 bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-bold text-sm rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-[#26352A] hover:bg-[#18231C] dark:bg-[#C6A15B] dark:hover:bg-[#D4B26F] text-white dark:text-[#18231C] font-bold text-sm rounded-2xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
             <span>تسجيل الصلوات الآن</span>

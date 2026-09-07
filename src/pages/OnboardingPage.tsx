@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Plus, Minus, ArrowLeft, ArrowRight, Info, Sparkles, ChevronRight } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, ArrowRight, Info, Sparkles, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { calculateMissedPrayers, createInitialCounters, formatArabicNumber } from '../utils/calculator';
 import { Gender } from '../types';
+import { PageTransition, TactileButton } from '../components/ui/MotionPrimitives';
+import { StarEightPoint } from '../components/landing/IslamicOrnaments';
+import { PersonalizedWelcomeScreen } from '../components/onboarding/PersonalizedWelcomeScreen';
 
 export const OnboardingPage: React.FC = () => {
   const { completeOnboarding, setupIstighfar } = useApp();
+
+  // Intro & Name flow
+  const [introPhase, setIntroPhase] = useState<'name_input' | 'welcome' | 'questions'>('name_input');
 
   // Step navigation
   const [step, setStep] = useState<number>(1);
@@ -81,6 +88,7 @@ export const OnboardingPage: React.FC = () => {
     }
     if (step < totalSteps) {
       setStep(step + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -88,6 +96,10 @@ export const OnboardingPage: React.FC = () => {
     setErrorMsg(null);
     if (step > 1) {
       setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (step === 1) {
+      setIntroPhase('name_input');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -119,225 +131,358 @@ export const OnboardingPage: React.FC = () => {
     }
   };
 
-  const stepIndicator = (
-    <div className="flex items-center justify-center gap-1.5 mb-6">
-      {Array.from({ length: totalSteps }).map((_, i) => (
-        <div
-          key={i}
-          className={`h-1 rounded-full transition-all duration-300 ${
-            i + 1 === step
-              ? 'w-6 bg-[#5A5A40] dark:bg-[#C8C7B9]'
-              : i + 1 < step
-              ? 'w-2 bg-[#5A5A40] dark:bg-[#C8C7B9] opacity-50'
-              : 'w-2 bg-[#D1CDC2] dark:bg-[#3D3E37]'
-          }`}
-        />
-      ))}
-    </div>
-  );
-
-  const stepLabel = (
-    <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] text-center mb-4">
-      الخطوة {step} من {totalSteps}
-    </p>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#F5F5F0] dark:bg-[#1C1D1A] text-[#2D2D2A] dark:text-[#EAE7E0] pb-12 pt-6 px-4 flex flex-col max-w-md mx-auto relative selection:bg-[#E8E4D9] selection:text-[#2D2D2A]">
-      {/* Top Brand Header */}
-      <header className="flex items-center justify-between py-3 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-2xl bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 3c-4 4-8 8-8 14a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4c0-6-4-10-8-14z" />
-              <path d="M12 3v4" />
-            </svg>
+  if (introPhase === 'name_input') {
+    return (
+      <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col justify-between max-w-md mx-auto relative select-none" dir="rtl">
+        {/* Top Brand Header */}
+        <header className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-[#26352A]/10 dark:bg-[#C6A15B]/15 border border-[#C6A15B]/30 flex items-center justify-center text-[#C6A15B]">
+              <StarEightPoint size={14} color="#C6A15B" />
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-bold text-lg font-landing-display tracking-tight text-[#1D211E] dark:text-[#F6F1E7]">
+                قضاء
+              </span>
+              <span className="text-[9px] uppercase tracking-widest text-[#7E8C7F] dark:text-[#A9B7A3] font-mono">
+                QADA
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="font-bold text-lg font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0]">قضاء</span>
-            <span className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] block leading-none">متابعة الصلوات الفائتة</span>
+          <span className="px-3 py-1 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/20 text-[11px] font-semibold text-[#C6A15B]">
+            الترحيب المبارك
+          </span>
+        </header>
+
+        {/* Center Card */}
+        <div className="my-auto py-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-3xl bg-[#C6A15B]/10 border border-[#C6A15B]/30 mx-auto mb-4 flex items-center justify-center text-[#C6A15B] shadow-inner">
+              <StarEightPoint size={28} color="#C6A15B" />
+            </div>
+            <h1 className="font-bold text-2xl sm:text-3xl font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-2">
+              ما اسمك الكريم؟
+            </h1>
+            <p className="text-xs sm:text-sm text-[#7E8C7F] dark:text-[#A9B7A3] max-w-xs mx-auto">
+              يسعدنا أن نرحب بك شخصيًا ونرافقك في مسيرتك المباركة لإبراء الذمة
+            </p>
           </div>
-        </div>
-      </header>
 
-      {/* Main Title */}
-      <section className="text-center mt-2 mb-4 flex flex-col items-center">
-        <div className="w-14 h-14 bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-full flex items-center justify-center mb-3 text-[#5A5A40] dark:text-[#C8C7B9]">
-          <Sparkles className="w-7 h-7" />
-        </div>
-        <h1 className="font-bold text-2xl font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0] mb-1">
-          إعداد الحساب
-        </h1>
-        <p className="text-sm text-[#8E8E80] dark:text-[#A6A699] max-w-[280px]">
-          أهلاً بك في قضاء. لنبدأ بتقدير عدد الصلوات الفائتة.
-        </p>
-      </section>
-
-      {stepIndicator}
-      {stepLabel}
-
-      {errorMsg && (
-        <div className="mb-4 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs text-center font-medium">
-          {errorMsg}
-        </div>
-      )}
-
-      {/* Step Content */}
-      <div className="flex flex-col gap-4 flex-grow">
-        {/* ===== STEP 1: Personal Info ===== */}
-        {step === 1 && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                الاسم
+          <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/25 shadow-sm space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] mb-2">
+                اسمك
               </label>
-              <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-3">
-                اختياري — يمكنك إدخال اسمك الشخصي
-              </p>
               <input
                 type="text"
+                autoFocus
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="اكتب اسمك"
-                className="w-full px-4 py-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-sm font-medium text-[#2D2D2A] dark:text-[#EAE7E0] placeholder:text-[#8E8E80] dark:placeholder:text-[#A6A699] focus:outline-none focus:ring-2 focus:ring-[#5A5A40] transition-all"
-                dir="rtl"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setIntroPhase('welcome');
+                  }
+                }}
+                placeholder="اكتب اسمك الكريم (مثال: ياسين، إبراهيم...)"
+                className="w-full px-4 py-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/25 text-base font-bold text-[#1D211E] dark:text-[#F6F1E7] focus:outline-none focus:border-[#C6A15B] transition-colors text-center"
               />
             </div>
 
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                الجنس <span className="text-rose-500">*</span>
-              </label>
-              <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-3">
-                يُستخدم فقط لتقدير الصلوات بشكل صحيح
-              </p>
-              <div className="flex gap-3">
-                {([
-                  { id: 'male' as Gender, label: 'رجل', icon: '🧑' },
-                  { id: 'female' as Gender, label: 'امرأة', icon: '👩' },
-                ]).map((g) => (
+            {/* Quick Suggestions Pills */}
+            <div className="pt-1">
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3] block mb-2 text-center">
+                أو اختر اسمًا للتجربة:
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {['ياسين', 'إبراهيم', 'عمر', 'مريم', 'محمد'].map((n) => (
                   <button
-                    key={g.id}
+                    key={n}
                     type="button"
-                    onClick={() => { setGender(g.id); setErrorMsg(null); }}
-                    className={`flex-1 py-4 rounded-2xl text-base font-bold transition-all border-2 ${
-                      gender === g.id
-                        ? 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-md dark:bg-[#C8C7B9] dark:text-[#1C1D1A] dark:border-[#C8C7B9]'
-                        : 'bg-white dark:bg-[#1C1D1A] border-[#E8E4D9] dark:border-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0] hover:border-[#5A5A40]/30'
+                    onClick={() => setUserName(n)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                      userName === n
+                        ? 'bg-[#C6A15B] text-[#18231C] font-bold shadow-sm'
+                        : 'bg-black/5 dark:bg-white/5 text-[#5A685B] dark:text-[#A9B7A3] hover:bg-[#C6A15B]/15 hover:text-[#C6A15B]'
                     }`}
                   >
-                    <span className="text-2xl block mb-1">{g.icon}</span>
-                    {g.label}
+                    {n}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* ===== STEP 2: Ages ===== */}
-        {step === 2 && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Puberty Age */}
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                سن البلوغ
-              </label>
-              <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-3">
-                العمر الذي بدأ فيه التكليف الشرعي
-              </p>
-              <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
-                <button
-                  type="button"
-                  onClick={() => handlePubertyChange(-1)}
-                  className="w-11 h-11 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-gray-100 transition-colors flex items-center justify-center shadow-sm"
-                  aria-label="إنقاص سن البلوغ"
-                >
-                  <Minus className="w-5 h-5" />
-                </button>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-3xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                    {pubertyAge}
-                  </span>
-                  <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">سنة</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handlePubertyChange(1)}
-                  className="w-11 h-11 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] hover:opacity-90 transition-opacity flex items-center justify-center shadow-sm"
-                  aria-label="زيادة سن البلوغ"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+        {/* Bottom Actions */}
+        <div className="space-y-2 pt-4">
+          <TactileButton
+            onClick={() => setIntroPhase('welcome')}
+            className="w-full py-4 rounded-full bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:opacity-95 cursor-pointer"
+          >
+            <span>متابعة</span>
+            <ArrowLeft className="w-4 h-4 rtl:rotate-0" />
+          </TactileButton>
 
-            {/* Current Age */}
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                العمر الحالي
-              </label>
-              <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-3">
-                عمرك في الوقت الحالي
-              </p>
-              <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
-                <button
-                  type="button"
-                  onClick={() => handleCurrentAgeChange(-1)}
-                  className="w-11 h-11 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-gray-100 transition-colors flex items-center justify-center shadow-sm"
-                  aria-label="إنقاص العمر الحالي"
-                >
-                  <Minus className="w-5 h-5" />
-                </button>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-3xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                    {currentAge}
-                  </span>
-                  <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">سنة</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleCurrentAgeChange(1)}
-                  className="w-11 h-11 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] hover:opacity-90 transition-opacity flex items-center justify-center shadow-sm"
-                  aria-label="زيادة العمر الحالي"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+          <button
+            type="button"
+            onClick={() => {
+              setUserName('');
+              setIntroPhase('welcome');
+            }}
+            className="w-full py-2.5 text-xs font-semibold text-[#7E8C7F] dark:text-[#A9B7A3] hover:text-[#1D211E] dark:hover:text-[#F6F1E7] text-center cursor-pointer"
+          >
+            المتابعة بدون اسم
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (introPhase === 'welcome') {
+    return (
+      <PersonalizedWelcomeScreen
+        userName={userName}
+        gender={gender}
+        onContinue={() => {
+          setIntroPhase('questions');
+          setStep(1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col max-w-md mx-auto relative select-none" dir="rtl">
+      {/* Top Brand Header */}
+      <header className="flex items-center justify-between py-2 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-[#26352A]/10 dark:bg-[#C6A15B]/15 border border-[#C6A15B]/30 flex items-center justify-center text-[#C6A15B]">
+            <StarEightPoint size={14} color="#C6A15B" />
           </div>
-        )}
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-bold text-lg font-landing-display tracking-tight text-[#1D211E] dark:text-[#F6F1E7]">
+              قضاء
+            </span>
+            <span className="text-[9px] uppercase tracking-widest text-[#7E8C7F] dark:text-[#A9B7A3] font-mono">
+              QADA
+            </span>
+          </div>
+        </div>
 
-        {/* ===== STEP 3: Prayer Frequency + Menstruation ===== */}
-        {step === 3 && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Prayer Frequency Card */}
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <div className="flex justify-between items-end mb-2">
+        <span className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold">
+          الخطوة {step} من {totalSteps}
+        </span>
+      </header>
+
+      {/* Step Progress Line */}
+      <div className="flex items-center gap-2 mb-6">
+        {Array.from({ length: totalSteps }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1.5 rounded-full transition-all duration-300 flex-1 ${
+              i + 1 <= step ? 'bg-[#C6A15B]' : 'bg-black/10 dark:bg-white/10'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Page Title */}
+      <div className="text-center mb-6">
+        <h1 className="font-bold text-2xl font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-1">
+          {step === 1 && 'البيانات الشخصية'}
+          {step === 2 && 'العمر وسن البلوغ'}
+          {step === 3 && 'نسبة الالتزام السابقة'}
+          {step === 4 && 'ملخص الحساب التقديري'}
+        </h1>
+        <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
+          {step === 1 && 'معلومات بسيطة لمعايرة الحساب الشرعي بدقة'}
+          {step === 2 && 'لحساب عدد سنوات التكليف الفائتة'}
+          {step === 3 && 'تقدير ما كنت تؤديه من صلوات في تلك الفترة'}
+          {step === 4 && 'النتيجة التقديرية لبدء رحلة القضاء المنظمة'}
+        </p>
+      </div>
+
+      {errorMsg && (
+        <div className="mb-4 p-3 rounded-2xl bg-[#9E3A3A]/10 border border-[#9E3A3A]/30 text-[#9E3A3A] text-xs text-center font-medium">
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Step Content */}
+      <div className="flex-grow">
+        <AnimatePresence mode="wait">
+          {/* ===== STEP 1: Personal Info & Gender ===== */}
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="space-y-4"
+            >
+              {/* Registered Name Badge with Quick Edit */}
+              <div className="p-4 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm flex items-center justify-between">
                 <div>
-                  <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                    نسبة الصلاة التقريبية
-                  </label>
-                  <p className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
-                    نسبة ما كنت تؤديه من الصلوات في الماضي
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-[#C6A15B] block">
+                    اسمك المسجل
+                  </span>
+                  <p className="text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                    {userName ? `يا ${userName} 🌿` : 'ضيف كريم 🌿'}
                   </p>
                 </div>
-                <div className="text-left">
-                  <span className="font-bold text-xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
+                <button
+                  type="button"
+                  onClick={() => setIntroPhase('name_input')}
+                  className="px-3 py-1.5 rounded-full bg-[#C6A15B]/10 hover:bg-[#C6A15B]/20 text-xs font-bold text-[#C6A15B] border border-[#C6A15B]/20 transition-all cursor-pointer"
+                >
+                  تعديل الاسم
+                </button>
+              </div>
+
+              {/* Gender Selection */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+                <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                  الجنس <span className="text-[#9E3A3A]">*</span>
+                </label>
+                <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                  ضروري لمراعاة فترات العذر الشرعي للنساء في الحساب
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'male' as Gender, label: 'رجل' },
+                    { id: 'female' as Gender, label: 'امرأة' },
+                  ].map((g) => {
+                    const isSelected = gender === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => {
+                          setGender(g.id);
+                          setErrorMsg(null);
+                        }}
+                        className={`py-4 rounded-2xl text-sm font-bold transition-all border cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#26352A] text-[#F6F1E7] dark:bg-[#C6A15B] dark:text-[#18231C] border-[#C6A15B] shadow-sm'
+                            : 'bg-black/5 dark:bg-white/5 text-[#1D211E] dark:text-[#F6F1E7] border-transparent hover:border-[#C6A15B]/30'
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===== STEP 2: Ages ===== */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="space-y-4"
+            >
+              {/* Puberty Age */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                    سن البلوغ التقريبي
+                  </label>
+                  <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                    بداية التكليف الشرعي (عادة بين 12 و 15 سنة)
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-2xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                  <TactileButton
+                    onClick={() => handlePubertyChange(-1)}
+                    className="w-10 h-10 rounded-xl bg-white dark:bg-[#26352A] flex items-center justify-center text-[#1D211E] dark:text-[#F6F1E7] shadow-sm"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </TactileButton>
+
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-landing-display text-[#C6A15B]">
+                      {pubertyAge}
+                    </span>
+                    <span className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">سنة</span>
+                  </div>
+
+                  <TactileButton
+                    onClick={() => handlePubertyChange(1)}
+                    className="w-10 h-10 rounded-xl bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </TactileButton>
+                </div>
+              </div>
+
+              {/* Current Age */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                    العمر الحالي
+                  </label>
+                  <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                    عمرك في الوقت الحاضر
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-2xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                  <TactileButton
+                    onClick={() => handleCurrentAgeChange(-1)}
+                    className="w-10 h-10 rounded-xl bg-white dark:bg-[#26352A] flex items-center justify-center text-[#1D211E] dark:text-[#F6F1E7] shadow-sm"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </TactileButton>
+
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold font-landing-display text-[#C6A15B]">
+                      {currentAge}
+                    </span>
+                    <span className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">سنة</span>
+                  </div>
+
+                  <TactileButton
+                    onClick={() => handleCurrentAgeChange(1)}
+                    className="w-10 h-10 rounded-xl bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </TactileButton>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ===== STEP 3: Frequency + Menstruation ===== */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="space-y-4"
+            >
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                      نسبة أداء الصلاة في الماضي
+                    </label>
+                    <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                      كم كنت تصلي تقريباً خلال تلك السنوات؟
+                    </p>
+                  </div>
+                  <span className="text-lg font-bold font-landing-display text-[#C6A15B]">
                     {frequency}%
                   </span>
                 </div>
-              </div>
 
-              <div className="px-1 py-2">
                 <input
                   type="range"
                   min="0"
@@ -345,274 +490,137 @@ export const OnboardingPage: React.FC = () => {
                   step="5"
                   value={frequency}
                   onChange={(e) => setFrequency(Number(e.target.value))}
-                  className="w-full"
+                  className="w-full accent-[#C6A15B]"
                 />
-                <div className="flex justify-between font-medium text-[11px] text-[#8E8E80] dark:text-[#A6A699] mt-1">
-                  <span>0% (لم أصلي)</span>
+
+                <div className="flex justify-between text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                  <span>0% (انقطاع تام)</span>
                   <span>50%</span>
-                  <span>100% (ملتزم تماماً)</span>
+                  <span>100% (التزام كامل)</span>
                 </div>
               </div>
 
-              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] bg-[#F0EEE6] dark:bg-[#1C1D1A] p-2.5 rounded-xl mt-3 leading-relaxed border border-[#E8E4D9] dark:border-[#3D3E37]">
-                هذا تقدير شخصي لعدد الصلوات التي كنت تؤديها خلال هذه الفترة.
-              </p>
-            </div>
-
-            {/* Menstruation Section (women only) */}
-            {gender === 'female' && (
-              <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)] animate-in fade-in duration-200">
-                <label className="block font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-0.5">
-                  أيام الحيض
-                </label>
-                <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-1">
-                  يمكنك إدخال تقدير لأيام الحيض التي لم تكن الصلاة مطلوبة فيها، حتى لا تدخل هذه الأيام في حساب الصلوات الفائتة.
-                </p>
-                <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] bg-[#F0EEE6] dark:bg-[#1C1D1A] p-2.5 rounded-xl mb-4 leading-relaxed border border-[#E8E4D9] dark:border-[#3D3E37]">
-                  الصلاة لا تُقضى عن أيام الحيض. هذا الحساب تقديري لتنظيم الصلوات التي كانت الصلاة مطلوبة فيها.
-                </p>
-
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-semibold text-[#2D2D2A] dark:text-[#EAE7E0]">
-                    متوسط عدد أيام الحيض في الشهر
-                  </span>
-                  <span className="text-sm font-bold font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                    {averageMenstruationDays} يوم
-                  </span>
-                </div>
-                <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-xl p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
-                  <button
-                    type="button"
-                    onClick={() => setAverageMenstruationDays((v) => Math.max(1, v - 1))}
-                    className="w-10 h-10 rounded-lg bg-white dark:bg-[#2A2B26] flex items-center justify-center text-[#2D2D2A] dark:text-[#C8C7B9]"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="font-bold text-lg font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                    {averageMenstruationDays} يوم/شهر
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setAverageMenstruationDays((v) => Math.min(15, v + 1))}
-                    className="w-10 h-10 rounded-lg bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] mt-2 leading-relaxed text-center">
-                  تقدير عدد أيام الحيض الشهرية (الحد الأدنى 1، الحد الأقصى 15)
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ===== STEP 4: Summary ===== */}
-        {step === 4 && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Summary Card */}
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <h3 className="font-bold text-base text-[#2D2D2A] dark:text-[#EAE7E0] mb-4 text-center">
-                ملخص الحساب
-              </h3>
-
-              {userName && (
-                <div className="text-center text-xs text-[#8E8E80] dark:text-[#A6A699] mb-3">
-                  مرحباً {userName}
-                </div>
-              )}
-
-              {/* Prayer Summary */}
-              <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-4 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] mb-3">
-                <div className="text-xs font-semibold text-[#5A5A40] dark:text-[#C8C7B9] mb-2 text-center">
-                  الصلوات المقدرة الفائتة
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {Object.entries(calc.perPrayer).map(([key, val]) => {
-                    const names: Record<string, string> = {
-                      fajr: 'الفجر',
-                      dhuhr: 'الظهر',
-                      asr: 'العصر',
-                      maghrib: 'المغرب',
-                      isha: 'العشاء',
-                    };
-                    return (
-                      <div key={key} className="flex justify-between bg-white dark:bg-[#252622] px-3 py-2 rounded-xl border border-[#E8E4D9] dark:border-[#3D3E37]">
-                        <span className="text-[#2D2D2A] dark:text-[#EAE7E0]">{names[key]}</span>
-                        <span className="font-bold text-[#5A5A40] dark:text-[#C8C7B9]">{formatArabicNumber(val)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 pt-3 border-t border-[#E8E4D9] dark:border-[#3D3E37] text-center">
-                  <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">المجموع: </span>
-                  <span className="font-bold text-lg font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                    {formatArabicNumber(totalEffectiveMissed)} صلاة
-                  </span>
-                </div>
-              </div>
-
-              {/* Menstruation exclusion info (women) */}
-              {gender === 'female' && calc.menstruationDaysExcluded > 0 && (
-                <div className="bg-white dark:bg-[#252622] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center mb-3">
-                  <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
-                    أيام الحيض المستثناة: <strong className="text-[#5A5A40] dark:text-[#C8C7B9]">{formatArabicNumber(calc.menstruationDaysExcluded)}</strong> يوم
-                  </span>
-                </div>
-              )}
-
-              <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
-                ({calc.years} سنوات × {formatArabicNumber(calc.days)} يوم
-                {gender === 'female' && calc.menstruationDaysExcluded > 0
-                  ? ` - ${formatArabicNumber(calc.menstruationDaysExcluded)} حيض`
-                  : ''} × 5 صلوات × {100 - frequency}% فائتة)
-              </div>
-            </div>
-
-            {/* Istighfar Setup Section */}
-            <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-[24px] p-5 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">🤍</span>
-                  <span className="font-bold text-sm text-[#2D2D2A] dark:text-[#EAE7E0]">
-                    إعداد الاستغفار السابق
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSetupIstighfarNow(!setupIstighfarNow)}
-                  className={`w-11 h-6 rounded-full transition-colors relative ${
-                    setupIstighfarNow ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                      setupIstighfarNow ? 'left-5' : 'left-0.5'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {setupIstighfarNow && (
-                <div className="space-y-3 pt-3 border-t border-[#E8E4D9] dark:border-[#3D3E37] animate-in fade-in duration-200">
+              {/* Menstruation Section (female only) */}
+              {gender === 'female' && (
+                <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699] mb-1">
-                      متى بدأت تريد الالتزام بالاستغفار؟
+                    <label className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                      متوسط أيام العذر الشرعي (شهرياً)
                     </label>
-                    <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
-                      <button
-                        type="button"
-                        onClick={() => setIstighfarStartAge((v) => Math.max(7, v - 1))}
-                        className="w-10 h-10 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center shadow-sm"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold text-2xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                          {istighfarStartAge}
-                        </span>
-                        <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">سنة</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIstighfarStartAge((v) => Math.min(currentAge - 1, v + 1))}
-                        className="w-10 h-10 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center shadow-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                      تُستثنى تلقائياً لأن الصلاة لا تقضى عنها
+                    </p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699] mb-1">
-                      الهدف اليومي
-                    </label>
-                    <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-full p-1.5 border border-[#E8E4D9] dark:border-[#3D3E37]">
-                      <button
-                        type="button"
-                        onClick={() => setIstighfarDailyTarget((v) => Math.max(1, v - 10))}
-                        className="w-10 h-10 rounded-full bg-white dark:bg-[#2A2B26] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center shadow-sm"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-bold text-2xl font-brand-serif text-[#5A5A40] dark:text-[#C8C7B9]">
-                          {istighfarDailyTarget}
-                        </span>
-                        <span className="text-xs text-[#8E8E80] dark:text-[#A6A699]">مرة يومياً</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIstighfarDailyTarget((v) => v + 10)}
-                        className="w-10 h-10 rounded-full bg-[#5A5A40] dark:bg-[#C8C7B9] text-white dark:text-[#1C1D1A] flex items-center justify-center shadow-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-2xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                    <TactileButton
+                      onClick={() => setAverageMenstruationDays((v) => Math.max(1, v - 1))}
+                      className="w-10 h-10 rounded-xl bg-white dark:bg-[#26352A] flex items-center justify-center text-[#1D211E] dark:text-[#F6F1E7] shadow-sm"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </TactileButton>
 
-                  <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center">
-                    <div className="text-xs text-[#8E8E80] dark:text-[#A6A699] mb-1">
-                      الاستغفار السابق (تقدير شخصي):
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold font-landing-display text-[#C6A15B]">
+                        {averageMenstruationDays}
+                      </span>
+                      <span className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">أيام / شهر</span>
                     </div>
-                    <div className="font-bold text-xl font-brand-serif text-[#C97C5D]">
-                      {formatArabicNumber((currentAge - istighfarStartAge) * 365 * istighfarDailyTarget)} استغفار
-                    </div>
-                    <div className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] mt-1">
-                      ({currentAge - istighfarStartAge} سنوات × 365 يوم × {istighfarDailyTarget} مرة)
-                    </div>
-                  </div>
 
-                  <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
-                    هذا تقدير شخصي وليس حكم شرعي. يُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب.
-                  </p>
+                    <TactileButton
+                      onClick={() => setAverageMenstruationDays((v) => Math.min(15, v + 1))}
+                      className="w-10 h-10 rounded-xl bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </TactileButton>
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+
+          {/* ===== STEP 4: Summary ===== */}
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="space-y-4"
+            >
+              <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/30 shadow-sm text-center">
+                <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
+                  المجموع التقديري للصلوات الفائتة
+                </span>
+                <div className="text-4xl sm:text-5xl font-extrabold font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-2">
+                  {formatArabicNumber(totalEffectiveMissed)}
+                  <span className="text-base font-normal text-[#C6A15B] mr-2">صلاة</span>
+                </div>
+                <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
+                  توزيع {calc.years} سنوات تكليف • نسبة فوات {100 - frequency}%
+                </p>
+
+                <div className="grid grid-cols-5 gap-1.5 mt-5 pt-4 border-t border-black/5 dark:border-white/5">
+                  {[
+                    { label: 'الفجر', val: calc.perPrayer.fajr },
+                    { label: 'الظهر', val: calc.perPrayer.dhuhr },
+                    { label: 'العصر', val: calc.perPrayer.asr },
+                    { label: 'المغرب', val: calc.perPrayer.maghrib },
+                    { label: 'العشاء', val: calc.perPrayer.isha },
+                  ].map((p) => (
+                    <div key={p.label} className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-center">
+                      <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] block">
+                        {p.label}
+                      </span>
+                      <span className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                        {formatArabicNumber(p.val)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 text-xs text-[#7E8C7F] dark:text-[#A9B7A3] leading-relaxed flex items-start gap-2">
+                <Info className="w-4 h-4 text-[#C6A15B] shrink-0 mt-0.5" />
+                <span>
+                  هذه الأرقام تقديرية قابلة للتعديل اليدوي في أي وقت من شاشة الإعدادات. تذكر: «قليلٌ دائم خيرٌ من كثيرٍ منقطع».
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Navigation Buttons */}
-      <div className="mt-6 space-y-2">
+      <div className="pt-6 space-y-2">
         {step < totalSteps ? (
-          <button
-            type="button"
+          <TactileButton
             onClick={handleNext}
-            className="w-full bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-bold text-base py-4 rounded-full shadow-[0_4px_16px_rgba(90,90,64,0.2)] transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full py-4 rounded-full bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:opacity-95"
           >
-            <span>التالي</span>
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+            <span>متابعة</span>
+            <ArrowLeft className="w-4 h-4" />
+          </TactileButton>
         ) : (
-          <button
-            type="button"
+          <TactileButton
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-bold text-base py-4 rounded-full shadow-[0_4px_16px_rgba(90,90,64,0.2)] transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-60"
+            className="w-full py-4 rounded-full bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:opacity-95"
           >
-            <span>{isSubmitting ? 'جارٍ الحساب...' : 'احسب الصلوات الفائتة وابدأ'}</span>
-            {!isSubmitting && <ArrowLeft className="w-5 h-5" />}
-          </button>
+            <Check className="w-4 h-4 stroke-[2.5]" />
+            <span>{isSubmitting ? 'جارٍ الحفظ...' : 'ابدأ رحلة القضاء الآن'}</span>
+          </TactileButton>
         )}
 
         {step > 1 && (
-          <button
-            type="button"
+          <TactileButton
             onClick={handleBack}
-            className="w-full py-3 text-sm font-semibold text-[#5A5A40] dark:text-[#C8C7B9] hover:opacity-70 transition-opacity flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-full text-xs font-semibold text-[#7E8C7F] dark:text-[#A9B7A3] hover:text-[#1D211E] dark:hover:text-[#F6F1E7] flex items-center justify-center gap-1.5"
           >
-            <ArrowRight className="w-4 h-4" />
-            <span>السابق</span>
-          </button>
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>الرجوع للخطوة السابقة</span>
+          </TactileButton>
         )}
-
-        <p className="mt-2 text-center text-xs text-[#8E8E80] dark:text-[#A6A699] leading-relaxed flex items-start justify-center gap-1.5 px-2">
-          <Info className="w-4 h-4 shrink-0 text-[#5A5A40] dark:text-[#C8C7B9] mt-0.5" />
-          <span>
-            الأعداد المحسوبة تقديرية لأغراض المتابعة الشخصية، ويُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب لحالتك.
-          </span>
-        </p>
       </div>
     </div>
   );

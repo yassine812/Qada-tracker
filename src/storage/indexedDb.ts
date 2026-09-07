@@ -1,7 +1,7 @@
-import { BackupData, DailyRecord, IstighfarData, IstighfarRecord, PrayerCounters, UserSettings } from '../types';
+import { AdhkarDailyState, AdhkarHistoryEntry, BackupData, DailyRecord, IstighfarData, IstighfarRecord, PrayerCounters, UserSettings, ZakatSavedState } from '../types';
 
 const DB_NAME = 'QadaTrackerDB';
-const DB_VERSION = 2;
+const DB_VERSION = 4;
 
 const STORES = {
   SETTINGS: 'settings',
@@ -9,6 +9,9 @@ const STORES = {
   RECORDS: 'dailyRecords',
   ISTIGHFAR: 'istighfarRecords',
   ISTIGHFAR_DATA: 'istighfarData',
+  ZAKAT: 'zakatAssets',
+  ADHKAR_DAILY: 'adhkarDailyState',
+  ADHKAR_HISTORY: 'adhkarHistory',
 };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -45,6 +48,15 @@ export function getDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.ISTIGHFAR_DATA)) {
         db.createObjectStore(STORES.ISTIGHFAR_DATA);
+      }
+      if (!db.objectStoreNames.contains(STORES.ZAKAT)) {
+        db.createObjectStore(STORES.ZAKAT);
+      }
+      if (!db.objectStoreNames.contains(STORES.ADHKAR_DAILY)) {
+        db.createObjectStore(STORES.ADHKAR_DAILY, { keyPath: 'date' });
+      }
+      if (!db.objectStoreNames.contains(STORES.ADHKAR_HISTORY)) {
+        db.createObjectStore(STORES.ADHKAR_HISTORY, { keyPath: 'id' });
       }
     };
 
@@ -290,23 +302,157 @@ export async function saveIstighfarData(data: IstighfarData): Promise<void> {
   }
 }
 
+export async function getZakatState(): Promise<ZakatSavedState | null> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.ZAKAT, 'readonly');
+      const store = tx.objectStore(STORES.ZAKAT);
+      const req = store.get('current');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (error) {
+    console.error('Error fetching zakat state from IndexedDB:', error);
+    const local = localStorage.getItem('qada_zakat_state');
+    return local ? JSON.parse(local) : null;
+  }
+}
+
+export async function saveZakatState(state: ZakatSavedState): Promise<void> {
+  try {
+    localStorage.setItem('qada_zakat_state', JSON.stringify(state));
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORES.ZAKAT, 'readwrite');
+        const store = tx.objectStore(STORES.ZAKAT);
+        const req = store.put(state, 'current');
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        reject(txErr);
+      }
+    });
+  } catch (error) {
+    console.warn('Fallback: Saved zakat state in localStorage', error);
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// ADHKAR (الأذكار) persistence
+// ────────────────────────────────────────────────────────────
+export async function getAdhkarDailyStates(): Promise<AdhkarDailyState[]> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.ADHKAR_DAILY, 'readonly');
+      const store = tx.objectStore(STORES.ADHKAR_DAILY);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = (req.result || []) as AdhkarDailyState[];
+        list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (error) {
+    console.error('Error fetching adhkar daily states from IndexedDB:', error);
+    const local = localStorage.getItem('qada_adhkar_daily');
+    return local ? JSON.parse(local) : [];
+  }
+}
+
+export async function saveAdhkarDailyState(state: AdhkarDailyState): Promise<void> {
+  try {
+    const local = localStorage.getItem('qada_adhkar_daily');
+    const existingList: AdhkarDailyState[] = local ? JSON.parse(local) : [];
+    const updatedList = [state, ...existingList.filter((s) => s.date !== state.date)];
+    localStorage.setItem('qada_adhkar_daily', JSON.stringify(updatedList));
+
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORES.ADHKAR_DAILY, 'readwrite');
+        const store = tx.objectStore(STORES.ADHKAR_DAILY);
+        const req = store.put(state);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        reject(txErr);
+      }
+    });
+  } catch (error) {
+    console.warn('Fallback: Saved adhkar daily state in localStorage', error);
+  }
+}
+
+export async function getAdhkarHistory(): Promise<AdhkarHistoryEntry[]> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORES.ADHKAR_HISTORY, 'readonly');
+      const store = tx.objectStore(STORES.ADHKAR_HISTORY);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = (req.result || []) as AdhkarHistoryEntry[];
+        list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+        resolve(list);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (error) {
+    console.error('Error fetching adhkar history from IndexedDB:', error);
+    const local = localStorage.getItem('qada_adhkar_history');
+    return local ? JSON.parse(local) : [];
+  }
+}
+
+export async function saveAdhkarHistoryEntry(entry: AdhkarHistoryEntry): Promise<void> {
+  try {
+    const local = localStorage.getItem('qada_adhkar_history');
+    const existingList: AdhkarHistoryEntry[] = local ? JSON.parse(local) : [];
+    const updatedList = [entry, ...existingList.filter((e) => e.id !== entry.id)];
+    localStorage.setItem('qada_adhkar_history', JSON.stringify(updatedList.slice(0, 120)));
+
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORES.ADHKAR_HISTORY, 'readwrite');
+        const store = tx.objectStore(STORES.ADHKAR_HISTORY);
+        const req = store.put(entry);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (txErr) {
+        reject(txErr);
+      }
+    });
+  } catch (error) {
+    console.warn('Fallback: Saved adhkar history entry in localStorage', error);
+  }
+}
+
 export async function exportAllData(): Promise<BackupData> {
   const settings = await getSettings();
   const counters = await getCounters();
   const records = await getDailyRecords();
   const istighfarRecords = await getIstighfarRecords();
+  const adhkarDailyStates = await getAdhkarDailyStates();
+  const adhkarHistory = await getAdhkarHistory();
 
   if (!settings || !counters) {
     throw new Error('لا توجد بيانات كافية للتصدير');
   }
 
   return {
-    version: '1.1',
+    version: '1.2',
     exportedAt: new Date().toISOString(),
     settings,
     counters,
     records,
     istighfarRecords,
+    adhkarDailyStates,
+    adhkarHistory,
   };
 }
 
@@ -406,6 +552,34 @@ export async function importAllData(data: unknown): Promise<void> {
   if (istighfarData && typeof istighfarData === 'object') {
     await saveIstighfarData(istighfarData);
   }
+
+  // Import adhkar daily states + history (addition in v1.2 backups)
+  const adhkarDailyStates = (data as Record<string, any>).adhkarDailyStates as AdhkarDailyState[] | undefined;
+  if (Array.isArray(adhkarDailyStates) && adhkarDailyStates.length > 0) {
+    const txA = db.transaction(STORES.ADHKAR_DAILY, 'readwrite');
+    const storeA = txA.objectStore(STORES.ADHKAR_DAILY);
+    await new Promise<void>((resolve, reject) => {
+      const clearReq = storeA.clear();
+      clearReq.onsuccess = () => resolve();
+      clearReq.onerror = () => reject(clearReq.error);
+    });
+    for (const state of adhkarDailyStates) {
+      await saveAdhkarDailyState(state);
+    }
+  }
+  const adhkarHistory = (data as Record<string, any>).adhkarHistory as AdhkarHistoryEntry[] | undefined;
+  if (Array.isArray(adhkarHistory) && adhkarHistory.length > 0) {
+    const txH = db.transaction(STORES.ADHKAR_HISTORY, 'readwrite');
+    const storeH = txH.objectStore(STORES.ADHKAR_HISTORY);
+    await new Promise<void>((resolve, reject) => {
+      const clearReq = storeH.clear();
+      clearReq.onsuccess = () => resolve();
+      clearReq.onerror = () => reject(clearReq.error);
+    });
+    for (const entry of adhkarHistory) {
+      await saveAdhkarHistoryEntry(entry);
+    }
+  }
 }
 
 export async function resetAllData(): Promise<void> {
@@ -415,14 +589,21 @@ export async function resetAllData(): Promise<void> {
     localStorage.removeItem('qada_records');
     localStorage.removeItem('qada_istighfar');
     localStorage.removeItem('qada_istighfar_data');
+    localStorage.removeItem('qada_zakat_state');
+    localStorage.removeItem('qada_adhkar_daily');
+    localStorage.removeItem('qada_adhkar_history');
+    localStorage.removeItem('qada_adhkar_favorites');
 
     const db = await getDB();
-    const tx = db.transaction([STORES.SETTINGS, STORES.COUNTERS, STORES.RECORDS, STORES.ISTIGHFAR, STORES.ISTIGHFAR_DATA], 'readwrite');
+    const tx = db.transaction([STORES.SETTINGS, STORES.COUNTERS, STORES.RECORDS, STORES.ISTIGHFAR, STORES.ISTIGHFAR_DATA, STORES.ZAKAT, STORES.ADHKAR_DAILY, STORES.ADHKAR_HISTORY], 'readwrite');
     tx.objectStore(STORES.SETTINGS).clear();
     tx.objectStore(STORES.COUNTERS).clear();
     tx.objectStore(STORES.RECORDS).clear();
     tx.objectStore(STORES.ISTIGHFAR).clear();
     tx.objectStore(STORES.ISTIGHFAR_DATA).clear();
+    tx.objectStore(STORES.ZAKAT).clear();
+    tx.objectStore(STORES.ADHKAR_DAILY).clear();
+    tx.objectStore(STORES.ADHKAR_HISTORY).clear();
 
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();

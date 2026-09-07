@@ -1,117 +1,27 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  User,
-  Calculator,
-  Edit3,
-  Moon,
-  Volume2,
-  Vibrate,
-  Download,
-  Upload,
-  Trash2,
-  Info,
-  ChevronLeft,
-  Smartphone,
-  ShieldCheck,
-  AlertTriangle,
-  Bell,
-  Clock,
-  Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  Play,
+  User, Moon, Sun, Download, Upload, Trash2,
+  Settings as SettingsIcon, ChevronLeft, AlertTriangle, ShieldCheck,
+  Calculator, Edit3, Smartphone, Bell, BellRing
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { EditCountersModal } from '../components/EditCountersModal';
 import { RecalculateModal } from '../components/RecalculateModal';
 import { InstallModal } from '../components/InstallModal';
-import { IstighfarSetupModal } from '../components/IstighfarSetupModal';
-import { IstighfarEditModal } from '../components/IstighfarEditModal';
-import { formatArabicNumber } from '../utils/calculator';
-import {
-  formatArabicTime,
-  getNotificationPermission,
-  requestNotificationPermission,
-  triggerTestReminder,
-  NotificationPermissionState,
-} from '../utils/notifications';
+import { PageTransition, TactileButton } from '../components/ui/MotionPrimitives';
+import { StarEightPoint } from '../components/landing/IslamicOrnaments';
+import { requestNotificationPermission } from '../utils/notifications';
+import { AdhkarCategory } from '../types';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, exportBackup, importBackup, resetAll, showToast, istighfarData, setupIstighfar, updateIstighfarEstimate, recalculateIstighfar, dhikrReminderTimes, updateDhikrReminderTimes, toggleDhikrReminders } = useApp();
+  const { settings, updateSettings, exportBackup, importBackup, resetAll, adhkarReminders, updateAdhkarReminder, showToast } = useApp();
 
   const [isEditCountersOpen, setIsEditCountersOpen] = useState(false);
   const [isRecalculateOpen, setIsRecalculateOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [isIstighfarSetupOpen, setIsIstighfarSetupOpen] = useState(false);
-  const [isIstighfarEditOpen, setIsIstighfarEditOpen] = useState(false);
-  const [permState, setPermState] = useState<NotificationPermissionState>('default');
-  const [isTestingNotification, setIsTestingNotification] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setPermState(getNotificationPermission());
-  }, []);
-
-  const handleToggleReminder = async () => {
-    const nextState = !settings?.reminderEnabled;
-    if (nextState) {
-      // Request permission if not yet granted
-      const granted = await requestNotificationPermission();
-      const currentPerm = getNotificationPermission();
-      setPermState(currentPerm);
-
-      await updateSettings({
-        reminderEnabled: true,
-        reminderTime: settings?.reminderTime || '21:00',
-      });
-
-      if (granted) {
-        showToast('تم تفعيل التنبيه اليومي وإذن الإشعارات', 'success');
-      } else {
-        showToast('تم تفعيل التنبيه اليومي داخل التطبيق', 'info');
-      }
-    } else {
-      await updateSettings({ reminderEnabled: false });
-      showToast('تم إيقاف التنبيه اليومي', 'info');
-    }
-  };
-
-  const handleTimeChange = async (newTime: string) => {
-    if (!newTime) return;
-    await updateSettings({ reminderTime: newTime });
-    showToast(`تم تعيين وقت التنبيه إلى ${formatArabicTime(newTime)}`, 'success');
-  };
-
-  const handleTestReminder = async () => {
-    setIsTestingNotification(true);
-    const res = await triggerTestReminder(settings?.soundEnabled, settings?.hapticsEnabled);
-    setIsTestingNotification(false);
-    if (res.browserNotified) {
-      showToast('تم إرسال التنبيه التجريبي بنجاح عبر النظام 🔔', 'success');
-    } else {
-      showToast('تم تشغيل التنبيه التجريبي داخل التطبيق 🔔', 'info');
-    }
-  };
-
-  const handleRequestPermissionAgain = async () => {
-    const granted = await requestNotificationPermission();
-    setPermState(getNotificationPermission());
-    if (granted) {
-      showToast('تم منح إذن إشعارات النظام بنجاح', 'success');
-    } else {
-      showToast('يرجى تمكين الإشعارات من إعدادات المتصفح/الهاتف', 'info');
-    }
-  };
-
-  const reminderPresets = [
-    { label: 'بعد الفجر', time: '06:00', icon: '🌅' },
-    { label: 'بعد العصر', time: '16:30', icon: '☀️' },
-    { label: 'بعد المغرب', time: '19:30', icon: '🌙' },
-    { label: 'بعد العشاء', time: '21:00', icon: '⭐️' },
-    { label: 'قبل النوم', time: '22:30', icon: '🛏️' },
-  ];
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,15 +36,18 @@ export const SettingsPage: React.FC = () => {
     setIsResetConfirmOpen(false);
   };
 
+  const currentTheme = settings?.theme || 'auto';
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
-      <div className="px-1">
-        <h2 className="font-bold text-xl text-[#2D2D2A] dark:text-[#EAE7E0]">
-          الإعدادات
+    <PageTransition className="space-y-6 pb-24 text-right select-none">
+      {/* 1. Header */}
+      <div>
+        <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
+          التخصيص والبيانات
+        </span>
+        <h2 className="text-2xl font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
+          الإعدادات والخصوصية
         </h2>
-        <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mt-0.5">
-          إدارة الحساب، تخصيص التطبيق، والنسخ الاحتياطي
-        </p>
       </div>
 
       {/* Hidden file input for import */}
@@ -146,557 +59,260 @@ export const SettingsPage: React.FC = () => {
         className="hidden"
       />
 
-      {/* GROUP 1: ACCOUNT & PRAYER DATA */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-1 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider mb-2">
-          الحساب والبيانات
+      {/* 2. Theme Selection (Light / Dark / Auto) */}
+      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+        <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
+          <StarEightPoint size={11} color="#C6A15B" />
+          <span>مظهر التطبيق</span>
         </h3>
 
-        <button
-          type="button"
-          onClick={() => setIsRecalculateOpen(true)}
-          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-              <Calculator className="w-4 h-4" />
-            </div>
-            <div className="text-right">
-              <span className="font-semibold text-sm text-[#2D2D2A] dark:text-[#EAE7E0] block">
-                إعادة حساب الصلوات
-              </span>
-              <span className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-                تعديل العمر وسن البلوغ ونسبة الالتزام
-              </span>
-            </div>
-          </div>
-          <ChevronLeft className="w-4 h-4 text-[#8E8E80] dark:text-[#A6A699] group-hover:text-[#5A5A40] dark:group-hover:text-[#C8C7B9] transition-colors" />
-        </button>
+        <div className="grid grid-cols-3 gap-2.5">
+          {[
+            { id: 'light', label: 'عاجي نهاري', icon: Sun },
+            { id: 'dark', label: 'غابة ليلية', icon: Moon },
+            { id: 'auto', label: 'تلقائي', icon: Smartphone },
+          ].map((th) => {
+            const isSelected = currentTheme === th.id;
+            const Icon = th.icon;
+            return (
+              <button
+                key={th.id}
+                type="button"
+                onClick={() => {
+                  updateSettings({ theme: th.id as any });
+                  if (th.id === 'dark') document.documentElement.classList.add('dark');
+                  else if (th.id === 'light') document.documentElement.classList.remove('dark');
+                }}
+                className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#26352A] text-[#F6F1E7] dark:bg-[#C6A15B] dark:text-[#18231C] shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 text-[#7E8C7F] dark:text-[#A9B7A3] hover:bg-black/10'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{th.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        <div className="h-px bg-[#E8E4D9] dark:bg-[#3D3E37] my-1" />
+      {/* 3. Adhkar Reminder Toggles (independent per collection) */}
+      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
+            <Bell className="w-4 h-4 text-[#C6A15B]" />
+            <span>تذكيرات الأذكار اليومية</span>
+          </h3>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-[9px] text-[#C6A15B] font-bold">
+            <BellRing className="w-3 h-3" />
+            لكل ورد إعداد مستقل
+          </span>
+        </div>
+
+        <p className="text-[10px] leading-relaxed text-[#7E8C7F] dark:text-[#A9B7A3]">
+          يذكّرك التطبيق في وقتك المحدد بكل ورد على حدة. للتذكير داخل المتصفح يُطلب إذن الإشعارات أول مرة — بياناتك كاملة محلية.
+        </p>
+
+        {(Object.keys(adhkarReminders) as AdhkarCategory[]).map((category) => {
+          const reminder = adhkarReminders[category];
+          const meta: Record<AdhkarCategory, { icon: string; title: string; desc: string; defaultTime: string }> = {
+            morning: { icon: '🌅', title: 'أذكار الصباح', desc: 'من بعد صلاة الفجر حتى الظهر', defaultTime: '07:00' },
+            evening: { icon: '🌇', title: 'أذكار المساء', desc: 'من بعد صلاة العصر حتى المغرب', defaultTime: '17:00' },
+            sleep: { icon: '🌙', title: 'أذكار النوم', desc: 'قبل النوم', defaultTime: '22:00' },
+          };
+          const m = meta[category];
+
+          return (
+            <div
+              key={category}
+              className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-transparent"
+              style={reminder.enabled ? { borderColor: 'rgba(198,161,91,0.25)' } : undefined}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-xl shrink-0">{m.icon}</span>
+                <div className="min-w-0">
+                  <span className="block text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                    {m.title}
+                  </span>
+                  <span className="block text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] truncate">
+                    {m.desc}
+                  </span>
+                  {reminder.enabled && (
+                    <label className="flex items-center gap-1.5 mt-1.5">
+                      <input
+                        type="time"
+                        value={reminder.time}
+                        onChange={async (e) => {
+                          if (e.target.value) {
+                            await updateAdhkarReminder(category, { ...reminder, time: e.target.value });
+                          }
+                        }}
+                        className="w-[104px] px-2 py-1 rounded-lg bg-white dark:bg-[#18231C] border border-[#C6A15B]/30 text-[11px] text-[#1D211E] dark:text-[#F6F1E7] focus:outline-none focus:border-[#C6A15B]/70"
+                      />
+                      <span className="text-[10px] text-[#7E8C7F]">وقت التذكير</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={reminder.enabled}
+                aria-label={`تفعيل تذكير ${m.title}`}
+                onClick={async () => {
+                  if (!reminder.enabled) {
+                    const granted = await requestNotificationPermission();
+                    if (!granted) {
+                      showToast('لم يتم الحصول على إذن الإشعارات، سيظهر التذكير داخل التطبيق فقط', 'info');
+                    }
+                  }
+                  await updateAdhkarReminder(category, { ...reminder, enabled: !reminder.enabled });
+                }}
+                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${
+                  reminder.enabled ? 'bg-[#C6A15B]' : 'bg-black/15 dark:bg-white/15'
+                }`}
+              >
+                <span
+                  className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                  style={{
+                    insetInlineStart: reminder.enabled ? undefined : '2px',
+                    insetInlineEnd: reminder.enabled ? '2px' : undefined,
+                  }}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 4. Prayer Calculations & Counters Adjustment */}
+      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-2">
+        <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5 mb-2">
+          <StarEightPoint size={11} color="#C6A15B" />
+          <span>حساب وتعديل الصلوات</span>
+        </h3>
 
         <button
           type="button"
           onClick={() => setIsEditCountersOpen(true)}
-          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors group"
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-              <Edit3 className="w-4 h-4" />
-            </div>
+            <Edit3 className="w-4 h-4 text-[#C6A15B]" />
             <div className="text-right">
-              <span className="font-semibold text-sm text-[#2D2D2A] dark:text-[#EAE7E0] block">
-                تعديل العدد يدوياً
+              <span className="text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7] block">
+                تعديل الأرقام يدوياً
               </span>
-              <span className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-                تغيير العدد المتبقي لأي صلاة مباشرة
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                ضبط أعداد الصلوات المتبقية بدقة
               </span>
             </div>
           </div>
-          <ChevronLeft className="w-4 h-4 text-[#8E8E80] dark:text-[#A6A699] group-hover:text-[#5A5A40] dark:group-hover:text-[#C8C7B9] transition-colors" />
+          <ChevronLeft className="w-4 h-4 text-[#7E8C7F] dark:text-[#A9B7A3]" />
         </button>
-      </section>
 
-      {/* ISTIGHFAR CONFIGURATION */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-3 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider mb-2">
-          الاستغفار السابق
-        </h3>
+        <div className="border-t border-black/5 dark:border-white/5 my-1" />
 
-        {istighfarData?.hasCompletedSetup ? (
-          <div className="space-y-3">
-            <div className="p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699]">البيانات الحالية</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">العمر عند البدء: <strong>{istighfarData.startAge}</strong></div>
-                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">العمر الحالي: <strong>{istighfarData.currentAge}</strong></div>
-                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">الهدف اليومي: <strong>{istighfarData.dailyTarget}</strong></div>
-                <div className="text-[#2D2D2A] dark:text-[#EAE7E0]">الإجمالي: <strong>{formatArabicNumber(istighfarData.totalEstimated)}</strong></div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setIsIstighfarEditOpen(true)}
-                className="flex-1 py-2.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-colors"
-              >
-                تعديل التقدير يدوياً
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsIstighfarSetupOpen(true)}
-                className="flex-1 py-2.5 bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#E8E4D9] dark:hover:bg-[#2A2B26] transition-colors"
-              >
-                إعادة الحساب
-              </button>
-            </div>
-
-            <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
-              هذا تقدير شخصي لعدد مرات الاستغفار التي فاتتك. يُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-[#8E8E80] dark:text-[#A6A699]">
-              قيّم عدد مرات الاستغفار التي فاتتك وتابع تعويضها
-            </p>
-            <button
-              type="button"
-              onClick={() => setIsIstighfarSetupOpen(true)}
-              className="w-full py-3 bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A] font-bold text-sm rounded-2xl transition-colors shadow-md"
-            >
-              إعداد الاستغفار السابق
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Istighfar Setup Modal */}
-      {isIstighfarSetupOpen && (
-        <IstighfarSetupModal
-          isOpen={isIstighfarSetupOpen}
-          onClose={() => setIsIstighfarSetupOpen(false)}
-          existingData={istighfarData}
-          onSave={istighfarData?.hasCompletedSetup ? recalculateIstighfar : setupIstighfar}
-        />
-      )}
-
-      {/* Istighfar Edit Modal */}
-      {isIstighfarEditOpen && (
-        <IstighfarEditModal
-          isOpen={isIstighfarEditOpen}
-          onClose={() => setIsIstighfarEditOpen(false)}
-          data={istighfarData!}
-          onUpdate={updateIstighfarEstimate}
-        />
-      )}
-
-      {/* GROUP 2: DAILY REMINDER (التنبيه اليومي لتسجيل الصلوات) */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-4 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-              <Bell className="w-4 h-4" />
-            </div>
-            <div className="text-right">
-              <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider">
-                التنبيه والتذكير اليومي
-              </h3>
-              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-                تذكير يومي لطيف لتسجيل ما قضيته من صلواتك
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleToggleReminder}
-            aria-label="تفعيل التنبيه اليومي"
-            className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
-              settings?.reminderEnabled ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                settings?.reminderEnabled ? 'left-5' : 'left-0.5'
-              }`}
-            />
-          </button>
-        </div>
-
-        {settings?.reminderEnabled && (
-          <div className="space-y-3.5 pt-2 border-t border-[#E8E4D9] dark:border-[#3D3E37] animate-in fade-in slide-in-from-top-2 duration-200">
-            {/* Time Picker & Display */}
-            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3.5 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#C97C5D]" />
-                  <div>
-                    <span className="text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0] block">
-                      وقت التنبيه اليومي
-                    </span>
-                    <span className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-                      سيصلك الإشعار عند الساعة:{' '}
-                      <strong className="text-[#5A5A40] dark:text-[#C8C7B9] font-bold">
-                        {formatArabicTime(settings.reminderTime || '21:00')}
-                      </strong>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Styled Native Time Input */}
-                <input
-                  type="time"
-                  value={settings.reminderTime || '21:00'}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  className="bg-white dark:bg-[#252622] text-[#2D2D2A] dark:text-[#EAE7E0] border border-[#D1CDC2] dark:border-[#3D3E37] text-xs font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A5A40] cursor-pointer"
-                  dir="ltr"
-                />
-              </div>
-
-              {/* Quick Preset Time Chips */}
-              <div className="mt-3 pt-3 border-t border-[#E8E4D9]/80 dark:border-[#3D3E37]/80">
-                <span className="text-[10px] font-bold text-[#8E8E80] dark:text-[#A6A699] block mb-1.5">
-                  أوقات مقترحة سريعة:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {reminderPresets.map((preset) => {
-                    const isSelected = settings.reminderTime === preset.time;
-                    return (
-                      <button
-                        key={preset.time}
-                        type="button"
-                        onClick={() => handleTimeChange(preset.time)}
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 ${
-                          isSelected
-                            ? 'bg-[#5A5A40] text-white shadow-sm scale-95'
-                            : 'bg-white dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0] hover:bg-[#FAF9F5]'
-                        }`}
-                      >
-                        <span>{preset.icon}</span>
-                        <span>{preset.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Browser Permission Status & Test Notification */}
-            <div className="flex items-center justify-between bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
-              <div className="flex items-center gap-1.5 text-[11px]">
-                {permState === 'granted' ? (
-                  <span className="flex items-center gap-1 text-[#5A5A40] dark:text-[#C8C7B9] font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    إشعارات النظام مفعّلة ✓
-                  </span>
-                ) : permState === 'denied' ? (
-                  <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-semibold">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    إشعارات المتصفح محظورة
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleRequestPermissionAgain}
-                    className="text-xs text-[#C97C5D] font-bold underline hover:opacity-80"
-                  >
-                    طلب إذن إشعارات النظام
-                  </button>
-                )}
-              </div>
-
-              {/* Test button */}
-              <button
-                type="button"
-                onClick={handleTestReminder}
-                disabled={isTestingNotification}
-                className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#252622] border border-[#D1CDC2] dark:border-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0] text-[11px] font-bold flex items-center gap-1 hover:bg-[#FAF9F5] active:scale-95 transition-all shadow-xs"
-              >
-                <Play className="w-3 h-3 text-[#5A5A40] dark:text-[#C8C7B9] fill-current" />
-                <span>تجربة التنبيه</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* GROUP: DHIKR REMINDERS */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-4 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-              <Bell className="w-4 h-4" />
-            </div>
-            <div className="text-right">
-              <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider">
-                التذكيرات
-              </h3>
-              <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-                تذكيرات الأذكار والأدعية
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              const next = !settings?.dhikrRemindersEnabled;
-              if (next) {
-                const granted = await requestNotificationPermission();
-                const currentPerm = getNotificationPermission();
-                setPermState(currentPerm);
-                await toggleDhikrReminders(true);
-                if (granted) {
-                  showToast('تم تفعيل تذكيرات الأذكار', 'success');
-                } else {
-                  showToast('السماح بالإشعارات يساعدك على تذكرك بالأذكار والأدعية خلال اليوم.', 'info');
-                }
-              } else {
-                await toggleDhikrReminders(false);
-                showToast('تم إيقاف تذكيرات الأذكار', 'info');
-              }
-            }}
-            aria-label="تفعيل تذكيرات الأذكار"
-            className={`w-11 h-6 rounded-full transition-colors relative shrink-0 ${
-              settings?.dhikrRemindersEnabled ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                settings?.dhikrRemindersEnabled ? 'left-5' : 'left-0.5'
-              }`}
-            />
-          </button>
-        </div>
-
-        {settings?.dhikrRemindersEnabled && (
-          <div className="space-y-3 pt-2 border-t border-[#E8E4D9] dark:border-[#3D3E37] animate-in fade-in duration-200">
-            {/* Permission Status */}
-            {permState === 'unsupported' && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-2xl">
-                <p className="text-xs text-amber-800 dark:text-amber-200 text-center">
-                  الإشعارات غير مدعومة في هذا المتصفح. التطبيق سيظل يعمل بشكل طبيعي.
-                </p>
-              </div>
-            )}
-
-            {/* Reminder Times */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-[#8E8E80] dark:text-[#A6A699]">
-                أوقات التذكير:
-              </span>
-              {dhikrReminderTimes.map((reminder, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={reminder.time}
-                    onChange={(e) => {
-                      const newTimes = [...dhikrReminderTimes];
-                      newTimes[index] = { ...newTimes[index], time: e.target.value };
-                      updateDhikrReminderTimes(newTimes);
-                    }}
-                    className="bg-white dark:bg-[#252622] text-[#2D2D2A] dark:text-[#EAE7E0] border border-[#D1CDC2] dark:border-[#3D3E37] text-xs font-bold px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5A5A40] cursor-pointer"
-                    dir="ltr"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newTimes = dhikrReminderTimes.filter((_, i) => i !== index);
-                      updateDhikrReminderTimes(newTimes);
-                    }}
-                    className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  const newTimes = [...dhikrReminderTimes, { time: '12:00', enabled: true }];
-                  updateDhikrReminderTimes(newTimes);
-                }}
-                className="w-full py-2.5 border border-dashed border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-semibold text-[#5A5A40] dark:text-[#C8C7B9] hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors"
-              >
-                + إضافة تذكير
-              </button>
-            </div>
-
-            <p className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] text-center leading-relaxed">
-              كل تذكير يحتوي على ذكر أو دعاء أصلي مع المصدر.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* GROUP 3: APP PREFERENCES */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-3 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider mb-2">
-          تفضيلات التطبيق
-        </h3>
-
-        {/* Theme selection */}
-        <div className="p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2.5">
-              <Moon className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
-              <span className="text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0]">
-                المظهر (الوضع الليلي)
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: 'light', label: 'فاتح' },
-              { id: 'dark', label: 'داكن' },
-              { id: 'auto', label: 'تلقائي' },
-            ].map((th) => {
-              const isSelected = settings?.theme === th.id;
-              return (
-                <button
-                  key={th.id}
-                  type="button"
-                  onClick={() => updateSettings({ theme: th.id as any })}
-                  className={`py-2 rounded-xl text-xs font-semibold transition-all ${
-                    isSelected
-                      ? 'bg-[#5A5A40] text-white shadow-sm'
-                      : 'bg-white dark:bg-[#252622] border border-[#E8E4D9] dark:border-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0]'
-                  }`}
-                >
-                  {th.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Sound toggle */}
-        <div className="flex items-center justify-between p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl">
-          <div className="flex items-center gap-2.5">
-            <Volume2 className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
-            <span className="text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0]">
-              المؤثرات الصوتية عند التسجيل
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => updateSettings({ soundEnabled: !settings?.soundEnabled })}
-            className={`w-11 h-6 rounded-full transition-colors relative ${
-              settings?.soundEnabled ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                settings?.soundEnabled ? 'left-5' : 'left-0.5'
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Haptic feedback toggle */}
-        <div className="flex items-center justify-between p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl">
-          <div className="flex items-center gap-2.5">
-            <Vibrate className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
-            <span className="text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0]">
-              الاهتزاز التفاعلي (Haptic)
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => updateSettings({ hapticsEnabled: !settings?.hapticsEnabled })}
-            className={`w-11 h-6 rounded-full transition-colors relative ${
-              settings?.hapticsEnabled ? 'bg-[#5A5A40]' : 'bg-[#D1CDC2] dark:bg-[#3D3E37]'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                settings?.hapticsEnabled ? 'left-5' : 'left-0.5'
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Install PWA Option */}
         <button
           type="button"
-          onClick={() => setIsInstallOpen(true)}
-          className="w-full flex items-center justify-between p-3.5 bg-[#F0EEE6] dark:bg-[#2A2B26] border border-[#D1CDC2] dark:border-[#3D3E37] rounded-2xl group transition-all"
+          onClick={() => setIsRecalculateOpen(true)}
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#5A5A40]/10 text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center">
-              <Smartphone className="w-4 h-4" />
-            </div>
+            <Calculator className="w-4 h-4 text-[#C6A15B]" />
             <div className="text-right">
-              <span className="font-semibold text-xs text-[#5A5A40] dark:text-[#C8C7B9] block">
-                تثبيت التطبيق على الشاشة الرئيسية
+              <span className="text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7] block">
+                إعادة الحساب التقديري
               </span>
-              <span className="text-[10px] text-[#8E8E80] dark:text-[#A6A699]">
-                استخدام التطبيق بدون شريط المتصفح وبدون إنترنت
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                تحديث عمر البلوغ وسنوات الفوات
               </span>
             </div>
           </div>
-          <ChevronLeft className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
+          <ChevronLeft className="w-4 h-4 text-[#7E8C7F] dark:text-[#A9B7A3]" />
         </button>
-      </section>
+      </div>
 
-      {/* GROUP 3: BACKUP & RESTORE */}
-      <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] space-y-3 shadow-[0_4px_16px_rgba(90,90,64,0.04)]">
-        <h3 className="text-xs font-bold text-[#5A5A40] dark:text-[#C8C7B9] uppercase tracking-wider mb-2">
-          النسخ الاحتياطي ونقل البيانات
+      {/* 4. Local Data Management (Backup, Restore, Reset) */}
+      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-2">
+        <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5 mb-2">
+          <ShieldCheck className="w-4 h-4 text-[#C6A15B]" />
+          <span>البيانات والنسخ الاحتياطي</span>
         </h3>
-        <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699]">
-          نظراً لأن جميع بياناتك محفوظة محلياً على هاتفك فقط، يمكنك تحميل نسخة احتياطية واستيرادها على أي جهاز آخر.
-        </p>
 
-        <div className="grid grid-cols-2 gap-2.5 pt-1">
-          {/* Export Button */}
-          <button
-            type="button"
-            onClick={exportBackup}
-            className="flex items-center justify-center gap-2 p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] hover:bg-[#EAE7E0] dark:hover:bg-[#2A2B26] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0] transition-colors"
-          >
-            <Download className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
-            <span>تصدير البيانات</span>
-          </button>
+        <button
+          type="button"
+          onClick={exportBackup}
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Download className="w-4 h-4 text-[#C6A15B]" />
+            <div className="text-right">
+              <span className="text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7] block">
+                تصدير نسخة احتياطية
+              </span>
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                حفظ سجلاتك في ملف JSON محلي
+              </span>
+            </div>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-[#7E8C7F] dark:text-[#A9B7A3]" />
+        </button>
 
-          {/* Import Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 p-3 bg-[#F0EEE6] dark:bg-[#1C1D1A] hover:bg-[#EAE7E0] dark:hover:bg-[#2A2B26] border border-[#E8E4D9] dark:border-[#3D3E37] rounded-2xl text-xs font-bold text-[#2D2D2A] dark:text-[#EAE7E0] transition-colors"
-          >
-            <Upload className="w-4 h-4 text-[#C97C5D]" />
-            <span>استيراد البيانات</span>
-          </button>
-        </div>
-      </section>
+        <div className="border-t border-black/5 dark:border-white/5 my-1" />
 
-      {/* GROUP 4: DANGER ZONE (RESET DATA) */}
-      <section className="bg-rose-50/60 dark:bg-rose-950/20 rounded-[28px] p-5 border border-rose-200 dark:border-rose-900/50 space-y-2">
-        <h3 className="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
-          منطقة الخطر
-        </h3>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Upload className="w-4 h-4 text-[#C6A15B]" />
+            <div className="text-right">
+              <span className="text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7] block">
+                استعادة نسخة احتياطية
+              </span>
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                تحميل بياناتك من ملف سابق
+              </span>
+            </div>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-[#7E8C7F] dark:text-[#A9B7A3]" />
+        </button>
+
+        <div className="border-t border-black/5 dark:border-white/5 my-1" />
 
         <button
           type="button"
           onClick={() => setIsResetConfirmOpen(true)}
-          className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white/80 dark:bg-[#252622] hover:bg-rose-100 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 transition-colors group"
+          className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-[#9E3A3A]/10 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <Trash2 className="w-4 h-4" />
-            </div>
+            <Trash2 className="w-4 h-4 text-[#9E3A3A]" />
             <div className="text-right">
-              <span className="font-bold text-sm text-rose-700 dark:text-rose-300 block">
-                إعادة ضبط جميع البيانات
+              <span className="text-sm font-bold text-[#9E3A3A] block">
+                حذف وتصفير البيانات
               </span>
-              <span className="text-[10px] text-[#8E8E80] dark:text-[#A6A699]">
-                مسح جميع السجلات والعدادات والبدء من جديد
+              <span className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                مسح السجلات المخزنة على هذا الجهاز
               </span>
             </div>
           </div>
-          <ChevronLeft className="w-4 h-4 text-rose-400 group-hover:text-rose-700" />
+          <ChevronLeft className="w-4 h-4 text-[#7E8C7F] dark:text-[#A9B7A3]" />
         </button>
-      </section>
+      </div>
 
-      {/* GROUP 5: APP INFO & RELIGIOUS DISCLAIMER */}
-      <section className="p-4 rounded-2xl bg-[#F0EEE6] dark:bg-[#1C1D1A] border border-[#E8E4D9] dark:border-[#3D3E37] text-center space-y-2">
-        <div className="flex items-center justify-center gap-1.5 text-xs text-[#8E8E80] dark:text-[#A6A699]">
-          <ShieldCheck className="w-4 h-4 text-[#5A5A40] dark:text-[#C8C7B9]" />
-          <span>تطبيق محلي 100% يعمل بدون خادم وبدون إنترنت</span>
-        </div>
-        <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] leading-relaxed max-w-xs mx-auto">
-          "الأعداد المحسوبة تقديرية لأغراض المتابعة الشخصية، ويُرجى الرجوع إلى عالم موثوق لمعرفة الحكم الشرعي المناسب لحالتك."
+      {/* 5. Privacy Notice Footer */}
+      <div className="p-4 rounded-2xl bg-[#26352A]/5 dark:bg-[#C6A15B]/5 border border-[#C6A15B]/20 text-center text-xs text-[#7E8C7F] dark:text-[#A9B7A3] space-y-1">
+        <p className="font-semibold text-[#1D211E] dark:text-[#F6F1E7]">
+          قضاء • تطبيق إسلامي محلي بالكامل
         </p>
-        <div className="text-[10px] text-[#8E8E80] dark:text-[#A6A699] pt-1">
-          قضاء • الإصدار 1.0 (PWA)
-        </div>
-      </section>
+        <p className="text-[11px]">
+          يعمل بدون خوادم خارجية وبدون إنترنت • بياناتك في أمان تام
+        </p>
+      </div>
 
       {/* Modals */}
       <EditCountersModal
@@ -716,39 +332,38 @@ export const SettingsPage: React.FC = () => {
 
       {/* Reset Confirmation Modal */}
       {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#FAF9F5] dark:bg-[#252622] border border-rose-200 dark:border-rose-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="text-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-2">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-base text-rose-700 dark:text-rose-300">
-                تأكيد إعادة ضبط البيانات
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="rounded-3xl p-6 max-w-sm w-full bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/30 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#9E3A3A]/15 text-[#9E3A3A] flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
+                تأكيد حذف البيانات
               </h3>
-              <p className="text-xs text-[#8E8E80] dark:text-[#A6A699] mt-1 leading-relaxed">
-                هل أنت متأكد تماماً من رغبتك في حذف جميع الصلوات المسجلة والعدادات والبدء من شاشة الإعداد الأولية؟ <strong>هذا الإجراء لا يمكن التراجع عنه.</strong>
+              <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3] mt-1 leading-relaxed">
+                هل أنت متأكد من رغبتك في مسح كافة السجلات؟ هذا الإجراء محلي ولا يمكن التراجع عنه إلا بوجود نسخة احتياطية.
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
+            <div className="flex gap-2.5 pt-2">
+              <TactileButton
                 onClick={() => setIsResetConfirmOpen(false)}
-                className="flex-1 py-3 bg-[#E8E4D9] dark:bg-[#3D3E37] text-[#2D2D2A] dark:text-[#EAE7E0] font-semibold text-xs rounded-2xl"
+                className="flex-1 py-3 rounded-2xl bg-black/5 dark:bg-white/5 font-semibold text-xs text-[#1D211E] dark:text-[#F6F1E7]"
               >
                 إلغاء
-              </button>
-              <button
-                type="button"
+              </TactileButton>
+              <TactileButton
                 onClick={handleResetConfirm}
-                className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-2xl transition-colors shadow-md"
+                className="flex-1 py-3 rounded-2xl bg-[#9E3A3A] font-semibold text-xs text-white shadow-sm"
               >
-                نعم، احذف الكل
-              </button>
+                تأكيد الحذف
+              </TactileButton>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </PageTransition>
   );
 };

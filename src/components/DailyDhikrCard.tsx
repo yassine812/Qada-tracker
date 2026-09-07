@@ -1,19 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Sparkles,
-  RefreshCw,
-  Copy,
-  Check,
-  Heart,
-  Quote,
-  BookOpen,
-  Volume2,
-} from 'lucide-react';
+import { RefreshCw, Copy, Check, Heart, Quote, BookOpen } from 'lucide-react';
 import { DhikrItem, getDailyDhikr, getRandomDhikr } from '../data/adhkar';
 import { useApp } from '../context/AppContext';
 import { playSoftClickSound, triggerHaptic } from '../utils/streak';
 import { formatArabicNumber } from '../utils/calculator';
 
+/** Elegant Islamic ornament corner SVG */
+const OrnamentCorner: React.FC<{ position: string }> = ({ position }) => {
+  const transforms: Record<string, string> = {
+    tl: '',
+    tr: 'scaleX(-1)',
+    bl: 'scaleY(-1)',
+    br: 'scale(-1,-1)',
+  };
+  const positions: Record<string, React.CSSProperties> = {
+    tl: { top: 6, right: 6 },
+    tr: { top: 6, left: 6 },
+    bl: { bottom: 6, right: 6 },
+    br: { bottom: 6, left: 6 },
+  };
+
+  return (
+    <svg
+      viewBox="0 0 28 28"
+      className="absolute w-6 h-6 pointer-events-none"
+      style={{
+        opacity: 0.08,
+        color: 'var(--qada-gold)',
+        transform: transforms[position],
+        ...positions[position],
+      }}
+    >
+      {/* Geometric L-shape ornament */}
+      <path d="M0 0 L8 0 L8 2 L2 2 L2 8 L0 8 Z" fill="currentColor" />
+      <circle cx="8" cy="8" r="1.5" fill="currentColor" opacity="0.5" />
+      <path d="M4 0 L4 4 L0 4" stroke="currentColor" strokeWidth="0.3" fill="none" opacity="0.4" />
+    </svg>
+  );
+};
+
+/**
+ * Beautiful daily dhikr section — spiritual reflection area.
+ * Uses parchment-like gradient, ornamental corners, elegant Arabic typography.
+ */
 export const DailyDhikrCard: React.FC = () => {
   const { showToast, settings } = useApp();
   const [dhikr, setDhikr] = useState<DhikrItem>(getDailyDhikr);
@@ -30,10 +59,8 @@ export const DailyDhikrCard: React.FC = () => {
     setIsAnimating(true);
     if (settings?.soundEnabled) playSoftClickSound();
     if (settings?.hapticsEnabled) triggerHaptic();
-
     setTimeout(() => {
-      const next = getRandomDhikr(dhikr.id);
-      setDhikr(next);
+      setDhikr(getRandomDhikr(dhikr.id));
       setCount(0);
       setIsAnimating(false);
     }, 150);
@@ -42,10 +69,10 @@ export const DailyDhikrCard: React.FC = () => {
   const handleIncrement = () => {
     if (settings?.soundEnabled) playSoftClickSound();
     if (settings?.hapticsEnabled) triggerHaptic();
-    setCount((prev) => prev + 1);
-
-    if (count + 1 === dhikr.recommendedCount) {
-      showToast('جزاك الله خيراً، أتممت ورد هذا الذكر المبارك 🌿', 'success');
+    const next = count + 1;
+    setCount(next);
+    if (next === dhikr.recommendedCount) {
+      showToast('جزاك الله خيراً، أتممت ورد هذا الذكر 🌿', 'success');
     }
   };
 
@@ -53,117 +80,131 @@ export const DailyDhikrCard: React.FC = () => {
     try {
       await navigator.clipboard.writeText(`${dhikr.text}\n(${dhikr.source})`);
       setIsCopied(true);
-      showToast('تم نسخ الذكر الشريف إلى الحافظة', 'success');
+      showToast('تم نسخ الذكر إلى الحافظة', 'success');
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (e) {
-      showToast('تعذر نسخ النص', 'error');
+    } catch {
+      showToast('تعذر النسخ', 'error');
     }
   };
 
   const isCompleted = count >= dhikr.recommendedCount;
 
   return (
-    <section className="bg-[#FAF9F5] dark:bg-[#252622] rounded-[28px] p-5 border border-[#E8E4D9] dark:border-[#3D3E37] shadow-[0_4px_16px_rgba(90,90,64,0.04)] relative overflow-hidden transition-all">
-      {/* Decorative subtle background quote icon */}
-      <div className="absolute left-3 top-3 text-[#E8E4D9]/60 dark:text-[#3D3E37]/50 pointer-events-none select-none">
-        <Quote className="w-16 h-16 transform scale-x-[-1]" />
-      </div>
-
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-2 mb-3 relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center border border-[#E8E4D9] dark:border-[#3D3E37]">
-            <Sparkles className="w-4 h-4 text-[#C97C5D]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0]">
-                ذكر اليوم المبارك
-              </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] border border-[#E8E4D9] dark:border-[#3D3E37]">
-                {dhikr.category}
-              </span>
-            </div>
-          </div>
+    <>
+      {/* Section header */}
+      <div className="section-label mb-3">
+        <div className="section-label-icon" style={{ background: 'var(--qada-accent-soft)' }}>
+          <span className="text-xs">✨</span>
         </div>
-
-        {/* Action Controls: Shuffle & Copy */}
+        <div className="flex-1">
+          <div className="section-label-text">ذكر اليوم</div>
+          <div className="section-label-sub">{dhikr.category}</div>
+        </div>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={handleNextDhikr}
             title="ذكر آخر"
-            className="p-2 rounded-xl text-[#8E8E80] dark:text-[#A6A699] hover:text-[#2D2D2A] dark:hover:text-white hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--qada-text-muted)' }}
           >
-            <RefreshCw className={`w-4 h-4 ${isAnimating ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isAnimating ? 'animate-spin' : ''}`} />
           </button>
-
           <button
             type="button"
             onClick={handleCopy}
-            title="نسخ الذكر"
-            className="p-2 rounded-xl text-[#8E8E80] dark:text-[#A6A699] hover:text-[#2D2D2A] dark:hover:text-white hover:bg-[#F0EEE6] dark:hover:bg-[#1C1D1A] transition-colors"
+            title="نسخ"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--qada-text-muted)' }}
           >
-            {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            {isCopied
+              ? <Check className="w-3.5 h-3.5" style={{ color: 'var(--qada-success)' }} />
+              : <Copy className="w-3.5 h-3.5" />
+            }
           </button>
         </div>
       </div>
 
-      {/* Main Dhikr Content */}
-      <div
-        className={`relative z-10 space-y-3 transition-opacity duration-150 ${
-          isAnimating ? 'opacity-30' : 'opacity-100'
-        }`}
-      >
-        <p className="font-brand-serif text-base sm:text-lg font-bold text-[#2D2D2A] dark:text-[#EAE7E0] leading-relaxed text-center px-2 py-1 select-text">
-          « {dhikr.text} »
-        </p>
+      {/* Parchment-style dua section */}
+      <div className="section-parchment rounded-xl p-5 relative">
+        {/* Ornamental corners */}
+        <OrnamentCorner position="tl" />
+        <OrnamentCorner position="tr" />
+        <OrnamentCorner position="bl" />
+        <OrnamentCorner position="br" />
 
-        {/* Source and Benefit Footnote */}
-        <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-2.5 rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37] text-center space-y-1">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#5A5A40] dark:text-[#C8C7B9]">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>المصدر: {dhikr.source}</span>
-          </div>
-          {dhikr.benefit && (
-            <p className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] leading-normal">
-              {dhikr.benefit}
-            </p>
-          )}
+        {/* Subtle background quote */}
+        <div className="absolute left-3 top-3 pointer-events-none select-none" style={{ opacity: 0.03, color: 'var(--qada-primary)' }}>
+          <Quote className="w-16 h-16" style={{ transform: 'scaleX(-1)' }} />
         </div>
 
-        {/* Interactive Tasbeeh / Repetition Counter */}
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <div className="text-[11px] text-[#8E8E80] dark:text-[#A6A699] flex items-center gap-1">
-            <span>الورد المقترح:</span>
-            <strong className="text-[#2D2D2A] dark:text-[#EAE7E0]">
+        {/* Dua text */}
+        <div
+          className={`relative z-10 text-center px-3 py-5 mb-3 rounded-lg transition-opacity duration-150 ${
+            isAnimating ? 'opacity-20' : 'opacity-100'
+          }`}
+          style={{ background: 'var(--qada-surface-2)', border: '1px solid var(--qada-border)' }}
+        >
+          <p className="font-brand-serif text-base sm:text-lg font-bold leading-loose select-text" style={{ color: 'var(--qada-text)' }}>
+            « {dhikr.text} »
+          </p>
+        </div>
+
+        {/* Source */}
+        <div className="relative z-10 flex items-center justify-center gap-1.5 text-[11px] mb-2">
+          <BookOpen className="w-3 h-3" style={{ color: 'var(--qada-text-muted)' }} />
+          <span style={{ color: 'var(--qada-text-secondary)' }}>
+            المصدر: {dhikr.source}
+          </span>
+        </div>
+
+        {dhikr.benefit && (
+          <p className="text-[11px] text-center leading-relaxed mb-4 relative z-10" style={{ color: 'var(--qada-text-muted)' }}>
+            {dhikr.benefit}
+          </p>
+        )}
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 mb-3 relative z-10 opacity-30">
+          <div className="flex-1" style={{ height: 1, background: 'var(--qada-border-strong)' }} />
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="var(--qada-gold)">
+            <path d="M12 0l2.5 8.5 8.5 2.5-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z" />
+          </svg>
+          <div className="flex-1" style={{ height: 1, background: 'var(--qada-border-strong)' }} />
+        </div>
+
+        {/* Tasbeeh counter */}
+        <div className="flex items-center justify-between gap-2 relative z-10">
+          <span className="text-[11px]" style={{ color: 'var(--qada-text-muted)' }}>
+            الورد: <strong style={{ color: 'var(--qada-text)' }}>
               {formatArabicNumber(dhikr.recommendedCount)} {dhikr.recommendedCount === 1 ? 'مرة' : 'مرات'}
             </strong>
-          </div>
+          </span>
 
           <button
             type="button"
             onClick={handleIncrement}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xs ${
-              isCompleted
-                ? 'bg-emerald-600 dark:bg-emerald-700 text-white'
-                : 'bg-[#5A5A40] hover:bg-[#484833] dark:bg-[#C8C7B9] dark:hover:bg-[#B8B7A8] text-white dark:text-[#1C1D1A]'
-            }`}
+            className="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 btn-press"
+            style={{
+              background: isCompleted ? 'var(--qada-success)' : 'var(--qada-primary)',
+              color: '#fff',
+              boxShadow: isCompleted ? '0 2px 8px rgba(74,122,74,0.2)' : '0 2px 8px rgba(60,90,60,0.15)',
+            }}
           >
             {isCompleted ? (
               <>
                 <Check className="w-3.5 h-3.5" />
-                <span>اكتمل الورد ({formatArabicNumber(count)})</span>
+                <span>اكتمل ({formatArabicNumber(count)})</span>
               </>
             ) : (
               <>
                 <Heart className="w-3.5 h-3.5 fill-current opacity-80" />
-                <span>تسبيح ({formatArabicNumber(count)} / {formatArabicNumber(dhikr.recommendedCount)})</span>
+                <span>تسبيح ({formatArabicNumber(count)}/{formatArabicNumber(dhikr.recommendedCount)})</span>
               </>
             )}
           </button>
         </div>
       </div>
-    </section>
+    </>
   );
 };
