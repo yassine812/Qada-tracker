@@ -109,10 +109,11 @@ interface AppContextType {
   incrementIstighfar: () => Promise<void>;
   decrementIstighfar: () => Promise<void>;
   istighfarData: IstighfarData | null;
-  setupIstighfar: (startAge: number, currentAge: number, dailyTarget: number) => Promise<void>;
+  setupIstighfar: (startAge: number, currentAge: number, dailyTarget: number, options?: { estimatedPreviousDaily?: number; trackedYears?: number }) => Promise<void>;
   recordIstighfarCompensation: (count: number) => Promise<boolean>;
   updateIstighfarEstimate: (newTotal: number) => Promise<void>;
-  recalculateIstighfar: (startAge: number, currentAge: number, dailyTarget: number) => Promise<void>;
+  recalculateIstighfar: (startAge: number, currentAge: number, dailyTarget: number, options?: { estimatedPreviousDaily?: number; trackedYears?: number }) => Promise<void>;
+  applyTodayToHistorical: (count: number) => Promise<boolean>;
   dhikrReminderTimes: DhikrReminderItem[];
   updateDhikrReminderTimes: (times: DhikrReminderItem[]) => Promise<void>;
   toggleDhikrReminders: (enabled: boolean) => Promise<void>;
@@ -453,9 +454,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [counters, records]);
 
   // Setup istighfar historical tracking
-  const setupIstighfar = async (startAge: number, currentAge: number, dailyTarget: number) => {
+  const setupIstighfar = async (
+    startAge: number,
+    currentAge: number,
+    dailyTarget: number,
+    options?: { estimatedPreviousDaily?: number; trackedYears?: number }
+  ) => {
     const years = currentAge - startAge;
     const totalEstimated = years * 365 * dailyTarget;
+    const estimatedPreviousDaily = options?.estimatedPreviousDaily ?? 0;
+    const trackedYears = options?.trackedYears ?? years;
+    const historicalTotalTarget = trackedYears * 365 * dailyTarget;
+    const historicalCompleted = trackedYears * 365 * estimatedPreviousDaily;
+    const historicalRemaining = Math.max(
+      0,
+      historicalTotalTarget - historicalCompleted
+    );
     const data: IstighfarData = {
       hasCompletedSetup: true,
       startAge,
@@ -464,6 +478,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalEstimated,
       completed: 0,
       remaining: totalEstimated,
+      estimatedPreviousDaily,
+      trackedYears,
+      historicalTotalTarget,
+      historicalCompleted,
+      historicalRemaining,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -471,7 +490,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIstighfarData(data);
   };
 
-  // Record istighfar compensation
+  // Record istighfar compensation (historical personal target)
   const recordIstighfarCompensation = async (count: number): Promise<boolean> => {
     if (!istighfarData) return false;
     if (typeof count !== 'number' || isNaN(count) || !Number.isInteger(count) || count <= 0) {
@@ -484,11 +503,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const newCompleted = istighfarData.completed + count;
-    const newRemaining = istighfarData.totalEstimated - newCompleted;
+    const newRemaining = Math.max(0, istighfarData.totalEstimated - newCompleted);
+    const newHistoricalRemaining = Math.max(
+      0,
+      istighfarData.historicalRemaining - count
+    );
     const updated: IstighfarData = {
       ...istighfarData,
       completed: newCompleted,
       remaining: newRemaining,
+      historicalRemaining: newHistoricalRemaining,
       updatedAt: new Date().toISOString(),
     };
 
@@ -528,7 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated: IstighfarData = {
       ...istighfarData,
       totalEstimated: newTotal,
-      remaining: newTotal - istighfarData.completed,
+      remaining: Math.max(0, newTotal - istighfarData.completed),
       updatedAt: new Date().toISOString(),
     };
     await saveIstighfarData(updated);
@@ -537,16 +561,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Recalculate istighfar
-  const recalculateIstighfar = async (startAge: number, currentAge: number, dailyTarget: number) => {
+  const recalculateIstighfar = async (
+    startAge: number,
+    currentAge: number,
+    dailyTarget: number,
+    options?: { estimatedPreviousDaily?: number; trackedYears?: number }
+  ) => {
     const years = currentAge - startAge;
     const totalEstimated = years * 365 * dailyTarget;
+    const estimatedPreviousDaily = options?.estimatedPreviousDaily ?? istighfarData?.estimatedPreviousDaily ?? 0;
+    const trackedYears = options?.trackedYears ?? istighfarData?.trackedYears ?? years;
+    const historicalTotalTarget = trackedYears * 365 * dailyTarget;
+    const historicalCompleted = trackedYears * 365 * estimatedPreviousDaily;
+    const historicalRemaining = Math.max(
+      0,
+      historicalTotalTarget - historicalCompleted - (istighfarData?.completed || 0)
+    );
+    const alreadyCompleted = istighfarData?.completed || 0;
     const updated: IstighfarData = {
       ...istighfarData!,
       startAge,
       currentAge,
       dailyTarget,
       totalEstimated,
-      remaining: totalEstimated - (istighfarData?.completed || 0),
+      completed: alreadyCompleted,
+      remaining: Math.max(0, totalEstimated - alreadyCompleted),
+      estimatedPreviousDaily,
+      trackedYears,
+      historicalTotalTarget,
+      historicalCompleted,
+      historicalRemaining,
       updatedAt: new Date().toISOString(),
     };
     await saveIstighfarData(updated);
@@ -1102,6 +1146,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recordIstighfarCompensation,
         updateIstighfarEstimate,
         recalculateIstighfar,
+        applyTodayToHistorical: async (count: number) => {
+          if (!istighfarData) return false;
+          if (typeof count !== 'number' || isNaN(count) || !Number.isInteger(count) || count <= 0) {
+            showToast('يرجى إدخال عدد صحيح أكبر من صفر', 'error');
+            return false;
+          }
+          if (count > todayIstighfarCount) {
+            showToast(`لا يمكن تطبيق عدد أكبر من استغفار اليوم (${todayIstighfarCount})`, 'error');
+            return false;
+          }
+          if (count > istighfarData.historicalRemaining) {
+            showToast(`لا يمكن تطبيق أكثر من المتبقي التاريخي (${istighfarData.historicalRemaining})`, 'error');
+            return false;
+          }
+          const newHistoricalRemaining = Math.max(0, istighfarData.historicalRemaining - count);
+          // We do NOT reduce daily remaining here; this is about applying today's count to the historical ledger
+          const updated: IstighfarData = {
+            ...istighfarData,
+            historicalRemaining: newHistoricalRemaining,
+            updatedAt: new Date().toISOString(),
+          };
+          await saveIstighfarData(updated);
+          setIstighfarData(updated);
+          if (settings?.soundEnabled) playSoftClickSound();
+          if (settings?.hapticsEnabled) triggerHaptic();
+          showToast(`تم تطبيق ${count} استغفار على الهدف التاريخي`, 'success');
+          return true;
+        },
         dhikrReminderTimes,
         updateDhikrReminderTimes,
         toggleDhikrReminders,

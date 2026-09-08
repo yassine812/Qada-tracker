@@ -154,6 +154,12 @@ export interface IstighfarData {
   totalEstimated: number; // calculated: years * 365 * dailyTarget
   completed: number; // total compensated so far
   remaining: number; // totalEstimated - completed
+  // Historical personal tracking (inspired by Prophetic practice, NOT religiously obligatory)
+  estimatedPreviousDaily: number; // user's estimate of prior daily istighfar (e.g. 50)
+  trackedYears: number; // years over which to calculate historical gap
+  historicalTotalTarget: number; // trackedYears * 365 * dailyTarget
+  historicalCompleted: number; // estimated previously done: trackedYears * 365 * estimatedPreviousDaily
+  historicalRemaining: number; // historicalTotalTarget - historicalCompleted - (applied today's counts)
   createdAt: string;
   updatedAt: string;
 }

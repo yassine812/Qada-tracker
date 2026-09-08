@@ -33,6 +33,8 @@ export const OnboardingPage: React.FC = () => {
   // Istighfar setup state (shown on summary)
   const [istighfarStartAge, setIstighfarStartAge] = useState<number>(14);
   const [istighfarDailyTarget, setIstighfarDailyTarget] = useState<number>(70);
+  const [istighfarEstimatedPreviousDaily, setIstighfarEstimatedPreviousDaily] = useState<number>(0);
+  const [istighfarTrackedYears, setIstighfarTrackedYears] = useState<number>(0);
   const [setupIstighfarNow, setSetupIstighfarNow] = useState<boolean>(false);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -122,7 +124,15 @@ export const OnboardingPage: React.FC = () => {
 
       // Setup istighfar if user chose to
       if (setupIstighfarNow && istighfarStartAge < currentAge) {
-        await setupIstighfar(istighfarStartAge, currentAge, istighfarDailyTarget);
+        await setupIstighfar(
+          istighfarStartAge,
+          currentAge,
+          istighfarDailyTarget,
+          {
+            estimatedPreviousDaily: istighfarEstimatedPreviousDaily,
+            trackedYears: istighfarTrackedYears || currentAge - istighfarStartAge,
+          }
+        );
       }
     } catch (err) {
       console.error(err);
@@ -541,13 +551,13 @@ export const OnboardingPage: React.FC = () => {
 
           {/* ===== STEP 4: Summary ===== */}
           {step === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+              >
               <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/30 shadow-sm text-center">
                 <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
                   المجموع التقديري للصلوات الفائتة
@@ -586,7 +596,161 @@ export const OnboardingPage: React.FC = () => {
                   هذه الأرقام تقديرية قابلة للتعديل اليدوي في أي وقت من شاشة الإعدادات. تذكر: «قليلٌ دائم خيرٌ من كثيرٍ منقطع».
                 </span>
               </div>
-            </motion.div>
+
+              {/* Istighfar Setup Section */}
+              <div className="p-4 rounded-2xl bg-[#C6A15B]/5 border border-[#C6A15B]/20">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block">
+                      ورد الاستغفار (اختياري)
+                    </span>
+                    <p className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] mt-0.5">
+                      هدف يومي مستوحى من الحديث النبوي — ليس قضاءً شرعيًا
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSetupIstighfarNow(!setupIstighfarNow)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                      setupIstighfarNow
+                        ? 'bg-[#C6A15B] text-[#18231C] border-[#C6A15B] shadow-sm'
+                        : 'bg-black/5 dark:bg-white/5 text-[#7E8C7F] dark:text-[#A9B7A3] border-transparent hover:border-[#C6A15B]/30'
+                    }`}
+                  >
+                    {setupIstighfarNow ? 'مفعّل' : 'تفعيل'}
+                  </button>
+                </div>
+
+                {setupIstighfarNow && (
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                      <div>
+                        <span className="text-xs font-semibold text-[#1D211E] dark:text-[#F6F1E7] block">
+                          سن البدء بالهدف
+                        </span>
+                        <p className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                          من milestone عمرك الذي تفكر فيه
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TactileButton onClick={() => setIstighfarStartAge((a) => Math.max(7, a - 1))} className="w-8 h-8 rounded-lg bg-white dark:bg-[#26352A] flex items-center justify-center text-sm"><Minus className="w-3.5 h-3.5" /></TactileButton>
+                        <span className="text-lg font-bold font-landing-display text-[#C6A15B] min-w-[2rem] text-center">{istighfarStartAge}</span>
+                        <span className="text-[10px] text-[#7E8C7F]">سنة</span>
+                        <TactileButton onClick={() => setIstighfarStartAge((a) => Math.min(currentAge - 1, a + 1))} className="w-8 h-8 rounded-lg bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center text-sm"><Plus className="w-3.5 h-3.5" /></TactileButton>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                      <div>
+                        <span className="text-xs font-semibold text-[#1D211E] dark:text-[#F6F1E7] block">
+                          عدد السنوات المراد تتبعها
+                        </span>
+                        <p className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                          الفترة التاريخية لهدف الاستغفار
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TactileButton onClick={() => setIstighfarTrackedYears((y) => Math.max(0, y - 1))} className="w-8 h-8 rounded-lg bg-white dark:bg-[#26352A] flex items-center justify-center text-sm"><Minus className="w-3.5 h-3.5" /></TactileButton>
+                        <span className="text-lg font-bold font-landing-display text-[#C6A15B] min-w-[2rem] text-center">{istighfarTrackedYears || (currentAge - istighfarStartAge)}</span>
+                        <span className="text-[10px] text-[#7E8C7F]">سنة</span>
+                        <TactileButton onClick={() => setIstighfarTrackedYears((y) => Math.min(currentAge - istighfarStartAge, y + 1))} className="w-8 h-8 rounded-lg bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center text-sm"><Plus className="w-3.5 h-3.5" /></TactileButton>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                      <div>
+                        <span className="text-xs font-semibold text-[#1D211E] dark:text-[#F6F1E7] block">
+                          هدف يومي
+                        </span>
+                        <p className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                          عدد مرات الاستغفار اليومي
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TactileButton onClick={() => setIstighfarDailyTarget((t) => Math.max(10, t - 5))} className="w-8 h-8 rounded-lg bg-white dark:bg-[#26352A] flex items-center justify-center text-sm"><Minus className="w-3.5 h-3.5" /></TactileButton>
+                        <span className="text-lg font-bold font-landing-display text-[#C6A15B] min-w-[2.5rem] text-center">{istighfarDailyTarget}</span>
+                        <span className="text-[10px] text-[#7E8C7F]">مرة/يوم</span>
+                        <TactileButton onClick={() => setIstighfarDailyTarget((t) => Math.min(150, t + 5))} className="w-8 h-8 rounded-lg bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center text-sm"><Plus className="w-3.5 h-3.5" /></TactileButton>
+                      </div>
+                    </div>
+
+                    {istighfarEstimatedPreviousDaily > 0 && (
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[#C6A15B]/20">
+                        <div>
+                          <span className="text-xs font-semibold text-[#1D211E] dark:text-[#F6F1E7] block">
+                            الاستغفار المتوقع سابقًا
+                          </span>
+                          <p className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                            تقدير يومي سابق (مثلاً كنت تستغفر 50 مرة يوميًا)
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <TactileButton onClick={() => setIstighfarEstimatedPreviousDaily((e) => Math.max(0, e - 5))} className="w-8 h-8 rounded-lg bg-white dark:bg-[#26352A] flex items-center justify-center text-sm"><Minus className="w-3.5 h-3.5" /></TactileButton>
+                          <span className="text-lg font-bold font-landing-display text-[#C6A15B] min-w-[2.5rem] text-center">{istighfarEstimatedPreviousDaily}</span>
+                          <span className="text-[10px] text-[#7E8C7F]">مرة/يوم</span>
+                          <TactileButton onClick={() => setIstighfarEstimatedPreviousDaily((e) => Math.min(istighfarDailyTarget, e + 5))} className="w-8 h-8 rounded-lg bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] flex items-center justify-center text-sm"><Plus className="w-3.5 h-3.5" /></TactileButton>
+                        </div>
+                      </div>
+                    )}
+
+                    {istighfarStartAge < currentAge && (
+                      <div className="p-3 rounded-xl bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-xs text-[#7E8C7F] dark:text-[#A9B7A3] text-center leading-relaxed">
+                        الهدف التاريخي التقديري:
+                        <strong className="text-[#C6A15B] font-bold">
+                          {formatArabicNumber((istighfarTrackedYears || currentAge - istighfarStartAge) * 365 * istighfarDailyTarget)}
+                        </strong>{' '}
+                        استغفار
+                        {istighfarEstimatedPreviousDaily > 0 && (
+                          <>
+                            {' '}مخصومًا منه {formatArabicNumber((istighfarTrackedYears || currentAge - istighfarStartAge) * 365 * istighfarEstimatedPreviousDaily)} استغفارًا كان يُرجّح أنّك كنت تفعلها
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/30 shadow-sm text-center">
+                <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
+                  المجموع التقديري للصلوات الفائتة
+                </span>
+                <div className="text-4xl sm:text-5xl font-extrabold font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-2">
+                  {formatArabicNumber(totalEffectiveMissed)}
+                  <span className="text-base font-normal text-[#C6A15B] mr-2">صلاة</span>
+                </div>
+                <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
+                  توزيع {calc.years} سنوات تكليف • نسبة فوات {100 - frequency}%
+                </p>
+
+                <div className="grid grid-cols-5 gap-1.5 mt-5 pt-4 border-t border-black/5 dark:border-white/5">
+                  {[
+                    { label: 'الفجر', val: calc.perPrayer.fajr },
+                    { label: 'الظهر', val: calc.perPrayer.dhuhr },
+                    { label: 'العصر', val: calc.perPrayer.asr },
+                    { label: 'المغرب', val: calc.perPrayer.maghrib },
+                    { label: 'العشاء', val: calc.perPrayer.isha },
+                  ].map((p) => (
+                    <div key={p.label} className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-center">
+                      <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] block">
+                        {p.label}
+                      </span>
+                      <span className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
+                        {formatArabicNumber(p.val)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 text-xs text-[#7E8C7F] dark:text-[#A9B7A3] leading-relaxed flex items-start gap-2">
+                <Info className="w-4 h-4 text-[#C6A15B] shrink-0 mt-0.5" />
+                <span>
+                  هذه الأرقام تقديرية قابلة للتعديل اليدوي في أي وقت من شاشة الإعدادات. تذكر: «قليلٌ دائم خيرٌ من كثيرٍ منقطع».
+                </span>
+              </div>
+
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
