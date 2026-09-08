@@ -710,44 +710,6 @@ export const OnboardingPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/30 shadow-sm text-center">
-                <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
-                  المجموع التقديري للصلوات الفائتة
-                </span>
-                <div className="text-4xl sm:text-5xl font-extrabold font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-2">
-                  {formatArabicNumber(totalEffectiveMissed)}
-                  <span className="text-base font-normal text-[#C6A15B] mr-2">صلاة</span>
-                </div>
-                <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
-                  توزيع {calc.years} سنوات تكليف • نسبة فوات {100 - frequency}%
-                </p>
-
-                <div className="grid grid-cols-5 gap-1.5 mt-5 pt-4 border-t border-black/5 dark:border-white/5">
-                  {[
-                    { label: 'الفجر', val: calc.perPrayer.fajr },
-                    { label: 'الظهر', val: calc.perPrayer.dhuhr },
-                    { label: 'العصر', val: calc.perPrayer.asr },
-                    { label: 'المغرب', val: calc.perPrayer.maghrib },
-                    { label: 'العشاء', val: calc.perPrayer.isha },
-                  ].map((p) => (
-                    <div key={p.label} className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-center">
-                      <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] block">
-                        {p.label}
-                      </span>
-                      <span className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
-                        {formatArabicNumber(p.val)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 text-xs text-[#7E8C7F] dark:text-[#A9B7A3] leading-relaxed flex items-start gap-2">
-                <Info className="w-4 h-4 text-[#C6A15B] shrink-0 mt-0.5" />
-                <span>
-                  هذه الأرقام تقديرية قابلة للتعديل اليدوي في أي وقت من شاشة الإعدادات. تذكر: «قليلٌ دائم خيرٌ من كثيرٍ منقطع».
-                </span>
-              </div>
 
               </motion.div>
             </div>
