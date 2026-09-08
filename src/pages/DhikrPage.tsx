@@ -7,6 +7,7 @@ import { playSoftClickSound, triggerHaptic } from '../utils/streak';
 import { PageTransition, AnimatedNumber, TactileButton, CircularProgressRing } from '../components/ui/MotionPrimitives';
 import { StarEightPoint, SubtleArch, OrnamentalDivider } from '../components/landing/IslamicOrnaments';
 import { AdhkarFeature } from '../components/adhkar/AdhkarFeature';
+import { PropheticDuaExperience } from '../components/adhkar/PropheticDuaExperience';
 
 // ══════════════════════════════════════════════════════════════════
 // 1. SATISFYING ISTIGHFAR INTERACTION
@@ -295,9 +296,9 @@ export const DhikrPage: React.FC = () => {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
-          {activeTab === 'adhkar' && <AdhkarFeature />}
+          {activeTab === 'adhkar' && <AdhkarFeature onOpenDua={() => setActiveTab('dua')} />}
           {activeTab === 'istighfar' && <IstighfarCounter />}
-          {activeTab === 'dua' && <DailyDua />}
+          {activeTab === 'dua' && <PropheticDuaExperience />}
         </motion.div>
       </AnimatePresence>
     </PageTransition>

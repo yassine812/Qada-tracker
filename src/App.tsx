@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { PwaInstallProvider } from './context/PwaInstallContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { Toast } from './components/Toast';
@@ -121,9 +122,11 @@ const RootViewRouter: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <RootViewRouter />
-    </AppProvider>
+    <PwaInstallProvider>
+      <AppProvider>
+        <RootViewRouter />
+      </AppProvider>
+    </PwaInstallProvider>
   );
 }
 

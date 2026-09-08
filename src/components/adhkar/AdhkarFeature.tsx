@@ -7,7 +7,11 @@ import { AdhkarHome } from './AdhkarHome';
 import { AdhkarReader } from './AdhkarReader';
 import { AdhkarSourceSheet } from './AdhkarSourceSheet';
 
-export const AdhkarFeature: React.FC = () => {
+export interface AdhkarFeatureProps {
+  onOpenDua?: () => void;
+}
+
+export const AdhkarFeature: React.FC<AdhkarFeatureProps> = ({ onOpenDua }) => {
   const adhkar = useAdhkar();
   const { adhkarFocus, setAdhkarFocus } = useApp();
   const [view, setView] = useState<AdhkarView>('home');
@@ -51,6 +55,7 @@ export const AdhkarFeature: React.FC = () => {
               adhkar={adhkar}
               onOpenCategory={handleOpenCategory}
               onOpenSource={setSourceItem}
+              onOpenDua={onOpenDua}
             />
           ) : (
             <AdhkarReader

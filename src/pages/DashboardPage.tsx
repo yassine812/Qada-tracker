@@ -163,6 +163,103 @@ export const DashboardPage: React.FC = () => {
         </p>
       </div>
 
+      {/* ═══════ DAILY ADHKAR (3 ICONS: صباح / مساء / نوم) ON TOP ═══════ */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <StarEightPoint size={13} color="#C6A15B" />
+            <h3 className="text-sm font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
+              الأذكار اليومية
+            </h3>
+          </div>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-[10px] text-[#C6A15B] font-bold">
+            {adhkarCompletedToday} من 3 أوراد
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5">
+          {ADHKAR_CATEGORY_LIST.map((cat) => {
+            const progress = adhkar.getCategoryProgress(cat.category);
+            const isComplete = progress.completed === progress.total && progress.total > 0;
+            const isActive = cat.category === activeAdhkarCategory;
+            const Icon = ADHKAR_ICON_MAP[cat.category];
+
+            return (
+              <motion.button
+                key={cat.category}
+                type="button"
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+                onClick={() => {
+                  setAdhkarFocus(cat.category);
+                  setActiveTab('dhikr');
+                }}
+                className="relative flex flex-col items-center gap-2 rounded-2xl px-2 py-3.5 transition-all cursor-pointer text-center select-none group"
+                style={{
+                  background: isActive
+                    ? 'linear-gradient(180deg, rgba(198,161,91,0.14), rgba(198,161,91,0.05))'
+                    : 'transparent',
+                  border: `1px solid ${isActive ? 'rgba(198,161,91,0.4)' : 'rgba(198,161,91,0.12)'}`,
+                }}
+                aria-label={`${cat.title} (${progress.completed}/${progress.total})`}
+              >
+                {/* subtle geometric flourish */}
+                <span className="absolute inset-1 rounded-xl pointer-events-none opacity-[0.07] islamic-pattern-bg" aria-hidden="true" />
+
+                <span
+                  className="relative flex items-center justify-center w-12 h-12 rounded-full text-[#C6A15B] border transition-all group-hover:scale-105"
+                  style={{
+                    background: isActive
+                      ? 'linear-gradient(160deg, #C6A15B, #a9854a)'
+                      : 'rgba(198,161,91,0.12)',
+                    color: isActive ? '#18231C' : '#C6A15B',
+                    borderColor: isActive ? '#C6A15B' : 'rgba(198,161,91,0.3)',
+                    boxShadow: isActive
+                      ? '0 0 0 1px rgba(198,161,91,0.25), 0 6px 18px rgba(198,161,91,0.25)'
+                      : '0 2px 8px rgba(24,35,28,0.06)',
+                  }}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={2.2} />
+                  {/* completed checkmark badge */}
+                  {isComplete && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 16 }}
+                      className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#3C6E47] text-[#F6F1E7] flex items-center justify-center border-2 border-white dark:border-[#1F2E24]"
+                    >
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </motion.span>
+                  )}
+                </span>
+
+                <span className="relative flex items-center gap-1 text-[11px] font-bold text-[#1D211E] dark:text-[#F6F1E7] whitespace-nowrap">
+                  <span className="text-[#C6A15B]">{cat.icon}</span>
+                  {cat.title}
+                </span>
+
+                <span
+                  className={`relative text-[10px] font-mono ${
+                    isComplete
+                      ? 'text-[#3C6E47] dark:text-[#6BA06B] font-bold'
+                      : progress.completed > 0
+                        ? 'text-[#C6A15B] font-bold'
+                        : 'text-[#7E8C7F] dark:text-[#A9B7A3]'
+                  }`}
+                >
+                  {progress.completed}/{progress.total}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 text-center text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+          الأكثر أهمية حسب وقتك الآن أُبرز تلقائيًا
+        </div>
+      </div>
+
       {/* ═══════ 2. AWKAT SALAT (PRAYER TIMES TIMELINE) ═══════ */}
       <PrayerTimesSection />
 
@@ -381,103 +478,6 @@ export const DashboardPage: React.FC = () => {
             >
               استغفر الله (+1)
             </TactileButton>
-          </div>
-        </div>
-
-        {/* Daily Adhkar — Three compact icon actions (صباح / مساء / نوم) */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <StarEightPoint size={13} color="#C6A15B" />
-              <h3 className="text-sm font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
-                الأذكار اليومية
-              </h3>
-            </div>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-[10px] text-[#C6A15B] font-bold">
-              {adhkarCompletedToday} من 3 أوراد
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2.5">
-            {ADHKAR_CATEGORY_LIST.map((cat) => {
-              const progress = adhkar.getCategoryProgress(cat.category);
-              const isComplete = progress.completed === progress.total && progress.total > 0;
-              const isActive = cat.category === activeAdhkarCategory;
-              const Icon = ADHKAR_ICON_MAP[cat.category];
-
-              return (
-                <motion.button
-                  key={cat.category}
-                  type="button"
-                  whileHover={{ y: -3 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 420, damping: 22 }}
-                  onClick={() => {
-                    setAdhkarFocus(cat.category);
-                    setActiveTab('dhikr');
-                  }}
-                  className="relative flex flex-col items-center gap-2 rounded-2xl px-2 py-3.5 transition-all cursor-pointer text-center select-none group"
-                  style={{
-                    background: isActive
-                      ? 'linear-gradient(180deg, rgba(198,161,91,0.14), rgba(198,161,91,0.05))'
-                      : 'transparent',
-                    border: `1px solid ${isActive ? 'rgba(198,161,91,0.4)' : 'rgba(198,161,91,0.12)'}`,
-                  }}
-                  aria-label={`${cat.title} (${progress.completed}/${progress.total})`}
-                >
-                  {/* subtle geometric flourish */}
-                  <span className="absolute inset-1 rounded-xl pointer-events-none opacity-[0.07] islamic-pattern-bg" aria-hidden="true" />
-
-                  <span
-                    className="relative flex items-center justify-center w-12 h-12 rounded-full text-[#C6A15B] border transition-all group-hover:scale-105"
-                    style={{
-                      background: isActive
-                        ? 'linear-gradient(160deg, #C6A15B, #a9854a)'
-                        : 'rgba(198,161,91,0.12)',
-                      color: isActive ? '#18231C' : '#C6A15B',
-                      borderColor: isActive ? '#C6A15B' : 'rgba(198,161,91,0.3)',
-                      boxShadow: isActive
-                        ? '0 0 0 1px rgba(198,161,91,0.25), 0 6px 18px rgba(198,161,91,0.25)'
-                        : '0 2px 8px rgba(24,35,28,0.06)',
-                    }}
-                  >
-                    <Icon className="w-5 h-5" strokeWidth={2.2} />
-                    {/* completed checkmark badge */}
-                    {isComplete && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 16 }}
-                        className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-[#3C6E47] text-[#F6F1E7] flex items-center justify-center border-2 border-white dark:border-[#1F2E24]"
-                      >
-                        <Check className="w-3 h-3 stroke-[3]" />
-                      </motion.span>
-                    )}
-                  </span>
-
-                  <span className="relative flex items-center gap-1 text-[11px] font-bold text-[#1D211E] dark:text-[#F6F1E7] whitespace-nowrap">
-                    <span className="text-[#C6A15B]">{cat.icon}</span>
-                    {cat.title}
-                  </span>
-
-                  <span
-                    className={`relative text-[10px] font-mono ${
-                      isComplete
-                        ? 'text-[#3C6E47] dark:text-[#6BA06B] font-bold'
-                        : progress.completed > 0
-                          ? 'text-[#C6A15B] font-bold'
-                          : 'text-[#7E8C7F] dark:text-[#A9B7A3]'
-                    }`}
-                  >
-                    {progress.completed}/{progress.total}
-                  </span>
-                </motion.button>
-              );
-            })}
-          </div>
-
-          <div className="mt-3 text-center text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
-            الأكثر أهمية حسب وقتك الآن أُبرز تلقائيًا
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { AdhkarDailyState, AdhkarHistoryEntry, BackupData, DailyRecord, IstighfarData, IstighfarRecord, PrayerCounters, UserSettings, ZakatSavedState } from '../types';
+import { AdhkarDailyState, AdhkarHistoryEntry, BackupData, DailyRecord, IstighfarData, IstighfarRecord, PrayerCounters, PropheticDuaCycleState, UserSettings, ZakatSavedState } from '../types';
 
 const DB_NAME = 'QadaTrackerDB';
 const DB_VERSION = 4;
@@ -582,6 +582,82 @@ export async function importAllData(data: unknown): Promise<void> {
   }
 }
 
+// ────────────────────────────────────────────────────────────
+// PROPHETIC DUAS (أدعية النبي ﷺ) — Storage & Persistence
+// ────────────────────────────────────────────────────────────
+const PROPHETIC_DUA_KEYS = {
+  CYCLE_STATE: 'qada_prophetic_dua_cycle',
+  FAVORITES: 'qada_prophetic_dua_favorites',
+};
+
+export async function getPropheticDuaCycleState(): Promise<PropheticDuaCycleState | null> {
+  try {
+    const db = await getDB();
+    const result = await new Promise<PropheticDuaCycleState | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.SETTINGS, 'readonly');
+      const store = tx.objectStore(STORES.SETTINGS);
+      const req = store.get(PROPHETIC_DUA_KEYS.CYCLE_STATE);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+    if (result) return result;
+  } catch (err) {
+    console.warn('IndexedDB unavailable for prophetic dua cycle, using localStorage fallback', err);
+  }
+  const local = localStorage.getItem(PROPHETIC_DUA_KEYS.CYCLE_STATE);
+  return local ? JSON.parse(local) : null;
+}
+
+export async function savePropheticDuaCycleState(state: PropheticDuaCycleState): Promise<void> {
+  try {
+    localStorage.setItem(PROPHETIC_DUA_KEYS.CYCLE_STATE, JSON.stringify(state));
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.SETTINGS, 'readwrite');
+      const store = tx.objectStore(STORES.SETTINGS);
+      const req = store.put(state, PROPHETIC_DUA_KEYS.CYCLE_STATE);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    console.warn('Failed to save prophetic dua cycle in IndexedDB, saved in localStorage', err);
+  }
+}
+
+export async function getPropheticDuaFavorites(): Promise<string[]> {
+  try {
+    const db = await getDB();
+    const result = await new Promise<string[] | null>((resolve, reject) => {
+      const tx = db.transaction(STORES.SETTINGS, 'readonly');
+      const store = tx.objectStore(STORES.SETTINGS);
+      const req = store.get(PROPHETIC_DUA_KEYS.FAVORITES);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+    if (result && Array.isArray(result)) return result;
+  } catch (err) {
+    console.warn('IndexedDB unavailable for prophetic dua favorites, using localStorage fallback', err);
+  }
+  const local = localStorage.getItem(PROPHETIC_DUA_KEYS.FAVORITES);
+  return local ? JSON.parse(local) : [];
+}
+
+export async function savePropheticDuaFavorites(favoriteIds: string[]): Promise<void> {
+  try {
+    localStorage.setItem(PROPHETIC_DUA_KEYS.FAVORITES, JSON.stringify(favoriteIds));
+    const db = await getDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.SETTINGS, 'readwrite');
+      const store = tx.objectStore(STORES.SETTINGS);
+      const req = store.put(favoriteIds, PROPHETIC_DUA_KEYS.FAVORITES);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch (err) {
+    console.warn('Failed to save prophetic dua favorites in IndexedDB, saved in localStorage', err);
+  }
+}
+
 export async function resetAllData(): Promise<void> {
   try {
     localStorage.removeItem('qada_settings');
@@ -593,6 +669,8 @@ export async function resetAllData(): Promise<void> {
     localStorage.removeItem('qada_adhkar_daily');
     localStorage.removeItem('qada_adhkar_history');
     localStorage.removeItem('qada_adhkar_favorites');
+    localStorage.removeItem(PROPHETIC_DUA_KEYS.CYCLE_STATE);
+    localStorage.removeItem(PROPHETIC_DUA_KEYS.FAVORITES);
 
     const db = await getDB();
     const tx = db.transaction([STORES.SETTINGS, STORES.COUNTERS, STORES.RECORDS, STORES.ISTIGHFAR, STORES.ISTIGHFAR_DATA, STORES.ZAKAT, STORES.ADHKAR_DAILY, STORES.ADHKAR_HISTORY], 'readwrite');

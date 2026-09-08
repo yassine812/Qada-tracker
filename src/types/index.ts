@@ -273,3 +273,10 @@ export const PRAYERS_LIST: PrayerMeta[] = [
     order: 5,
   },
 ];
+
+export interface PropheticDuaCycleState {
+  currentDuaId: string;
+  remainingDuaIds: string[];
+  historyDuaIds: string[];
+  cycleCount: number;
+}

@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   User, Moon, Sun, Download, Upload, Trash2,
   Settings as SettingsIcon, ChevronLeft, AlertTriangle, ShieldCheck,
-  Calculator, Edit3, Smartphone, Bell, BellRing
+  Calculator, Edit3, Smartphone, Bell, BellRing, BellOff, CheckCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { EditCountersModal } from '../components/EditCountersModal';
@@ -10,7 +10,12 @@ import { RecalculateModal } from '../components/RecalculateModal';
 import { InstallModal } from '../components/InstallModal';
 import { PageTransition, TactileButton } from '../components/ui/MotionPrimitives';
 import { StarEightPoint } from '../components/landing/IslamicOrnaments';
-import { requestNotificationPermission } from '../utils/notifications';
+import {
+  getPermissionState,
+  requestPermission,
+  sendTestNotification,
+  type NotificationPermissionState,
+} from '../services/notificationService';
 import { AdhkarCategory } from '../types';
 
 export const SettingsPage: React.FC = () => {
@@ -20,6 +25,16 @@ export const SettingsPage: React.FC = () => {
   const [isRecalculateOpen, setIsRecalculateOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [permState, setPermState] = useState<NotificationPermissionState>(() => getPermissionState());
+  const [isTestingSend, setIsTestingSend] = useState(false);
+  const [testResult, setTestResult] = useState<'sent' | 'failed' | null>(null);
+
+  // Refresh permission state whenever tab becomes visible
+  useEffect(() => {
+    const refresh = () => setPermState(getPermissionState());
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,16 +114,62 @@ export const SettingsPage: React.FC = () => {
 
       {/* 3. Adhkar Reminder Toggles (independent per collection) */}
       <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
             <Bell className="w-4 h-4 text-[#C6A15B]" />
             <span>تذكيرات الأذكار اليومية</span>
           </h3>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-[9px] text-[#C6A15B] font-bold">
-            <BellRing className="w-3 h-3" />
-            لكل ورد إعداد مستقل
-          </span>
+
+          {/* Permission state badge */}
+          {permState === 'granted' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-[9px] text-green-600 dark:text-green-400 font-bold">
+              <CheckCircle className="w-3 h-3" />
+              إشعارات مفعّلة
+            </span>
+          )}
+          {permState === 'denied' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-[9px] text-red-500 font-bold">
+              <BellOff className="w-3 h-3" />
+              إشعارات محجوبة
+            </span>
+          )}
+          {permState === 'default' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C6A15B]/10 border border-[#C6A15B]/25 text-[9px] text-[#C6A15B] font-bold">
+              <BellRing className="w-3 h-3" />
+              في انتظار الإذن
+            </span>
+          )}
+          {permState === 'unsupported' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-500/10 border border-gray-500/25 text-[9px] text-gray-500 font-bold">
+              غير مدعوم
+            </span>
+          )}
         </div>
+
+        {/* Permission request / guidance */}
+        {permState === 'default' && (
+          <button
+            type="button"
+            onClick={async () => {
+              const state = await requestPermission();
+              setPermState(state);
+              if (state === 'granted') {
+                showToast('تم تفعيل الإشعارات بنجاح ✅', 'success');
+              } else {
+                showToast('لم يُمنح إذن الإشعارات', 'info');
+              }
+            }}
+            className="w-full py-2.5 rounded-xl bg-[#C6A15B]/15 border border-[#C6A15B]/35 text-[#C6A15B] text-xs font-bold text-center hover:bg-[#C6A15B]/25 transition-colors"
+          >
+            السماح بالإشعارات
+          </button>
+        )}
+        {permState === 'denied' && (
+          <div className="p-3 rounded-xl bg-red-500/8 border border-red-500/20 text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3] leading-relaxed">
+            <strong className="text-red-500 block mb-1">الإشعارات محجوبة من إعدادات المتصفح.</strong>
+            لتفعيلها: افتح إعدادات المتصفح ← إعدادات المواقع ← الإشعارات ← ابحث عن هذا الموقع وغيّر الإعداد إلى «سماح».
+          </div>
+        )}
 
         <p className="text-[10px] leading-relaxed text-[#7E8C7F] dark:text-[#A9B7A3]">
           يذكّرك التطبيق في وقتك المحدد بكل ورد على حدة. للتذكير داخل المتصفح يُطلب إذن الإشعارات أول مرة — بياناتك كاملة محلية.
@@ -162,9 +223,10 @@ export const SettingsPage: React.FC = () => {
                 aria-checked={reminder.enabled}
                 aria-label={`تفعيل تذكير ${m.title}`}
                 onClick={async () => {
-                  if (!reminder.enabled) {
-                    const granted = await requestNotificationPermission();
-                    if (!granted) {
+                  if (!reminder.enabled && permState === 'default') {
+                    const state = await requestPermission();
+                    setPermState(state);
+                    if (state !== 'granted') {
                       showToast('لم يتم الحصول على إذن الإشعارات، سيظهر التذكير داخل التطبيق فقط', 'info');
                     }
                   }
@@ -185,6 +247,25 @@ export const SettingsPage: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Test notification button */}
+        {permState === 'granted' && (
+          <button
+            type="button"
+            disabled={isTestingSend}
+            onClick={async () => {
+              setIsTestingSend(true);
+              setTestResult(null);
+              const result = await sendTestNotification();
+              setIsTestingSend(false);
+              setTestResult(result.dispatched ? 'sent' : 'failed');
+              setTimeout(() => setTestResult(null), 4000);
+            }}
+            className="w-full py-2.5 rounded-xl border border-[#C6A15B]/30 text-[#C6A15B] text-xs font-bold text-center hover:bg-[#C6A15B]/10 transition-colors disabled:opacity-50"
+          >
+            {isTestingSend ? 'جاري الإرسال...' : testResult === 'sent' ? '✅ تم إرسال إشعار تجريبي' : testResult === 'failed' ? '❌ فشل الإرسال' : 'إرسال إشعار تجريبي'}
+          </button>
+        )}
       </div>
 
       {/* 4. Prayer Calculations & Counters Adjustment */}

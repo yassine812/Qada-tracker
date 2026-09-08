@@ -39,7 +39,10 @@ import {
   playSoftClickSound,
   triggerHaptic,
 } from '../utils/streak';
-import { sendNotification } from '../utils/notifications';
+import {
+  sendNotification,
+  sendAdhkarReminder as dispatchAdhkarReminder,
+} from '../services/notificationService';
 import { ADHKAR_LIST } from '../data/adhkar';
 
 const DEFAULT_ADHKAR_REMINDERS: AdhkarReminderSettings = {
@@ -218,10 +221,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentTimeStr >= settings.reminderTime
       ) {
         // Send Web/PWA Notification
-        sendNotification(
-          'تذكير قضاء الصلوات 🤲',
-          'حان موعد تسجيل صلواتك المقضية اليوم للمحافظة على وردك واستمراريتك.'
-        );
+        sendNotification({
+          title: 'تذكير قضاء الصلوات 🤲',
+          body: 'حان موعد تسجيل صلواتك المقضية اليوم للمحافظة على وردك واستمراريتك.',
+          tag: 'qada-daily-reminder',
+          data: { url: '/app' },
+        });
 
         if (settings.soundEnabled) playSoftClickSound();
         if (settings.hapticsEnabled) triggerHaptic();
@@ -326,7 +331,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const dhikr = ADHKAR_LIST[Math.floor(Math.random() * ADHKAR_LIST.length)];
           const bodyText = `${dhikr.text}\n(${dhikr.source})`;
 
-          await sendNotification('أذكار 🤲', bodyText, `dhikr-${reminder.time}`);
+          await sendNotification({
+            title: 'أذكار 🤲',
+            body: bodyText,
+            tag: `dhikr-${reminder.time}`,
+            data: { url: '/app?tab=dhikr' },
+          });
 
           if (settings.soundEnabled) playSoftClickSound();
           if (settings.hapticsEnabled) triggerHaptic();
@@ -369,11 +379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (changedDates[category] === todayDate) continue;
         if (currentTimeStr < reminder.time) continue;
 
-        sendNotification(
-          ADHKAR_NOTIFICATION_META[category].title,
-          ADHKAR_NOTIFICATION_META[category].label,
-          `adhkar-${category}`
-        );
+        dispatchAdhkarReminder(category);
         if (settings.soundEnabled) playSoftClickSound();
         if (settings.hapticsEnabled) triggerHaptic();
         changedDates[category] = todayDate;

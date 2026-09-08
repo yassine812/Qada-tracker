@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { X, Share, PlusSquare, Download, CheckCircle } from 'lucide-react';
+import { usePwaInstall } from '../context/PwaInstallContext';
 
 interface InstallModalProps {
   isOpen: boolean;
@@ -7,45 +8,23 @@ interface InstallModalProps {
 }
 
 export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+  const { canInstall, isInstalled, isStandalone, promptInstall } = usePwaInstall();
 
-  useEffect(() => {
-    // Check if running as installed standalone PWA
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(standalone);
-
-    // Detect iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const ios = /iphone|ipad|ipod/.test(userAgent);
-    setIsIOS(ios);
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
+  // Detect iOS for manual instructions
+  const isIOS =
+    typeof window !== 'undefined' &&
+    /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
   if (!isOpen) return null;
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        onClose();
-      }
+    const outcome = await promptInstall();
+    if (outcome === 'accepted') {
+      onClose();
     }
   };
+
+  const alreadyInstalled = isStandalone || isInstalled;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -70,14 +49,14 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
           </p>
         </div>
 
-        {isStandalone ? (
+        {alreadyInstalled ? (
           <div className="text-center py-4 bg-[#F0EEE6] dark:bg-[#1C1D1A] rounded-2xl border border-[#E8E4D9] dark:border-[#3D3E37]">
             <CheckCircle className="w-8 h-8 text-[#5A5A40] dark:text-[#C8C7B9] mx-auto mb-2" />
             <p className="text-sm font-semibold text-[#2D2D2A] dark:text-[#EAE7E0]">
               التطبيق مثبت بالفعل على جهازك!
             </p>
           </div>
-        ) : deferredPrompt ? (
+        ) : canInstall ? (
           <div className="space-y-4">
             <p className="text-sm text-[#8E8E80] dark:text-[#A6A699] text-center">
               يمكنك تثبيت التطبيق مباشرة لفتحه كأي تطبيق هاتف بدون شريط المتصفح.

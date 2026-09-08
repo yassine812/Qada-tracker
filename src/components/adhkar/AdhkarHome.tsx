@@ -11,6 +11,7 @@ interface AdhkarHomeProps {
   adhkar: UseAdhkarResult;
   onOpenCategory: (category: AdhkarCategory, opts?: { initialItemId?: string }) => void;
   onOpenSource: (item: AdhkarItem) => void;
+  onOpenDua?: () => void;
 }
 
 const CATEGORY_META = ADHKAR_CATEGORY_LIST;
@@ -19,6 +20,7 @@ export const AdhkarHome: React.FC<AdhkarHomeProps> = ({
   adhkar,
   onOpenCategory,
   onOpenSource,
+  onOpenDua,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -214,6 +216,44 @@ export const AdhkarHome: React.FC<AdhkarHomeProps> = ({
             </TactileButton>
           );
         })}
+
+        {/* 4. الدُّعَاء — أدعية النبي ﷺ (29 دعاءً نبوياً) */}
+        {onOpenDua && (
+          <TactileButton
+            onClick={onOpenDua}
+            className="w-full text-right rounded-3xl p-5 bg-gradient-to-br from-white to-[#FDFBF7] dark:from-[#1F2E24] dark:to-[#17221A] border border-[#C6A15B]/35 shadow-sm hover:border-[#C6A15B] transition-all group cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  initial={{ rotate: -8 }}
+                  whileHover={{ rotate: 6 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#26352A] to-[#18231C] border border-[#C6A15B]/40 flex items-center justify-center text-xl shrink-0 text-[#C6A15B]"
+                >
+                  🤲
+                </motion.div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
+                      أدعية النبي ﷺ
+                    </h3>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#C6A15B]/15 text-[#C6A15B] border border-[#C6A15B]/25">
+                      دعاء نبوي
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
+                    المجموعة الكاملة الصحيحة • 29 دعاءً مأثوراً
+                  </span>
+                </div>
+              </div>
+
+              <span className="flex items-center gap-1 px-3 py-1.5 rounded-2xl text-[10px] font-bold bg-[#C6A15B]/15 text-[#C6A15B] border border-[#C6A15B]/30">
+                فتح الأدعية
+              </span>
+            </div>
+          </TactileButton>
+        )}
       </div>
 
       {/* ═══════ FAVORITES ═══════ */}
