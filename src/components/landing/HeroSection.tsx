@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Download } from 'lucide-react';
 import { StarEightPoint } from './IslamicOrnaments';
 
 interface HeroSectionProps {
   onStartApp: () => void;
+  onInstall: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
+export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -163,6 +165,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
               >
                 <path d="M6 12l4-4-4-4" />
               </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={onInstall}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-[#F6F1E7] hover:text-white font-semibold text-sm sm:text-base border border-[#F6F1E7]/35 hover:border-[#F6F1E7]/60 bg-black/10 hover:bg-black/20 transition-all duration-200 cursor-pointer"
+              aria-label="تحميل التطبيق على الهاتف"
+            >
+              <Download className="w-4 h-4" aria-hidden="true" />
+              <span>تحميل التطبيق</span>
             </button>
 
             <button

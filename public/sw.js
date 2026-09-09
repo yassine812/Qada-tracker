@@ -11,13 +11,14 @@
  * - External push payload   → handled in push event
  */
 
-const CACHE_NAME = 'qada-v10';
+const CACHE_NAME = 'qada-v11';
 const FONT_CACHE = 'qada-fonts-v2';
 
 // Core app shell — no query strings
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/app',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -63,6 +64,36 @@ self.addEventListener('activate', (event) => {
   );
   // Take control of all open clients immediately
   self.clients.claim();
+});
+
+// ==================================================
+// WARM CACHE — Cache the real production bundles after first load
+// ==================================================
+// Vite fingerprints JS/CSS asset names at build time.  Instead of keeping
+// brittle hashes in this file, the client sends the same-origin resources it
+// has loaded. This makes the installed app available after a restart offline.
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== 'WARM_OFFLINE_CACHE' || !Array.isArray(event.data.urls)) {
+    return;
+  }
+
+  const sameOriginUrls = event.data.urls
+    .filter((value) => typeof value === 'string')
+    .map((value) => {
+      try {
+        const url = new URL(value, self.location.origin);
+        return url.origin === self.location.origin ? url.pathname + url.search : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(sameOriginUrls.map((url) => cache.add(url)))
+    )
+  );
 });
 
 // ==================================================
@@ -176,7 +207,7 @@ async function staleWhileRevalidate(request, cacheName) {
     })
     .catch(() => null);
 
-  return cached || networkPromise || new Response('Offline', { status: 503 });
+  return cached || (await networkPromise) || new Response('Offline', { status: 503 });
 }
 
 // ==================================================
