@@ -344,7 +344,7 @@ MushafPageContent.displayName = 'MushafPageContent';
 // ─────────────────────────────────────────────────────────────────
 
 export const QuranPage: React.FC = () => {
-  const { setActiveTab } = useApp();
+  const { setActiveTab, showToast } = useApp();
 
   // ── Current page ──
   const [currentPage, setCurrentPage] = useState<number>(() => getSavedMushafPage());
@@ -369,6 +369,7 @@ export const QuranPage: React.FC = () => {
   const [selectedTafsirSource, setSelectedTafsirSource] = useState('ar.muyassar');
   const [tafsirData, setTafsirData] = useState<AyahTafsirResult | null>(null);
   const [loadingTafsir, setLoadingTafsir] = useState(false);
+  const [tafsirError, setTafsirError] = useState<string | null>(null);
 
   // ── Modals ──
   const [isSurahIndexOpen, setIsSurahIndexOpen] = useState(false);
@@ -480,12 +481,19 @@ export const QuranPage: React.FC = () => {
 
   // Tafsir
   useEffect(() => {
-    if (!activeAyah) { setTafsirData(null); return; }
+    setTafsirData(null);
+    setTafsirError(null);
+    if (!activeAyah) { setLoadingTafsir(false); return; }
     let mounted = true;
     setLoadingTafsir(true);
     getAyahTafsir(activeAyah.surahNumber, activeAyah.ayahNumberInSurah, selectedTafsirSource)
       .then((res) => { if (mounted) { setTafsirData(res); setLoadingTafsir(false); } })
-      .catch(() => { if (mounted) setLoadingTafsir(false); });
+      .catch((err) => {
+        if (mounted) {
+          setTafsirError(err instanceof Error ? err.message : 'تعذر تحميل التفسير. يرجى التحقق من اتصال الإنترنت.');
+          setLoadingTafsir(false);
+        }
+      });
     return () => { mounted = false; };
   }, [activeAyah, selectedTafsirSource]);
 
@@ -680,16 +688,28 @@ export const QuranPage: React.FC = () => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.onended = () => { setIsPlayingAudio(false); setPlayingAyahNumber(null); };
-      audioRef.current.onerror = () => { setIsPlayingAudio(false); setPlayingAyahNumber(null); };
     }
     if (playingAyahNumber === ayah.globalAyahNumber && isPlayingAudio) {
       audioRef.current.pause();
       setIsPlayingAudio(false);
     } else {
-      audioRef.current.src = getAyahAudioUrl(ayah.globalAyahNumber);
-      audioRef.current.play()
+      const audio = audioRef.current;
+      let reportedFailure = false;
+      const reportAudioFailure = () => {
+        if (reportedFailure || audioRef.current !== audio) return;
+        reportedFailure = true;
+        setIsPlayingAudio(false);
+        setPlayingAyahNumber(null);
+        showToast('تعذر تشغيل التلاوة. الاستماع يحتاج إلى اتصال بالإنترنت؛ يمكنك متابعة قراءة المصحف.', 'error');
+      };
+      audio.onerror = reportAudioFailure;
+      audio.src = getAyahAudioUrl(ayah.globalAyahNumber);
+      audio.play()
         .then(() => { setPlayingAyahNumber(ayah.globalAyahNumber); setIsPlayingAudio(true); })
-        .catch(() => setIsPlayingAudio(false));
+        .catch((err) => {
+          // Changing the verse or leaving the page can cancel playback normally.
+          if (err?.name !== 'AbortError') reportAudioFailure();
+        });
     }
   };
 
@@ -760,6 +780,7 @@ export const QuranPage: React.FC = () => {
       : 'p-2 rounded-xl flex items-center justify-center gap-1 text-xs font-bold cursor-pointer transition-colors';
 
     return (
+      <>
       <div className={`grid grid-cols-4 gap-${compact ? '1' : '2'}`}>
         <button
           type="button"
@@ -794,6 +815,10 @@ export const QuranPage: React.FC = () => {
           <span>مشاركة</span>
         </button>
       </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-[#526055] dark:text-[#A9B7A3]">
+        التلاوة وتحميل تفسير جديد يحتاجان إلى الإنترنت. التفسير المحفوظ متاح دون اتصال.
+      </p>
+      </>
     );
   };
 
@@ -818,6 +843,11 @@ export const QuranPage: React.FC = () => {
           <div className="w-5 h-5 border-2 border-[#C6A15B] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
           <p className="text-xs text-[#7E8C7F]">جاري تحميل التفسير...</p>
         </div>
+      )}
+      {tafsirError && !loadingTafsir && (
+        <p role="status" className="py-3 text-xs leading-relaxed text-[#9E3A3A] dark:text-[#F1B6B6]">
+          {tafsirError}
+        </p>
       )}
       {tafsirData && !loadingTafsir && (
         <div>

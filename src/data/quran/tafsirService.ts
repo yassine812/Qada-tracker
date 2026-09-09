@@ -37,6 +37,7 @@ export interface AyahTafsirResult {
 
 // Memory cache for fetched Tafsirs
 const tafsirMemoryCache: Record<string, string> = {};
+const TAFSIR_UNAVAILABLE_MESSAGE = 'تعذر تحميل هذا التفسير. يحتاج التفسير غير المحفوظ إلى اتصال بالإنترنت.';
 
 /**
  * Fetch verified Tafsir for a specific Ayah from a verified named source.
@@ -82,6 +83,11 @@ export async function getAyahTafsir(
     // ignore
   }
 
+  // Saved tafsir stays readable offline; only uncached verses need the API.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new Error(TAFSIR_UNAVAILABLE_MESSAGE);
+  }
+
   // 3. Fetch from verified API
   try {
     const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:${ayahNumber}/${sourceId}`);
@@ -109,5 +115,5 @@ export async function getAyahTafsir(
     // Network failure
   }
 
-  throw new Error('تعذر تحميل نص التفسير المعتمد، يرجى التحقق من الاتصال بالإنترنت.');
+  throw new Error(TAFSIR_UNAVAILABLE_MESSAGE);
 }

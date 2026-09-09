@@ -1,0 +1,50 @@
+name: Build iPhone package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run ios:sync
+      - name: Compile unsigned iPhone app
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package for personal signing on Windows
+        run: |
+          mkdir -p artifacts/Payload
+          ditto build/ios/Build/Products/Release-iphoneos/App.app artifacts/Payload/App.app
+          node scripts/verify-ios-bundle.mjs artifacts/Payload/App.app/public
+          cd artifacts
+          zip -qry Qada-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Qada-iPhone-unsigned
+          path: artifacts/Qada-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14

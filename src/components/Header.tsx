@@ -1,14 +1,11 @@
 import React from 'react';
-import { Moon, Sun, Flame, Sparkles } from 'lucide-react';
+import { Moon, Sun, Flame, Download } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StarEightPoint } from './landing/IslamicOrnaments';
-
-interface HeaderProps {
-  onOpenInstall?: () => void;
-}
-
-export const Header: React.FC<HeaderProps> = ({ onOpenInstall }) => {
+import { usePwaInstall } from '../context/PwaInstallContext';
+export const Header: React.FC = () => {
   const { settings, updateSettings, stats } = useApp();
+  const { canInstall, promptInstall } = usePwaInstall();
 
   const isDark =
     settings?.theme === 'dark' ||
@@ -68,6 +65,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenInstall }) => {
 
         {/* Left (end in RTL): Controls & Streak badge */}
         <div className="flex items-center gap-2">
+          {canInstall && (
+            <button type="button" onClick={() => { void promptInstall(); }} aria-label="تثبيت التطبيق"
+              title="تثبيت التطبيق" className="w-9 h-9 rounded-lg flex items-center justify-center text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5">
+              <Download className="w-4 h-4" />
+            </button>
+          )}
           {/* Streak indicator if user has an active streak */}
           {stats && stats.currentStreak > 0 && (
             <div
@@ -95,18 +98,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenInstall }) => {
             {isDark ? <Sun className="w-4 h-4 text-[#C6A15B]" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Install or PWA quick trigger */}
-          {onOpenInstall && (
-            <button
-              type="button"
-              onClick={onOpenInstall}
-              className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-              title="تثبيت التطبيق على جهازك"
-              aria-label="تثبيت التطبيق"
-            >
-              <Sparkles className="w-4 h-4 text-[#C6A15B]" />
-            </button>
-          )}
         </div>
       </div>
     </header>

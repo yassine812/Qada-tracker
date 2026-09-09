@@ -7,7 +7,6 @@ import {
 import { useApp } from '../context/AppContext';
 import { EditCountersModal } from '../components/EditCountersModal';
 import { RecalculateModal } from '../components/RecalculateModal';
-import { InstallModal } from '../components/InstallModal';
 import { PageTransition, TactileButton } from '../components/ui/MotionPrimitives';
 import { StarEightPoint } from '../components/landing/IslamicOrnaments';
 import {
@@ -23,7 +22,6 @@ export const SettingsPage: React.FC = () => {
 
   const [isEditCountersOpen, setIsEditCountersOpen] = useState(false);
   const [isRecalculateOpen, setIsRecalculateOpen] = useState(false);
-  const [isInstallOpen, setIsInstallOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [permState, setPermState] = useState<NotificationPermissionState>(() => getPermissionState());
   const [isTestingSend, setIsTestingSend] = useState(false);
@@ -388,10 +386,10 @@ export const SettingsPage: React.FC = () => {
       {/* 5. Privacy Notice Footer */}
       <div className="p-4 rounded-2xl bg-[#26352A]/5 dark:bg-[#C6A15B]/5 border border-[#C6A15B]/20 text-center text-xs text-[#7E8C7F] dark:text-[#A9B7A3] space-y-1">
         <p className="font-semibold text-[#1D211E] dark:text-[#F6F1E7]">
-          قضاء • تطبيق إسلامي محلي بالكامل
+          قضاء • سجلاتك محفوظة على جهازك
         </p>
         <p className="text-[11px]">
-          يعمل بدون خوادم خارجية وبدون إنترنت • بياناتك في أمان تام
+          تتبّع عباداتك واقرأ القرآن دون اتصال بعد التجهيز الأول • الصوت والتفسير الجديد يحتاجان إلى الإنترنت
         </p>
       </div>
 
@@ -404,11 +402,6 @@ export const SettingsPage: React.FC = () => {
       <RecalculateModal
         isOpen={isRecalculateOpen}
         onClose={() => setIsRecalculateOpen(false)}
-      />
-
-      <InstallModal
-        isOpen={isInstallOpen}
-        onClose={() => setIsInstallOpen(false)}
       />
 
       {/* Reset Confirmation Modal */}

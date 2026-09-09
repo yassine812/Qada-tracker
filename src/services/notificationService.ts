@@ -89,9 +89,12 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
   try {
     // Prefer SW registration — works in background for foreground tabs
     if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(payload.title, options);
-      return true;
+      // Unlike .ready, this resolves when registration is missing or failed.
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration?.active) {
+        await registration.showNotification(payload.title, options);
+        return true;
+      }
     }
   } catch (err) {
     console.warn('[notificationService] SW showNotification failed:', err);
@@ -212,7 +215,7 @@ export async function sendTestNotification(): Promise<{
   swAvailable: boolean;
 }> {
   const permissionState = getPermissionState();
-  const swAvailable = 'serviceWorker' in navigator;
+  const swAvailable = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
 
   if (permissionState !== 'granted') {
     return { permissionState, dispatched: false, swAvailable };

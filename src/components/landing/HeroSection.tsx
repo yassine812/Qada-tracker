@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
 import { StarEightPoint } from './IslamicOrnaments';
 
 interface HeroSectionProps {
   onStartApp: () => void;
-  onInstall: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall }) => {
+export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -143,7 +141,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall 
 
           {/* Subtitle / Description */}
           <p className="anim-seq-3 text-sm sm:text-base lg:text-lg text-[#F6F1E7]/85 font-normal leading-relaxed mb-7 sm:mb-9 max-w-[480px] drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-            قضاء يساعدك على تنظيم الصلوات الفائتة، الصيام، الاستغفار، القرآن والذكر — في تجربة واحدة بسيطة وخصوصية كاملة.
+            قضاء يساعدك على تنظيم الصلوات الفائتة، الصيام، الاستغفار، القرآن والذكر — في تجربة واحدة بسيطة تحفظ سجلات المتابعة على جهازك.
           </p>
 
           {/* Primary & Secondary Call to Actions */}
@@ -153,7 +151,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall 
               onClick={onStartApp}
               className="group relative inline-flex items-center gap-3 px-8 py-3.5 sm:py-4 rounded-full bg-[#F6F1E7] text-[#26352A] font-bold text-base sm:text-lg transition-all duration-300 hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(246,241,231,0.25)] active:translate-y-0 cursor-pointer"
             >
-              <span>ابدأ رحلتك</span>
+              <span>افتح التطبيق</span>
               <svg
                 className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1.5 rotate-180"
                 viewBox="0 0 16 16"
@@ -165,16 +163,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall 
               >
                 <path d="M6 12l4-4-4-4" />
               </svg>
-            </button>
-
-            <button
-              type="button"
-              onClick={onInstall}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-[#F6F1E7] hover:text-white font-semibold text-sm sm:text-base border border-[#F6F1E7]/35 hover:border-[#F6F1E7]/60 bg-black/10 hover:bg-black/20 transition-all duration-200 cursor-pointer"
-              aria-label="تحميل التطبيق على الهاتف"
-            >
-              <Download className="w-4 h-4" aria-hidden="true" />
-              <span>تحميل التطبيق</span>
             </button>
 
             <button
@@ -213,7 +201,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp, onInstall 
               <span>بياناتك تبقى على جهازك</span>
             </div>
             <p className="text-[11px] sm:text-xs text-[#F6F1E7]/60 tracking-wider">
-              خصوصية • بساطة • بدون حساب
+              مباشرة من المتصفح • بدون تثبيت • بدون حساب
             </p>
           </div>
         </div>

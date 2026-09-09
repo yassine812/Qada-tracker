@@ -1,0 +1,10 @@
+{
+  "appId": "com.yassine812.qadatracker",
+  "appName": "Qada",
+  "webDir": "dist",
+  "backgroundColor": "#FAF7F2",
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  }
+}

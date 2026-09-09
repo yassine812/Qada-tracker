@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import { PwaInstallProvider } from './context/PwaInstallContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { Toast } from './components/Toast';
-import { InstallModal } from './components/InstallModal';
 import { DailyReminderModal } from './components/DailyReminderModal';
 import { IslamicGeometricBg } from './components/IslamicGeometricBg';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -14,10 +12,16 @@ import { QuranPage } from './pages/QuranPage';
 import { DhikrPage } from './pages/DhikrPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
+import { InfoPage } from './pages/InfoPage';
+import { OfflineStatus } from './components/OfflineStatus';
+import { AdSlot } from './components/AdSlot';
+import { AdvertisingPreferences } from './components/AdvertisingPreferences';
+import { PwaInstallProvider } from './context/PwaInstallContext';
+
+const INFO_PATHS = new Set(['/about', '/privacy', '/guides', '/guides/offline', '/guides/backup']);
 
 const MainAppContent: React.FC = () => {
   const { settings, loading, activeTab, setActiveTab } = useApp();
-  const [isInstallOpen, setIsInstallOpen] = useState(false);
 
   if (loading) {
     return (
@@ -61,7 +65,7 @@ const MainAppContent: React.FC = () => {
     >
       <IslamicGeometricBg />
 
-      <Header onOpenInstall={() => setIsInstallOpen(true)} />
+      <Header />
 
       <main className={`relative z-10 flex-grow pt-16 px-3 sm:px-4 mx-auto w-full transition-all duration-300 ${activeTab === 'quran' ? 'max-w-3xl' : 'max-w-md'}`}>
         {activeTab === 'dashboard' && <DashboardPage />}
@@ -75,7 +79,6 @@ const MainAppContent: React.FC = () => {
 
       <Toast />
       <DailyReminderModal />
-      <InstallModal isOpen={isInstallOpen} onClose={() => setIsInstallOpen(false)} />
     </div>
   );
 };
@@ -121,12 +124,24 @@ const RootViewRouter: React.FC = () => {
 };
 
 export default function App() {
+  const [path, setPath] = useState(() => window.location.pathname.replace(/\/$/, '') || '/');
+  useEffect(() => {
+    const update = () => setPath(window.location.pathname.replace(/\/$/, '') || '/');
+    window.addEventListener('popstate', update);
+    return () => window.removeEventListener('popstate', update);
+  }, []);
+
+  // Public content does not mount the provider that reads personal prayer records.
+  // Links between these documents and /app use full navigation, clearing ad scripts.
+  if (INFO_PATHS.has(path)) {
+    return <InfoPage path={path} advertisingControls={<AdvertisingPreferences />}><AdSlot /></InfoPage>;
+  }
   return (
     <PwaInstallProvider>
       <AppProvider>
+        <OfflineStatus />
         <RootViewRouter />
       </AppProvider>
     </PwaInstallProvider>
   );
 }
-

@@ -23,7 +23,7 @@ export const PhilosophySection: React.FC = () => {
     },
     {
       title: 'بياناتك محفوظة على جهازك',
-      description: 'نؤمن بالخصوصية الكاملة. جميع حساباتك وسجلاتك تبقى في ذاكرة جهازك المحلية فقط ولا تُرفع لأي خادم.',
+      description: 'تُحفظ إعداداتك وسجلات المتابعة في متصفح جهازك، دون حساب أو مزامنة سحابية تلقائية. احتفظ بنسخة احتياطية عند الحاجة.',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -32,8 +32,8 @@ export const PhilosophySection: React.FC = () => {
       ),
     },
     {
-      title: 'يعمل بدون اتصال بالإنترنت',
-      description: 'تطبيق ويب تقدمي (PWA) مستقل ومتاح دائماً سواء في المسجد أو أثناء السفر أو في أوقات انقطاع الشبكة.',
+      title: 'جاهز للاستخدام دون اتصال',
+      description: 'بعد التجهيز التلقائي في الزيارة الأولى، تابع عباداتك واقرأ القرآن دون إنترنت، ما دامت ملفات الموقع محفوظة في متصفحك.',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <line x1="1" y1="1" x2="23" y2="23" />
@@ -48,7 +48,7 @@ export const PhilosophySection: React.FC = () => {
     },
     {
       title: 'تصميم بسيط وهادئ',
-      description: 'خالٍ من الإعلانات المشتتة والألوان الصاخبة. واجهة تأملية مستوحاة من العمارة الإسلامية والألوان الطبيعية.',
+      description: 'شاشات القرآن والمتابعة بلا مواضع إعلانية. واجهة هادئة مستوحاة من العمارة الإسلامية والألوان الطبيعية.',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <circle cx="12" cy="12" r="10" />
@@ -141,16 +141,16 @@ export const PhilosophySection: React.FC = () => {
             </div>
             <div>
               <h4 className="text-base font-bold text-[#F6F1E7] font-landing-display">
-                ضمان الخصوصية التامة
+                سجلات المتابعة محلية
               </h4>
               <p className="text-xs sm:text-sm text-[#A9B7A3]">
-                بياناتك ملكك وحدك. لا نتتبعك، لا نبيع بياناتك، ولا نطلب أية تصاريح غير لازمة.
+                لا تُستخدم سجلات صلواتك لتخصيص الإعلانات. تعرّف على التخزين والخدمات الخارجية في صفحة الخصوصية.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-[#C6A15B] bg-[#18231C] px-4 py-2 rounded-full border border-[#C6A15B]/20">
             <StarEightPoint size={10} color="#C6A15B" />
-            <span>محلي 100% على جهازك</span>
+            <a href="/privacy" className="underline underline-offset-4">تفاصيل الخصوصية</a>
           </div>
         </div>
       </div>

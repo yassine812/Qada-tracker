@@ -1,5 +1,6 @@
 import React from 'react';
 import { StarEightPoint, SubtleArch } from './IslamicOrnaments';
+import { PublicFooter } from '../PublicFooter';
 
 interface FinalCtaSectionProps {
   onStartApp: () => void;
@@ -11,7 +12,8 @@ export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onStartApp }) 
   };
 
   return (
-    <footer className="relative bg-[#18231C] text-[#F6F1E7] overflow-hidden select-none" dir="rtl">
+    <>
+    <section className="relative bg-[#18231C] text-[#F6F1E7] overflow-hidden select-none" dir="rtl" aria-label="ابدأ مع قضاء">
       {/* Upper CTA area */}
       <div className="relative py-24 sm:py-32 border-b border-white/10">
         {/* Subtle decorative arches on both sides */}
@@ -58,7 +60,7 @@ export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onStartApp }) 
           </div>
 
           <p className="text-xs text-[#A9B7A3]/70 mt-6 tracking-wide">
-            مجاني بالكامل • بدون إعلانات • خصوصية تامة
+            المتابعة الأساسية مجانية • دون حساب • سجلاتك محفوظة على جهازك
           </p>
         </div>
       </div>
@@ -91,6 +93,8 @@ export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onStartApp }) 
           </svg>
         </button>
       </div>
-    </footer>
+    </section>
+    <PublicFooter />
+    </>
   );
 };

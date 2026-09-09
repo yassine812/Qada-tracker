@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Free plan only. Ads remain off until the owner completes Google approval,
+# contact details, and certified consent setup. Do not enable paid add-ons.
+[context.deploy-preview.environment]
+  VITE_ADS_ENABLED = "false"
+
+[context.branch-deploy.environment]
+  VITE_ADS_ENABLED = "false"
