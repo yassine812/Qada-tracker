@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
-import { InstallButton } from '../InstallButton';
 
 interface LandingNavbarProps {
   onStartApp: () => void;
@@ -62,7 +61,6 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
 
         {/* Right Side Desktop Navigation & CTA */}
         <nav className="hidden lg:flex items-center gap-6 text-sm">
-          <InstallButton className="px-4 py-2.5 rounded-full bg-[#C6A15B] text-[#18231C] font-semibold text-sm" />
           <button
             type="button"
             onClick={() => scrollToSection('hero')}
@@ -115,7 +113,10 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
 
         {/* Mobile Hamburger Button */}
         <div className="flex items-center gap-1 sm:gap-3 lg:hidden">
-          <InstallButton className="px-3 py-2 rounded-full bg-[#F6F1E7] text-[#26352A] font-medium text-xs shadow-sm hover:bg-white" />
+          <button type="button" onClick={onStartApp}
+            className="px-4 py-1.5 rounded-full bg-[#F6F1E7] text-[#26352A] font-medium text-xs shadow-sm hover:bg-white">
+            ابدأ الآن
+          </button>
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

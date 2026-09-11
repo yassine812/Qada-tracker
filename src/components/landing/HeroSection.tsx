@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
+import { InstallButton } from '../InstallButton';
 
 interface HeroSectionProps {
   onStartApp: () => void;
@@ -146,10 +147,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
 
           {/* Primary & Secondary Call to Actions */}
           <div className="anim-seq-4 flex flex-wrap items-center gap-4 mb-6 sm:mb-8">
+            <div className="flex w-full items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onStartApp}
-              className="group relative inline-flex items-center gap-3 px-8 py-3.5 sm:py-4 rounded-full bg-[#F6F1E7] text-[#26352A] font-bold text-base sm:text-lg transition-all duration-300 hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(246,241,231,0.25)] active:translate-y-0 cursor-pointer"
+              className="group relative inline-flex items-center justify-center whitespace-nowrap gap-2 px-4 sm:px-8 py-3.5 sm:py-4 rounded-full bg-[#F6F1E7] text-[#26352A] font-bold text-sm sm:text-lg transition-all duration-300 hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(246,241,231,0.25)] active:translate-y-0 cursor-pointer"
             >
               <span>افتح التطبيق</span>
               <svg
@@ -164,6 +166,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
                 <path d="M6 12l4-4-4-4" />
               </svg>
             </button>
+            <InstallButton className="px-3 sm:px-6 py-3.5 sm:py-4 rounded-full bg-[#C6A15B] text-[#18231C] font-bold text-sm sm:text-lg hover:bg-[#D5B673] transition-colors" />
+            </div>
 
             <button
               type="button"

@@ -82,8 +82,8 @@ for (const outcome of ['accepted', 'dismissed', 'failure']) {
   });
 }
 
-test('both landing and app headers expose the shared installation entry', () => {
-  for (const file of ['Header.tsx', 'landing/LandingNavbar.tsx']) {
+test('landing hero and app header expose the shared installation entry', () => {
+  for (const file of ['Header.tsx', 'landing/HeroSection.tsx']) {
     const source = readFileSync(new URL(`../src/components/${file}`, import.meta.url), 'utf8');
     assert.match(source, /<InstallButton\s/);
     assert.doesNotMatch(source, /canInstall\s*&&/);
