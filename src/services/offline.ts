@@ -115,7 +115,18 @@ async function register(scheduledRetry = false) {
       next.addEventListener('updatefound', () => {
         watch(next.installing);
         if (!navigator.serviceWorker.controller) publish('preparing');
+        const installing = next.installing;
+        if (installing) {
+          installing.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+              installing.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        }
       });
+    }
+    if (next.waiting && navigator.serviceWorker.controller) {
+      next.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
     watch(next.installing);
     watch(next.waiting);
@@ -135,7 +146,15 @@ export function startOfflineSupport() {
     publish('unsupported');
     return;
   }
-  navigator.serviceWorker.addEventListener('controllerchange', () => { void refresh(true); });
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    void refresh(true);
+    if (hadController && !refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
   window.addEventListener('offline', () => { publish(snapshot.phase); void refresh(); });
   window.addEventListener('online', () => {
     resetRetries();

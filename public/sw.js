@@ -83,8 +83,7 @@ async function offlineStatus() {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(prepareCache());
-  // No skipWaiting: an existing page must keep its matching HTML and bundles.
+  event.waitUntil(prepareCache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -99,6 +98,10 @@ self.addEventListener('activate', (event) => {
 
 let repairing;
 self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (event.data?.type !== 'QADA_OFFLINE_STATUS' && event.data?.type !== 'QADA_REPAIR_OFFLINE') return;
   event.waitUntil((async () => {
     if (event.data.type === 'QADA_REPAIR_OFFLINE') {

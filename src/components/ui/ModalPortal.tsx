@@ -29,6 +29,8 @@ export function ModalPortal({ active, children }: { active: boolean; children: R
     <div
       data-modal-portal="true"
       style={{
+        position: 'relative',
+        zIndex: 100,
         '--qada-modal-top': `${viewport.top}px`,
         ...(viewport.height > 0 ? { '--qada-modal-height': `${viewport.height}px` } : {}),
       } as CSSProperties}
