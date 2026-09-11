@@ -5,7 +5,6 @@ import { StarEightPoint } from '../components/landing/IslamicOrnaments';
 interface InfoPageProps {
   path: string;
   children?: ReactNode;
-  advertisingControls?: ReactNode;
 }
 
 const publicPages = {
@@ -76,7 +75,7 @@ function About() {
   );
 }
 
-function Privacy({ advertisingControls }: { advertisingControls?: ReactNode }) {
+function Privacy() {
   return (
     <div className="space-y-9">
       <Note>تشرح هذه الصفحة سلوك النسخة الحالية من قضاء. حفظ سجلاتك محلياً لا يعني أن تصفح الإنترنت مجهول الهوية أو أن المتصفح سيحتفظ بالبيانات إلى الأبد.</Note>
@@ -88,17 +87,7 @@ function Privacy({ advertisingControls }: { advertisingControls?: ReactNode }) {
         <p>عند فتح قضاء أو تحديث ملفاته، يتلقى مزود الاستضافة طلبات ويب عادية قد تتضمن عنوان IP ومعلومات المتصفح والصفحات المطلوبة. التخزين المحلي لسجلك لا يمنع هذه الاتصالات التقنية.</p>
         <p>يُحمَّل نص القرآن من ملفات الموقع أولاً. اختيار تلاوة صوتية أو تفسير غير محفوظ يؤدي إلى طلب خدمات خارجية، ومنها AlQuran Cloud وIslamic Network. قد يُستخدم المصدر الخارجي أيضاً إذا تعذر تحميل بعض بيانات القراءة المحلية. يتلقى مزود الخدمة تفاصيل الطلب وعنوان IP، ويعالجها وفق سياساته؛ لا يرسل قضاء إليه سجل صلواتك.</p>
       </Section>
-      <Section title="٣. الإعلانات وخياراتك" id="advertising">
-        <p>الإعلانات معطلة في الإعداد الافتراضي. تفعيلها يتطلب إعداد الناشر لخدمة Google AdSense ومراجعة الموقع وتهيئة إدارة الموافقة. لا تكفي زيارة الصفحة أو تنزيل التطبيق لتشغيلها. لا يضيف قضاء خدمة تحليلات مستقلة لتتبع استخدامك.</p>
-        <p>عند تفعيل الخدمة، تقتصر المواضع المعدة للإعلانات على مقالي دليل الاستخدام، بعيداً عن سجلاتك وشاشات العبادة. لا تُرسل تقديرات الفوات أو بيانات المتابعة إلى خدمة الإعلانات ولا تُستخدم لاستهدافك. الإعلانات غير المخصصة قد تظل تستخدم التخزين المحلي أو ملفات تعريف الارتباط لأغراض مثل القياس ومنع الاحتيال؛ لا تعني عبارة «غير مخصصة» أنها بلا معالجة بيانات.</p>
-        <p>حيث تكون خدمة الموافقة مفعلة، يمكنك مراجعة خياراتها أو سحب الموافقة من هذا القسم. رفض الإعلانات لا يمنعك من استخدام وظائف قضاء الأساسية. لمعرفة معالجة Google للبيانات، راجع <a className="font-semibold underline underline-offset-4" href="https://policies.google.com/technologies/partner-sites?hl=ar" target="_blank" rel="noopener noreferrer">كيفية استخدام Google للمعلومات من المواقع الشريكة</a>.</p>
-        {advertisingControls}
-      </Section>
-      <Section title="٤. التصدير والحذف">
-        <p>يمكنك تصدير ملف JSON من «الإعدادات ← البيانات والنسخ الاحتياطي». الملف قابل للقراءة وغير محمي بكلمة مرور داخل قضاء؛ احفظه في مكان آمن ولا تنشره. لا يرفعه التطبيق تلقائياً إلى خدمة نسخ سحابي.</p>
-        <p>خيار «حذف وتصفير البيانات» يعيد ضبط بيانات المتابعة في التطبيق. لإزالة جميع ملفات الموقع وتفضيلاته أيضاً، استخدم إدارة بيانات المواقع في متصفحك. هذا لا يحذف النسخ التي صدّرتها بنفسك، وقد يمنع فتح التطبيق دون اتصال حتى تزوره بالإنترنت مرة أخرى.</p>
-      </Section>
-      <Section title="٥. التواصل والتغييرات">
+      <Section title="٣. التواصل والتغييرات">
         <PublisherContact />
         <p>للاستفسارات التقنية استخدم <a className="font-semibold underline underline-offset-4" href="https://github.com/yassine812/Qada-tracker/issues" target="_blank" rel="noopener noreferrer">صفحة دعم المشروع</a> دون إرفاق بيانات شخصية؛ البلاغات المنشورة هناك عامة. إذا تغيّرت طريقة عمل التخزين أو الخدمات الخارجية، ينبغي تحديث هذه الصفحة لتوضيح التغيير قبل تفعيله.</p>
       </Section>
@@ -155,7 +144,7 @@ function BackupGuide() {
   );
 }
 
-export const InfoPage: React.FC<InfoPageProps> = ({ path, children, advertisingControls }) => {
+export const InfoPage: React.FC<InfoPageProps> = ({ path, children }) => {
   const page = publicPages[path as keyof typeof publicPages] ?? publicPages['/guides'];
   const isArticle = path === '/guides/offline' || path === '/guides/backup';
 
@@ -191,7 +180,7 @@ export const InfoPage: React.FC<InfoPageProps> = ({ path, children, advertisingC
         </div>
 
         {path === '/about' && <About />}
-        {path === '/privacy' && <Privacy advertisingControls={advertisingControls} />}
+        {path === '/privacy' && <Privacy />}
         {path === '/guides' && <Guides />}
         {isArticle && (
           <article aria-label={page.title}>

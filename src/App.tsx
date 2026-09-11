@@ -15,7 +15,6 @@ import { LandingPage } from './pages/LandingPage';
 import { InfoPage } from './pages/InfoPage';
 import { OfflineStatus } from './components/OfflineStatus';
 import { AdSlot } from './components/AdSlot';
-import { AdvertisingPreferences } from './components/AdvertisingPreferences';
 import { PwaInstallProvider } from './context/PwaInstallContext';
 
 const INFO_PATHS = new Set(['/about', '/privacy', '/guides', '/guides/offline', '/guides/backup']);
@@ -134,7 +133,7 @@ export default function App() {
   // Public content does not mount the provider that reads personal prayer records.
   // Links between these documents and /app use full navigation, clearing ad scripts.
   if (INFO_PATHS.has(path)) {
-    return <InfoPage path={path} advertisingControls={<AdvertisingPreferences />}><AdSlot /></InfoPage>;
+    return <InfoPage path={path}><AdSlot /></InfoPage>;
   }
   return (
     <PwaInstallProvider>

@@ -4,6 +4,8 @@ The repository prepares an optional web AdSense integration. It does **not** cre
 
 ## Complete the owner steps first
 
+The public privacy page was shortened at the owner's request on 11 September 2026. Its advertising section and embedded preferences control are no longer rendered. Keep ads disabled until accurate advertising/privacy disclosures and a persistent CMP refusal/withdrawal entry point have been restored or supplied through an appropriate public page. The existing `AdvertisingPreferences` component is currently unmounted; it must not be treated as an available user control.
+
 1. Publish the production site on HTTPS, on hosting whose plan permits commercial use. Keep it publicly readable without login. Review the guides, About and Privacy pages and supply a genuine publisher contact and accurate operator information in About/Privacy before applying.
 2. Create your account at [Google AdSense](https://adsense.google.com/start/). Enter identity, address, tax and payment details directly in Google, never in this repository or a chat. Add the final production domain and complete Google's site verification and review. Approval and revenue are not guaranteed.
 3. Prefer Google's supported `google-adsense-account` meta-tag verification method while ads remain disabled. Use only your actual publisher ID. Do not paste an unconditional global ad script into the shared app shell simply to verify ownership.

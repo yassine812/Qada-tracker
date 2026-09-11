@@ -19,6 +19,20 @@ test('public information pages contain meaningful pre-rendered Arabic and workin
   }
 });
 
+test('privacy page omits the removed advertising and export sections while preserving remaining content', async () => {
+  const html = await read('privacy/index.html');
+  assert.doesNotMatch(html, /الإعلانات وخياراتك|التصدير والحذف/, 'Removed section headings must not be pre-rendered');
+  assert.doesNotMatch(html, /id=["']advertising["']|data-testid=["']advertising-disabled["']/, 'Removed advertising section and disabled notice must not be rendered');
+  assert.doesNotMatch(html, /الإعلانات غير مفعّلة حاليًا|الإعلانات معطلة في الإعداد الافتراضي/, 'Removed advertising status text must not remain visible');
+
+  const headings = [...html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/g)].map((match) => match[1]);
+  assert.deepEqual(headings, [
+    '١. بيانات المتابعة على جهازك',
+    '٢. الاتصالات اللازمة لتشغيل الموقع',
+    '٣. التواصل والتغييرات',
+  ], 'Privacy must retain its two data sections and sequentially renumbered contact section');
+});
+
 test('production precache includes every required chunk, font, Quran dataset and public page', async () => {
   const worker = await read('sw.js');
   assert.doesNotMatch(worker, /__QADA_BUILD_ID__|__QADA_PRECACHE__/);
