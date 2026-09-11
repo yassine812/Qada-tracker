@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
+import { InstallButton } from '../InstallButton';
 
 interface LandingNavbarProps {
   onStartApp: () => void;
@@ -60,7 +61,8 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
         </div>
 
         {/* Right Side Desktop Navigation & CTA */}
-        <nav className="hidden md:flex items-center gap-8 text-sm">
+        <nav className="hidden lg:flex items-center gap-6 text-sm">
+          <InstallButton className="px-4 py-2.5 rounded-full bg-[#C6A15B] text-[#18231C] font-semibold text-sm" />
           <button
             type="button"
             onClick={() => scrollToSection('hero')}
@@ -112,14 +114,8 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
         </nav>
 
         {/* Mobile Hamburger Button */}
-        <div className="flex items-center gap-3 md:hidden">
-          <button
-            type="button"
-            onClick={onStartApp}
-            className="px-4 py-1.5 rounded-full bg-[#F6F1E7] text-[#26352A] font-medium text-xs shadow-sm hover:bg-white"
-          >
-            ابدأ الآن
-          </button>
+        <div className="flex items-center gap-1 sm:gap-3 lg:hidden">
+          <InstallButton className="px-3 py-2 rounded-full bg-[#F6F1E7] text-[#26352A] font-medium text-xs shadow-sm hover:bg-white" />
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -154,7 +150,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#18231C]/95 backdrop-blur-xl border-b border-[#C6A15B]/15 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-300">
+        <div className="lg:hidden bg-[#18231C]/95 backdrop-blur-xl border-b border-[#C6A15B]/15 px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-3 duration-300">
           <button
             type="button"
             onClick={() => scrollToSection('hero')}

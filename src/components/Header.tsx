@@ -1,11 +1,10 @@
 import React from 'react';
-import { Moon, Sun, Flame, Download } from 'lucide-react';
+import { Moon, Sun, Flame } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StarEightPoint } from './landing/IslamicOrnaments';
-import { usePwaInstall } from '../context/PwaInstallContext';
+import { InstallButton } from './InstallButton';
 export const Header: React.FC = () => {
   const { settings, updateSettings, stats } = useApp();
-  const { canInstall, promptInstall } = usePwaInstall();
 
   const isDark =
     settings?.theme === 'dark' ||
@@ -65,12 +64,7 @@ export const Header: React.FC = () => {
 
         {/* Left (end in RTL): Controls & Streak badge */}
         <div className="flex items-center gap-2">
-          {canInstall && (
-            <button type="button" onClick={() => { void promptInstall(); }} aria-label="تثبيت التطبيق"
-              title="تثبيت التطبيق" className="w-9 h-9 rounded-lg flex items-center justify-center text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5">
-              <Download className="w-4 h-4" />
-            </button>
-          )}
+          <InstallButton className="min-h-9 px-2 rounded-lg text-xs text-[#526055] dark:text-[#A9B7A3] bg-black/5 dark:bg-white/5" />
           {/* Streak indicator if user has an active streak */}
           {stats && stats.currentStreak > 0 && (
             <div

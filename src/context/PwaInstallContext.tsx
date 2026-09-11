@@ -73,15 +73,16 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const promptInstall = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unavailable'> => {
-    if (!deferredPrompt) return 'unavailable';
+    if (!deferredPrompt || _deferredPrompt !== deferredPrompt) return 'unavailable';
+
+    // A browser prompt is single-use, including dismissal or failure.
+    _deferredPrompt = null;
+    setDeferredPrompt(null);
 
     try {
-      deferredPrompt.prompt();
+      await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      _deferredPrompt = null;
-      setDeferredPrompt(null);
       if (outcome === 'accepted') {
-        setIsInstalled(true);
         return 'accepted';
       }
       return 'dismissed';
