@@ -762,7 +762,7 @@ const FastingTracker: React.FC = () => {
         </div>
       </div>
 
-      {/* ⓘ Edit bottom sheet (mobile) / centered card (desktop) */}
+      {/* ⓘ Edit modal (centered) */}
       <AnimatePresence>
         {showEdit && (
           <motion.div
@@ -779,14 +779,13 @@ const FastingTracker: React.FC = () => {
         {showEdit && (
           <motion.div
             dir="rtl"
-            initial={{ y: '100%', opacity: 1 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md px-3"
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.92, opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="rounded-t-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 pb-24 space-y-4">
-              <div className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/20 mx-auto sm:hidden" />
+            <div className="w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-[#C6A15B]/15 pb-2">
                 <h3 className="text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
                   تعديل أيام الصيام
@@ -857,7 +856,7 @@ const FastingTracker: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Custom reason picker — NOT a native dropdown */}
+      {/* Custom reason picker — centered modal */}
       <AnimatePresence>
         {showReasonPicker && (
           <motion.div
@@ -874,14 +873,13 @@ const FastingTracker: React.FC = () => {
         {showReasonPicker && (
           <motion.div
             dir="rtl"
-            initial={{ y: '100%', opacity: 1 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-md px-3"
+            initial={{ scale: 0.92, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.92, opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="rounded-t-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 pb-24 space-y-3">
-              <div className="w-10 h-1 rounded-full bg-black/20 dark:bg-white/20 mx-auto sm:hidden" />
+            <div className="w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-[#C6A15B]/15 pb-2">
                 <h3 className="text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
                   سبب الفطر
