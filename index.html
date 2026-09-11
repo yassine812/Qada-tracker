@@ -11,6 +11,17 @@
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- PWA Settings -->
+    <script>
+      // Capture Chrome's one-shot invitation before the application bundle loads.
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        window.__qadaInstallPrompt = event;
+      });
+      window.addEventListener('appinstalled', function () {
+        window.__qadaInstallPrompt = null;
+        window.__qadaInstalled = true;
+      });
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#26352A" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

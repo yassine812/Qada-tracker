@@ -32,11 +32,23 @@ export function usePwaInstall() {
 }
 
 // Store the deferred prompt globally so it's captured before any component mounts
-let _deferredPrompt: any = null;
+interface InstallPromptEvent extends Event {
+  prompt(): Promise<{ outcome: 'accepted' | 'dismissed' } | void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+declare global {
+  interface Window {
+    __qadaInstallPrompt?: InstallPromptEvent | null;
+    __qadaInstalled?: boolean;
+  }
+}
+
+const currentPrompt = () => typeof window !== 'undefined' ? window.__qadaInstallPrompt ?? null : null;
 
 export function PwaInstallProvider({ children }: { children: ReactNode }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(() => _deferredPrompt);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<InstallPromptEvent | null>(currentPrompt);
+  const [isInstalled, setIsInstalled] = useState(() => typeof window !== 'undefined' && !!window.__qadaInstalled);
 
   // Detect standalone mode (already installed)
   const isStandalone =
@@ -46,19 +58,19 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Restore any prompt captured before this component mounted
-    if (_deferredPrompt && !deferredPrompt) {
-      setDeferredPrompt(_deferredPrompt);
-    }
+    setDeferredPrompt(currentPrompt());
+    setIsInstalled(!!window.__qadaInstalled);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      _deferredPrompt = e;
-      setDeferredPrompt(e);
+      window.__qadaInstallPrompt = e as InstallPromptEvent;
+      setDeferredPrompt(e as InstallPromptEvent);
     };
 
     const handleAppInstalled = () => {
-      _deferredPrompt = null;
+      window.__qadaInstallPrompt = null;
+      window.__qadaInstalled = true;
       setDeferredPrompt(null);
       setIsInstalled(true);
     };
@@ -73,15 +85,18 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const promptInstall = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unavailable'> => {
-    if (!deferredPrompt || _deferredPrompt !== deferredPrompt) return 'unavailable';
+    // Read the actual invitation at click time, not a possibly stale React render.
+    const invitation = currentPrompt();
+    if (!invitation || isStandalone || window.__qadaInstalled) return 'unavailable';
 
     // A browser prompt is single-use, including dismissal or failure.
-    _deferredPrompt = null;
+    window.__qadaInstallPrompt = null;
     setDeferredPrompt(null);
 
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      // No asynchronous preparation before prompt(): preserve the user's gesture.
+      const result = await invitation.prompt();
+      const { outcome } = result || await invitation.userChoice;
       if (outcome === 'accepted') {
         return 'accepted';
       }
@@ -89,7 +104,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     } catch {
       return 'unavailable';
     }
-  }, [deferredPrompt]);
+  }, [isStandalone]);
 
   const canInstall = !!deferredPrompt && !isStandalone && !isInstalled;
 
@@ -99,20 +114,5 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </PwaInstallContext.Provider>
-  );
-}
-
-/**
- * Attach the beforeinstallprompt listener at module evaluation time
- * so it's captured even before React mounts.
- */
-if (typeof window !== 'undefined') {
-  window.addEventListener(
-    'beforeinstallprompt',
-    (e) => {
-      e.preventDefault();
-      _deferredPrompt = e;
-    },
-    { once: false }
   );
 }

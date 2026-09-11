@@ -5,13 +5,12 @@ import { InstallModal } from './InstallModal';
 
 /** Installation remains discoverable even before Chrome offers its native prompt. */
 export function InstallButton({ className = '' }: { className?: string }) {
-  const { canInstall, isInstalled, isStandalone, promptInstall } = usePwaInstall();
+  const { isInstalled, isStandalone, promptInstall } = usePwaInstall();
   const [showHelp, setShowHelp] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const install = async () => {
     if (busy) return;
-    if (!canInstall) { setShowHelp(true); return; }
     setBusy(true);
     try {
       if (await promptInstall() === 'unavailable') setShowHelp(true);

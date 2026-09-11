@@ -117,14 +117,15 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
           </div>
         ) : (
           <div className="space-y-3 text-sm text-[#2D2D2A] dark:text-[#EAE7E0]">
-            <p className="font-medium text-center">
-              لتثبيت التطبيق من قائمة المتصفح:
+            <p role="status" className="font-medium text-center">
+              نافذة التثبيت المباشر غير متاحة بعد.
             </p>
-            <div className="bg-[#F0EEE6] dark:bg-[#1C1D1A] p-3 rounded-xl">
-              <span>اضغط على خيارات المتصفح (⋮) ثم اختر <strong>"تثبيت التطبيق"</strong> أو <strong>"الإضافة إلى الشاشة الرئيسية"</strong>.</span>
-            </div>
-            <p>قد يظهر الخيار باسم <bdi>Installer l’application</bdi> أو <bdi>Install app</bdi> أو <bdi>Ajouter à l’écran d’accueil</bdi>.</p>
-            <p>إذا فتحت الرابط داخل تطبيق آخر، افتحه في Chrome على أندرويد. إذا لم يظهر خيار التثبيت، يمكنك استخدام قضاء من الموقع؛ المتصفح هو من يحدد إتاحة التثبيت.</p>
+            <p>اترك الصفحة مفتوحة قليلاً ثم أعد المحاولة. عند إتاحة التثبيت، سيفتح الزر نافذة المتصفح مباشرة.</p>
+            <button type="button" onClick={handleInstallClick} disabled={busy}
+              className="w-full py-3 rounded-2xl bg-[#C6A15B] text-[#18231C] font-semibold disabled:opacity-60">
+              إعادة محاولة التثبيت
+            </button>
+            <p className="text-xs">استخدم Chrome على أندرويد خارج المتصفح المدمج في التطبيقات. إذا كان قضاء مثبتاً بالفعل، افتحه من أيقونته على جهازك.</p>
           </div>
         )}
 

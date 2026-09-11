@@ -27,6 +27,11 @@ function fixture(file, dependencies = {}) {
     },
     removeEventListener(name, callback) { events.get(name)?.delete(callback); },
   };
+  // Use the real early HTML listener, not a synthetic application-only substitute.
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const bootstrap = html.match(/<script>([\s\S]*?__qadaInstallPrompt[\s\S]*?)<\/script>/)?.[1];
+  assert.ok(bootstrap);
+  vm.runInNewContext(bootstrap, { window });
   const module = { exports: {} };
   const source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: {
@@ -45,11 +50,12 @@ function fixture(file, dependencies = {}) {
 
 test('installation entry stays visible without a native prompt and opens help', async () => {
   const f = fixture('../src/components/InstallButton.tsx', {
-    '../context/PwaInstallContext': { usePwaInstall: () => ({ canInstall: false }) },
+    '../context/PwaInstallContext': { usePwaInstall: () => ({ canInstall: false, promptInstall: async () => 'unavailable' }) },
   });
   const tree = f.render('InstallButton');
   assert.equal(tree.props.children[0].props['aria-label'], 'تثبيت التطبيق');
   await tree.props.children[0].props.onClick();
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(f.render('InstallButton').props.children[1].props.isOpen, true);
 });
 
@@ -88,4 +94,28 @@ test('landing hero and app header expose the shared installation entry', () => {
     assert.match(source, /<InstallButton\s/);
     assert.doesNotMatch(source, /canInstall\s*&&/);
   }
+});
+
+test('an invitation before React mounts is retained for the installation click', async () => {
+  const f = fixture('../src/context/PwaInstallContext.tsx');
+  let calls = 0;
+  f.emit('beforeinstallprompt', { preventDefault() {},
+    async prompt() { calls++; return { outcome: 'accepted' }; },
+  });
+  const value = f.render('PwaInstallProvider').props.value;
+  assert.equal(value.canInstall, true);
+  assert.equal(await value.promptInstall(), 'accepted');
+  assert.equal(calls, 1);
+});
+
+test('a click sees a late invitation even before the React rerender', async () => {
+  const f = fixture('../src/context/PwaInstallContext.tsx');
+  const oldRender = f.render('PwaInstallProvider').props.value;
+  assert.equal(oldRender.canInstall, false);
+  let calls = 0;
+  f.emit('beforeinstallprompt', { preventDefault() {},
+    async prompt() { calls++; return { outcome: 'accepted' }; },
+  });
+  assert.equal(await oldRender.promptInstall(), 'accepted');
+  assert.equal(calls, 1);
 });
