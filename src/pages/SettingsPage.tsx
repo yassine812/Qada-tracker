@@ -52,9 +52,9 @@ export const SettingsPage: React.FC = () => {
   const currentTheme = settings?.theme || 'auto';
 
   return (
-    <PageTransition className="space-y-6 pb-24 text-right select-none">
+    <PageTransition className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start pb-24 text-right select-none">
       {/* 1. Header */}
-      <div>
+      <div className="lg:col-span-2">
         <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold block mb-1">
           التخصيص والبيانات
         </span>
@@ -111,7 +111,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* 3. Adhkar Reminder Toggles (independent per collection) */}
-      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+      <div className="lg:row-span-2 p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
             <Bell className="w-4 h-4 text-[#C6A15B]" />
@@ -315,7 +315,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* 4. Local Data Management (Backup, Restore, Reset) */}
-      <div className="p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-2">
+      <div className="lg:col-span-2 p-5 rounded-3xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-2">
         <h3 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5 mb-2">
           <ShieldCheck className="w-4 h-4 text-[#C6A15B]" />
           <span>البيانات والنسخ الاحتياطي</span>
@@ -384,7 +384,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* 5. Privacy Notice Footer */}
-      <div className="p-4 rounded-2xl bg-[#26352A]/5 dark:bg-[#C6A15B]/5 border border-[#C6A15B]/20 text-center text-xs text-[#7E8C7F] dark:text-[#A9B7A3] space-y-1">
+      <div className="lg:col-span-2 p-4 rounded-2xl bg-[#26352A]/5 dark:bg-[#C6A15B]/5 border border-[#C6A15B]/20 text-center text-xs text-[#7E8C7F] dark:text-[#A9B7A3] space-y-1">
         <p className="font-semibold text-[#1D211E] dark:text-[#F6F1E7]">
           قضاء • سجلاتك محفوظة على جهازك
         </p>

@@ -31,7 +31,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
       }}
       dir="rtl"
     >
-      <div className="max-w-md mx-auto flex items-center justify-around px-2 py-2">
+      <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto flex items-center justify-around px-2 lg:px-8 py-2">
         {navItems.map((item) => {
           const isActive = currentTab === item.id;
           const Icon = item.icon;
@@ -41,7 +41,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
               key={item.id}
               onClick={() => onSelectTab(item.id)}
               whileTap={{ scale: 0.9 }}
-              className="relative flex flex-col items-center justify-center py-1 px-3 rounded-2xl min-w-[56px] min-h-[48px] cursor-pointer select-none transition-colors"
+              className="relative flex flex-col items-center justify-center py-1 px-3 lg:px-6 rounded-2xl min-w-[56px] min-h-[48px] cursor-pointer select-none transition-colors"
               aria-label={item.label}
               aria-selected={isActive}
             >
@@ -60,7 +60,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
 
               {/* Icon & Label */}
               <div
-                className="relative z-10 flex flex-col items-center gap-1 transition-colors duration-200"
+                className="relative z-10 flex flex-col lg:flex-row items-center gap-1 lg:gap-2 transition-colors duration-200"
                 style={{
                   color: isActive ? 'var(--qada-accent)' : 'var(--qada-text-muted)',
                 }}
@@ -73,7 +73,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
                   }}
                 />
                 <span
-                  className="text-[11px] leading-none font-landing-display tracking-tight transition-all duration-200"
+                  className="text-[11px] lg:text-sm leading-none font-landing-display tracking-tight transition-all duration-200"
                   style={{
                     fontWeight: isActive ? 700 : 500,
                     color: isActive ? 'var(--qada-text)' : 'var(--qada-text-muted)',

@@ -91,7 +91,7 @@ const PrayerQadaList: React.FC = () => {
       </div>
 
       {/* Prayer Cards Grid */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
         {PRAYERS_LIST.map((prayer) => {
           const item = counters[prayer.key];
           const Icon = prayerIcons[prayer.key];
@@ -407,7 +407,7 @@ const FastingTracker: React.FC = () => {
   })();
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       {/* Main Summary Card */}
       <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
@@ -470,7 +470,7 @@ const FastingTracker: React.FC = () => {
       </div>
 
       {/* Due days summary */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
+      <div className="lg:row-span-2 p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
         <div className="flex items-center gap-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
           <Calendar className="w-4 h-4 text-[#C6A15B]" />
           <span>الأيام المستحقة</span>
@@ -1795,7 +1795,7 @@ export const IbadatPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setIbadatSubTab(tab.id)}
-              className="relative flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer select-none"
+              className="relative flex-1 py-2.5 lg:py-3 rounded-xl text-xs lg:text-sm font-bold transition-colors cursor-pointer select-none"
               style={{
                 color: isActive ? 'var(--qada-primary)' : 'var(--qada-text-muted)',
               }}

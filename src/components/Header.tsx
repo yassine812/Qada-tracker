@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
       }}
       dir="rtl"
     >
-      <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-4 lg:px-8 h-14 flex items-center justify-between">
         {/* Right (start in RTL): Brand Identity matching landing page */}
         <button
           type="button"

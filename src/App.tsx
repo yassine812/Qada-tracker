@@ -66,7 +66,7 @@ const MainAppContent: React.FC = () => {
 
       <Header />
 
-      <main className={`relative z-10 flex-grow pt-16 px-3 sm:px-4 mx-auto w-full transition-all duration-300 ${activeTab === 'quran' ? 'max-w-3xl' : 'max-w-md'}`}>
+      <main className={`relative z-10 flex-grow pt-16 px-3 sm:px-4 lg:px-8 mx-auto w-full transition-all duration-300 ${activeTab === 'quran' ? 'max-w-3xl lg:max-w-5xl' : 'max-w-md md:max-w-3xl lg:max-w-6xl'}`}>
         {activeTab === 'dashboard' && <DashboardPage />}
         {activeTab === 'ibadat' && <IbadatPage />}
         {activeTab === 'quran' && <QuranPage />}

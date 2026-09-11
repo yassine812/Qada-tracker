@@ -135,9 +135,9 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <PageTransition className="space-y-6 pb-28 text-right select-none" dir="rtl">
+    <PageTransition className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start pb-28 text-right select-none" dir="rtl">
       {/* ═══════ 1. GREETING & DATES HEADER ═══════ */}
-      <div className="pt-2 px-1">
+      <div className="lg:col-span-2 pt-2 px-1">
         <div className="flex items-center justify-between gap-2 mb-2">
           {/* Dual Calendar Dates Badge */}
           <div className="flex items-center gap-2 text-xs font-semibold text-[#7E8C7F] dark:text-[#A9B7A3]">
@@ -350,7 +350,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* ═══════ 5. QUICK LOG PRAYERS BAR (+1 صلاة) ═══════ */}
-      <div>
+      <div className="lg:col-span-2">
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-1.5">
             <StarEightPoint size={11} color="#C6A15B" />
@@ -396,7 +396,7 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* ═══════ 6. TODAY'S WORSHIP PULSE & WIRD RESTORATION ═══════ */}
-      <div>
+      <div className="lg:col-span-2">
         <h2 className="text-sm font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-3 px-1">
           عبادات اليوم والورد
         </h2>
