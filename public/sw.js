@@ -88,9 +88,14 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // Automatic activation can take over an older, still-open document. Keep
+    // two prior builds for their immutable assets, without unbounded storage.
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const names = await caches.keys();
-    await Promise.all(names.filter((name) => name !== CACHE_NAME && (
-      name.startsWith('qada-static-') || /^qada-v\d+$/.test(name) || /^qada-fonts-v\d+$/.test(name)
+    const previous = names.filter((name) => name !== CACHE_NAME && name.startsWith('qada-static-'));
+    const retained = new Set(windows.length ? previous.slice(-2) : []);
+    await Promise.all(names.filter((name) => name !== CACHE_NAME && !retained.has(name) && (
+      name.startsWith('qada-static-') || (windows.length === 0 && (/^qada-v\d+$/.test(name) || /^qada-fonts-v\d+$/.test(name)))
     )).map((name) => caches.delete(name)));
     await self.clients.claim();
   })());
@@ -117,6 +122,16 @@ async function appResponse(request, path) {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(path);
     if (cached) return cached;
+    // Only content-hashed bundles may fall back to an earlier build. Never
+    // reuse old HTML (including host-injected badges) or unversioned data.
+    if (/^\/assets\/[^?]+-[\w-]{8,}\.(?:js|css|woff2?)$/i.test(path)) {
+      for (const name of await caches.keys()) {
+        if (name !== CACHE_NAME && name.startsWith('qada-static-')) {
+          const previous = await (await caches.open(name)).match(path);
+          if (previous && !(previous.headers.get('Content-Type') || '').toLowerCase().includes('text/html')) return previous;
+        }
+      }
+    }
   } catch { /* Storage can be unavailable or evicted by the browser. */ }
   try {
     // Never overwrite a versioned asset or shell with another deployment.

@@ -112,7 +112,7 @@ function createNetwork(fixture) {
   return state;
 }
 
-function createWorker(fixture, { caches = createCaches(), network = createNetwork(fixture) } = {}) {
+function createWorker(fixture, { caches = createCaches(), network = createNetwork(fixture), windowClients = [] } = {}) {
   const handlers = new Map();
   const state = { skipWaitingCalls: 0, claimCalls: 0 };
   const self = {
@@ -120,7 +120,7 @@ function createWorker(fixture, { caches = createCaches(), network = createNetwor
     registration: { scope: `${ORIGIN}/`, async showNotification() {} },
     clients: {
       async claim() { state.claimCalls++; },
-      async matchAll() { return []; },
+      async matchAll() { return windowClients; },
       async openWindow() {},
     },
     addEventListener(name, callback) {
@@ -186,7 +186,7 @@ test('first visit precaches unvisited reader, fonts and complete Quran paths for
   await worker.install();
   await worker.activate();
   assert.deepEqual(await worker.status(), { ready: true, buildId: 'first' });
-  assert.equal(worker.state.skipWaitingCalls, 0);
+  assert.equal(worker.state.skipWaitingCalls, 1);
 
   worker.network.offline = true;
   const restarted = createWorker(fixture, worker);
@@ -267,7 +267,7 @@ test('deploy upgrade keeps the active shell and assets coherent until the new wo
   oldWorker.network.fixture = newFixture;
   const nextWorker = createWorker(newFixture, oldWorker);
   await nextWorker.install();
-  assert.equal(nextWorker.state.skipWaitingCalls, 0, 'An upgrade must wait for existing tabs to close');
+  assert.equal(nextWorker.state.skipWaitingCalls, 1, 'A complete update activates automatically');
 
   for (let request = 0; request < 2; request++) {
     assert.equal(await (await oldWorker.request('/', { navigate: true })).text(), oldFixture.files.get('/index.html')[0]);
@@ -295,6 +295,43 @@ test('failed update leaves the previous complete offline installation usable', a
   assert.deepEqual(await oldWorker.status(), { ready: true, buildId: 'working' });
   assert.equal(await (await oldWorker.request('/', { navigate: true })).text(), oldFixture.files.get('/index.html')[0]);
   assert.equal(await (await oldWorker.request('/assets/reader-working.js')).text(), 'reader working');
+});
+
+test('automatic updates preserve hashed assets for open old tabs but never replay their HTML or data', async () => {
+  const previous = buildFixture('previous1234');
+  const oldWorker = createWorker(previous);
+  await oldWorker.install();
+  await oldWorker.activate();
+  const current = buildFixture('current12345');
+  oldWorker.network.fixture = current;
+  const worker = createWorker(current, { ...oldWorker, windowClients: [{ url: `${ORIGIN}/app` }] });
+  await worker.install();
+  await worker.activate();
+  assert.ok((await worker.caches.keys()).includes('qada-static-previous1234'));
+  worker.network.offline = true;
+  assert.equal(await (await worker.request('/assets/reader-previous1234.js')).text(), 'reader previous1234');
+  assert.equal(await (await worker.request('/app', { navigate: true })).text(), current.files.get('/index.html')[0]);
+  const cache = await worker.caches.open('qada-static-current12345');
+  assert.equal(await cache.match('/assets/reader-previous1234.js'), undefined, 'Recovered assets must not be promoted to the current build');
+  await cache.delete('/index.html');
+  await cache.delete('/data/quran-pages.json');
+  assert.equal((await worker.request('/app', { navigate: true })).status, 503, 'Old HTML must not reintroduce removed host overlays');
+  assert.equal((await worker.request('/data/quran-pages.json')).status, 503, 'Unversioned data cannot cross builds');
+  const oldCache = await worker.caches.open('qada-static-previous1234');
+  await oldCache.put('/assets/missing-12345678.js', new Response('<html>fallback</html>', { headers: { 'Content-Type': 'text/html' } }));
+  assert.equal((await worker.request('/assets/missing-12345678.js')).status, 503, 'HTML is not a valid old bundle');
+  await (await worker.caches.open('another-app')).put('/assets/unrelated-12345678.js', new Response('unrelated'));
+  assert.equal((await worker.request('/assets/unrelated-12345678.js')).status, 503);
+});
+
+test('repeated live updates keep at most two prior version caches', async () => {
+  const fixture = buildFixture('bounded-history');
+  const caches = createCaches();
+  for (const id of ['one', 'two', 'three', 'four']) await caches.open(`qada-static-${id}`);
+  const worker = createWorker(fixture, { caches, windowClients: [{ url: `${ORIGIN}/app` }] });
+  await worker.install();
+  await worker.activate();
+  assert.deepEqual(await caches.keys(), ['qada-static-three', 'qada-static-four', 'qada-static-bounded-history']);
 });
 
 test('activation cleans only owned old caches and never reads an unrelated app shell', async () => {
