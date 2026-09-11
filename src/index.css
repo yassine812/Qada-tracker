@@ -2,6 +2,27 @@
 @import "./fonts.css";
 @custom-variant dark (&:is(.dark *));
 
+/* Portaled dialogs stay above navigation, with room for notches and keyboards. */
+.qada-modal-viewport {
+  top: var(--qada-modal-top, 0px);
+  right: 0;
+  left: 0;
+  height: var(--qada-modal-height, 100vh);
+  height: var(--qada-modal-height, 100dvh);
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  pointer-events: none;
+}
+
+.qada-modal-panel {
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
 @layer base {
   :root {
     /* === UNIFIED ISLAMIC COLOR SYSTEM === */

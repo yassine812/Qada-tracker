@@ -18,6 +18,7 @@ import {
 import { formatNumber, parseCurrencyInput } from '../utils/formatters';
 import { getZakatState, saveZakatState } from '../storage/indexedDb';
 import { PageTransition, AnimatedNumber, TactileButton, AnimatedProgressBar } from '../components/ui/MotionPrimitives';
+import { ModalPortal } from '../components/ui/ModalPortal';
 import { StarEightPoint, SubtleArch } from '../components/landing/IslamicOrnaments';
 
 const prayerIcons: Record<PrayerKey, React.ComponentType<{ className?: string }>> = {
@@ -762,6 +763,7 @@ const FastingTracker: React.FC = () => {
         </div>
       </div>
 
+      <ModalPortal active={showEdit || showReasonPicker || showChronicDialog}>
       {/* ⓘ Edit modal (centered) */}
       <AnimatePresence>
         {showEdit && (
@@ -783,11 +785,11 @@ const FastingTracker: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.92, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="qada-modal-viewport fixed z-50 flex items-center justify-center"
           >
-            <div className="w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-4">
+            <div role="dialog" aria-modal="true" aria-labelledby="fasting-edit-title" className="qada-modal-panel w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-[#C6A15B]/15 pb-2">
-                <h3 className="text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
+                <h3 id="fasting-edit-title" className="text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
                   تعديل أيام الصيام
                 </h3>
                 <button
@@ -815,6 +817,7 @@ const FastingTracker: React.FC = () => {
                     <input
                       type="text"
                       inputMode="numeric"
+                      aria-label="الأيام المتبقية"
                       dir="ltr"
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value.replace(/[^\d]/g, ''))}
@@ -877,9 +880,9 @@ const FastingTracker: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.92, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="qada-modal-viewport fixed z-50 flex items-center justify-center"
           >
-            <div className="w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-3">
+            <div role="dialog" aria-modal="true" aria-label="سبب الفطر" className="qada-modal-panel w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-[#C6A15B]/15 pb-2">
                 <h3 className="text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
                   سبب الفطر
@@ -992,9 +995,9 @@ const FastingTracker: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.92, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="qada-modal-viewport fixed z-50 flex items-center justify-center"
           >
-            <div className="w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-6 space-y-4">
+            <div role="dialog" aria-modal="true" aria-label="تنبيه شرعي" className="qada-modal-panel w-full max-w-sm rounded-3xl bg-[#FAF8F3] dark:bg-[#1C2820] border border-[#C6A15B]/35 shadow-2xl p-6 space-y-4">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-2xl bg-[#B8893A]/15 text-[#B8893A] dark:text-[#D4A84A] flex items-center justify-center">
                   <AlertCircle className="w-5 h-5" />
@@ -1036,6 +1039,7 @@ const FastingTracker: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </ModalPortal>
     </div>
   );
 };
