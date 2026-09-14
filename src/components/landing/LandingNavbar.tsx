@@ -91,6 +91,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
           </button>
 
           {/* Primary Navbar CTA */}
+          <a href="/account" className="text-[#F6F1E7] font-medium underline-offset-4 hover:underline">تسجيل الدخول</a>
           <button
             type="button"
             onClick={onStartApp}
@@ -181,6 +182,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
             الأسئلة
           </button>
           <div className="pt-2">
+            <a href="/account" className="mb-4 block py-3 text-center font-semibold text-[#F6F1E7]">تسجيل الدخول / إنشاء حساب</a>
             <button
               type="button"
               onClick={() => {

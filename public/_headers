@@ -16,5 +16,9 @@
   X-Robots-Tag: noindex
 /app/*
   X-Robots-Tag: noindex
+/account
+  X-Robots-Tag: noindex
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer
 /ads.txt
   Cache-Control: no-cache

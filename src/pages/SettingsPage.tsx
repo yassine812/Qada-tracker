@@ -16,6 +16,7 @@ import {
   type NotificationPermissionState,
 } from '../services/notificationService';
 import { AdhkarCategory } from '../types';
+import { AccountCard } from '../components/AccountCard';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, exportBackup, importBackup, resetAll, adhkarReminders, updateAdhkarReminder, showToast } = useApp();
@@ -64,6 +65,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Hidden file input for import */}
+      <AccountCard />
       <input
         type="file"
         ref={fileInputRef}

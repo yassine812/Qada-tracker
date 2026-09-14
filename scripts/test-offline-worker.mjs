@@ -382,6 +382,8 @@ test('advertising, consent and unrelated third-party requests are never intercep
     'https://fundingchoicesmessages.google.com/i/pub-123',
     'https://googleads.g.doubleclick.net/pagead/ads',
     'https://example.com/remote-script.js',
+    'https://project.supabase.co/auth/v1/user',
+    'https://project.supabase.co/auth/v1/token',
   ];
   for (const offline of [false, true]) {
     worker.network.offline = offline;

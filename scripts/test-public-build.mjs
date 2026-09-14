@@ -58,6 +58,8 @@ test('production precache includes every required chunk, font, Quran dataset and
 test('manual Netlify upload retains app route rewrites and safe worker update headers', async () => {
   assert.match(await read('_redirects'), /\/app\s+\/index\.html\s+200/);
   assert.match(await read('_redirects'), /\/app\/\*\s+\/index\.html\s+200/);
+  assert.match(await read('_redirects'), /\/account\s+\/index\.html\s+200/);
+  assert.match(await read('_headers'), /\/account\s+X-Robots-Tag: noindex\s+Cache-Control: no-store/);
   assert.match(await read('_headers'), /\/sw\.js\s+Cache-Control: no-cache, no-store, must-revalidate/);
   assert.match(await read('robots.txt'), /Disallow: \/app/);
   const sellers = await read('ads.txt');

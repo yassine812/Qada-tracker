@@ -16,6 +16,8 @@ import { InfoPage } from './pages/InfoPage';
 import { OfflineStatus } from './components/OfflineStatus';
 import { AdSlot } from './components/AdSlot';
 import { PwaInstallProvider } from './context/PwaInstallContext';
+import { AuthProvider } from './context/AuthContext';
+import { AccountPage } from './pages/AccountPage';
 
 const INFO_PATHS = new Set(['/about', '/privacy', '/guides', '/guides/offline', '/guides/backup']);
 
@@ -135,12 +137,15 @@ export default function App() {
   if (INFO_PATHS.has(path)) {
     return <InfoPage path={path}><AdSlot /></InfoPage>;
   }
+  if (path === '/account') return <AuthProvider><AccountPage /></AuthProvider>;
   return (
+    <AuthProvider>
     <PwaInstallProvider>
       <AppProvider>
         <OfflineStatus />
         <RootViewRouter />
       </AppProvider>
     </PwaInstallProvider>
+    </AuthProvider>
   );
 }

@@ -1,5 +1,10 @@
 {
   "headers": [
+    { "source": "/account", "headers": [
+      { "key": "X-Robots-Tag", "value": "noindex" },
+      { "key": "Cache-Control", "value": "no-store" },
+      { "key": "Referrer-Policy", "value": "no-referrer" }
+    ] },
     { "source": "/manifest.webmanifest", "headers": [
       { "key": "Content-Type", "value": "application/manifest+json; charset=utf-8" },
       { "key": "Cache-Control", "value": "no-cache" }

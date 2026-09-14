@@ -55,7 +55,7 @@ try {
     await writeFile(join(directory, 'index.html'), html);
   }
   const locations = ['/', ...routes.map(([route]) => route)];
-  await writeFile(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /app\n${origin ? `Sitemap: ${origin}/sitemap.xml\n` : ''}`);
+  await writeFile(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /app\nDisallow: /account\n${origin ? `Sitemap: ${origin}/sitemap.xml\n` : ''}`);
   if (origin) await writeFile(join(dist, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${locations.map((route) => `<url><loc>${escape(origin + route)}</loc></url>`).join('')}</urlset>`);
   console.log(`Public HTML ready: ${routes.length} information pages. Ads ${env.VITE_ADS_ENABLED === 'true' ? 'configured, still consent-gated' : 'disabled'}.`);
 } finally {

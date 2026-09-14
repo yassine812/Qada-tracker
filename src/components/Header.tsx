@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun, Flame } from 'lucide-react';
+import { Moon, Sun, Flame, UserRound } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StarEightPoint } from './landing/IslamicOrnaments';
 import { InstallButton } from './InstallButton';
@@ -64,11 +64,12 @@ export const Header: React.FC = () => {
 
         {/* Left (end in RTL): Controls & Streak badge */}
         <div className="flex items-center gap-2">
+          <a href="/account" aria-label="الحساب وتسجيل الدخول" title="الحساب وتسجيل الدخول" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#526055] dark:text-[#A9B7A3]"><UserRound className="h-4 w-4" /></a>
           <InstallButton className="min-h-9 px-2 rounded-lg text-xs text-[#526055] dark:text-[#A9B7A3] bg-black/5 dark:bg-white/5" />
           {/* Streak indicator if user has an active streak */}
           {stats && stats.currentStreak > 0 && (
             <div
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+              className="hidden min-[400px]:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
               style={{
                 background: 'rgba(198, 161, 91, 0.15)',
                 color: 'var(--qada-accent)',

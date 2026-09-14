@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "node --test scripts/test-offline-worker.mjs scripts/test-advertising.mjs scripts/test-public-build.mjs scripts/test-install.mjs",
+    "test": "node --test scripts/test-offline-worker.mjs scripts/test-advertising.mjs scripts/test-public-build.mjs scripts/test-install.mjs scripts/test-auth.mjs",
     "ios:sync": "npm run build && cap sync ios && npm run ios:verify",
     "ios:verify": "node scripts/verify-ios-bundle.mjs",
     "ios:open": "cap open ios"
@@ -23,6 +23,7 @@
     "@fontsource/noto-sans-arabic": "5.3.0",
     "@fontsource/scheherazade-new": "5.3.0",
     "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/canvas-confetti": "^1.9.0",
     "@vitejs/plugin-react": "^5.0.4",
