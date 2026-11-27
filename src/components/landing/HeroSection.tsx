@@ -120,7 +120,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
         in the garden on the right side remain completely uncovered and visible.
         Within the block, Arabic typography uses dir="rtl" and text-right.
       */}
-      <div className="absolute left-6 sm:left-10 lg:left-16 xl:left-24 bottom-20 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-20 w-[calc(100%-3rem)] sm:w-auto max-w-[540px]">
+      <div className="absolute left-6 sm:left-10 lg:left-16 xl:left-24 bottom-20 sm:bottom-auto sm:top-[56%] sm:-translate-y-1/2 z-20 w-[calc(100%-3rem)] sm:w-auto max-w-[540px]">
         <div dir="rtl" className="text-right text-[#F6F1E7]">
           {/* Eyebrow */}
           <div className="anim-seq-1 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#26352A]/70 border border-[#C6A15B]/30 backdrop-blur-md mb-5 sm:mb-6 shadow-sm">
@@ -202,10 +202,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onStartApp }) => {
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
-              <span>بياناتك تبقى على جهازك</span>
+              <span>حسابك يحمي وصولك</span>
             </div>
             <p className="text-[11px] sm:text-xs text-[#F6F1E7]/60 tracking-wider">
-              مباشرة من المتصفح • بدون تثبيت • بدون حساب
+              تسجيل دخول آمن • خصوصيتك أولاً
             </p>
           </div>
         </div>

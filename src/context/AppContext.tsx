@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { encourageProgress } from '../services/companionFeedback';
+import { useStreak } from './StreakContext';
+import { activityDate } from '../services/streakModel';
+import { isValidDailyTarget, normalizeQadaPlan } from '../utils/qadaPlan';
 import {
   BackupData,
   AdhkarCategory,
@@ -8,6 +12,7 @@ import {
   DailyRecord,
   DhikrReminderItem,
   IstighfarData,
+  IstighfarOperation,
   IstighfarRecord,
   IstighfarStats,
   PrayerCounters,
@@ -15,6 +20,8 @@ import {
   StatsSummary,
   TabType,
   UserSettings,
+  CalculationMethod,
+  ExactPeriodSettings,
 } from '../types';
 import {
   deleteDailyRecord,
@@ -32,24 +39,31 @@ import {
   saveIstighfarRecord,
   saveSettings,
 } from '../storage/indexedDb';
-import { calculateMissedPrayers, createInitialCounters, MenstruationInfo } from '../utils/calculator';
+import { applyIstighfarTap, DAILY_ISTIGHFAR_TARGET, parseIstighfarAmount } from '../services/istighfarLogic.mjs';
+import { calculateMissedPrayers, calculateMissedPrayersForDays, createInitialCounters, MenstruationInfo } from '../utils/calculator';
 import {
   computeStatsSummary,
-  getTodayDateString,
   playSoftClickSound,
   triggerHaptic,
 } from '../utils/streak';
-import {
-  sendNotification,
-  sendAdhkarReminder as dispatchAdhkarReminder,
-} from '../services/notificationService';
-import { ADHKAR_LIST } from '../data/adhkar';
+import { reconcilePush } from '../services/notificationService';
+import { Capacitor } from '@capacitor/core';
+import { publishQadaTracking, qadaTrackingSnapshot, QADA_TRACKING_CHANGED } from '../services/qadaTracking';
+import { useAuth } from './AuthContext';
+import { accountMetadataBackup, fetchAccountBackup, hasAccountBackup, saveAccountBackup, saveAccountMetadataBackup, type AccountBackup } from '../services/accountSync';
 
 const DEFAULT_ADHKAR_REMINDERS: AdhkarReminderSettings = {
   morning: { enabled: false, time: '07:00' },
   evening: { enabled: false, time: '17:00' },
   sleep: { enabled: false, time: '22:00' },
 };
+
+function newIstighfarOperation(amount: number): IstighfarOperation {
+  const operationId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return { operationId, amount, createdAt: new Date().toISOString() };
+}
 
 interface ToastState {
   message: string;
@@ -82,12 +96,15 @@ interface AppContextType {
       menstruationCalculationMode?: 'average' | 'detailed';
       averageMenstruationDays?: number;
       periodHistory?: Array<{ startDate: string; endDate: string }>;
+      calculationMethod?: CalculationMethod;
+      exactPeriod?: ExactPeriodSettings;
     }
   ) => Promise<void>;
   recordTodayPrayers: (counts: Record<PrayerKey, number>) => Promise<boolean>;
   recordQuickPrayer: (prayerKey: PrayerKey, count: number) => Promise<boolean>;
   updatePrayerRemainingCount: (prayerKey: PrayerKey, newRemaining: number) => Promise<boolean>;
   updateSettings: (newSettings: Partial<UserSettings>) => Promise<void>;
+  updateQadaPlan: (prayer: PrayerKey, target: number) => Promise<void>;
   deleteRecord: (id: string) => Promise<void>;
   exportBackup: () => Promise<void>;
   importBackup: (file: File) => Promise<boolean>;
@@ -107,6 +124,7 @@ interface AppContextType {
   todayIstighfarCount: number;
   istighfarStats: IstighfarStats;
   incrementIstighfar: () => Promise<void>;
+  recordIstighfarBatch: (amount: number | string) => Promise<boolean>;
   decrementIstighfar: () => Promise<void>;
   istighfarData: IstighfarData | null;
   setupIstighfar: (startAge: number, currentAge: number, dailyTarget: number, options?: { estimatedPreviousDaily?: number; trackedYears?: number }) => Promise<void>;
@@ -125,8 +143,35 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
+type LocalAppData = {
+  settings: UserSettings | null;
+  counters: PrayerCounters | null;
+  records: DailyRecord[];
+  istighfarRecords: IstighfarRecord[];
+  istighfarData: IstighfarData | null;
+};
+
+function accountSnapshot(data: LocalAppData): AccountBackup | null {
+  if (!hasAccountBackup(data.settings, data.counters)) return null;
+  return {
+    version: '1.3',
+    exportedAt: new Date().toISOString(),
+    settings: data.settings,
+    counters: data.counters,
+    records: data.records,
+    istighfarRecords: data.istighfarRecords,
+    istighfarData: data.istighfarData || undefined,
+  };
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { recordDailyActivity, cache: streakCache, today: streakToday, summary: dailyStreak } = useStreak();
+  const getTodayDateString = () => activityDate(new Date(), streakCache.timezone);
+  const { session, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const latestPlanSettings = useRef(settings);
+  latestPlanSettings.current = settings;
+  const planSaveQueue = useRef<Promise<void>>(Promise.resolve());
   const [counters, setCounters] = useState<PrayerCounters | null>(null);
   const [records, setRecords] = useState<DailyRecord[]>([]);
   const [istighfarRecords, setIstighfarRecords] = useState<IstighfarRecord[]>([]);
@@ -138,62 +183,166 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     { time: '20:00', enabled: true },
   ]);
   const [adhkarReminders, setAdhkarReminders] = useState<AdhkarReminderSettings>(DEFAULT_ADHKAR_REMINDERS);
-  const [adhkarFocus, setAdhkarFocus] = useState<AdhkarCategory | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
-  const [ibadatSubTab, setIbadatSubTab] = useState<'prayers' | 'fasting' | 'zakat'>('prayers');
+  const [adhkarFocus, setAdhkarFocus] = useState<AdhkarCategory | null>(() => {
+    const category = new URLSearchParams(window.location.search).get('category');
+    return ['morning', 'evening', 'sleep'].includes(category || '') ? category as AdhkarCategory : null;
+  });
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const path = window.location.pathname;
+    if (['/app/prayer', '/app/prayers', '/app/fasting', '/app/zakat'].includes(path)) return 'ibadat';
+    if (path === '/app/quran') return 'quran';
+    if (['/app/dua', '/app/istighfar', '/app/adhkar'].includes(path)) return 'dhikr';
+    if (['/app/notifications', '/app/settings'].includes(path)) return 'settings';
+    return 'dashboard';
+  });
+  const [ibadatSubTab, setIbadatSubTab] = useState<'prayers' | 'fasting' | 'zakat'>(() => {
+    const path = window.location.pathname;
+    const section = new URLSearchParams(window.location.search).get('section');
+    return path === '/app/zakat' || section === 'zakat' ? 'zakat' : path === '/app/fasting' || section === 'fasting' ? 'fasting' : 'prayers';
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [showReminderDialog, setShowReminderDialog] = useState<boolean>(false);
+  const cloudSyncReady = useRef(false);
 
-  // Initialize and load from IndexedDB
+  const readLocalData = async (): Promise<LocalAppData> => {
+    const [settings, counters, records, istighfarRecords, istighfarData] = await Promise.all([
+      getSettings(),
+      getCounters(),
+      getDailyRecords(),
+      getIstighfarRecords(),
+      getIstighfarData(),
+    ]);
+    return { settings, counters, records, istighfarRecords, istighfarData };
+  };
+
+  const applyLocalData = (data: LocalAppData) => {
+    if (data.settings) {
+      // Ensure reminder defaults for backward compatibility.
+      const sanitized: UserSettings = {
+        ...data.settings,
+        gender: data.settings.gender || 'male',
+        reminderEnabled: data.settings.reminderEnabled ?? false,
+        reminderTime: data.settings.reminderTime || '21:00',
+        dhikrRemindersEnabled: data.settings.dhikrRemindersEnabled ?? false,
+        dhikrReminderTimes: data.settings.dhikrReminderTimes ?? [
+          { time: '08:00', enabled: true },
+          { time: '12:00', enabled: true },
+          { time: '16:00', enabled: true },
+          { time: '20:00', enabled: true },
+        ],
+        adhkarReminders: {
+          ...DEFAULT_ADHKAR_REMINDERS,
+          ...(data.settings.adhkarReminders || {}),
+        },
+      };
+      setSettings(sanitized);
+      setDhikrReminderTimes(sanitized.dhikrReminderTimes);
+      setAdhkarReminders(sanitized.adhkarReminders || DEFAULT_ADHKAR_REMINDERS);
+    } else {
+      setSettings(null);
+    }
+    setCounters(data.counters);
+    setRecords(data.records);
+    setIstighfarRecords(data.istighfarRecords);
+    setIstighfarData(data.istighfarData);
+  };
+
+  // Signed-in users restore their private backup before onboarding can render.
+  // A blank device never uploads an empty snapshot over an existing account.
+  useEffect(() => {
+    if (authLoading) return;
+    let active = true;
+    cloudSyncReady.current = false;
+    const initialize = async () => {
+      setLoading(true);
+      try {
+        let local = await readLocalData();
+        const localBackup = accountSnapshot(local);
+        if (session?.user.id) {
+          let remote: Awaited<ReturnType<typeof fetchAccountBackup>> = null;
+          try {
+            remote = await fetchAccountBackup(session.access_token);
+          } catch (error) {
+            console.warn('Full account backup is temporarily unavailable.', error);
+          }
+          const metadataBackup = accountMetadataBackup(session.user.user_metadata);
+          if (remote) {
+            // A server row is authoritative on login. A local snapshot may
+            // still contain a legitimate newer historical count from an
+            // offline session; submit it only as a monotonic migration
+            // candidate, then hydrate again from the merged server response.
+            const localCompleted = localBackup?.istighfarData?.historicalCompleted ?? 0;
+            const remoteCompleted = remote.backup.istighfarData?.historicalCompleted ?? 0;
+            if (localBackup && localCompleted > remoteCompleted) {
+              await saveAccountBackup(session.access_token, localBackup).catch((error) => {
+                console.warn('Could not submit offline account progress.', error);
+              });
+              remote = await fetchAccountBackup(session.access_token).catch(() => remote);
+            }
+            await importAllData(remote.backup);
+            local = await readLocalData();
+          } else if (!localBackup && metadataBackup) {
+            await importAllData(metadataBackup);
+            local = await readLocalData();
+          } else if (metadataBackup) {
+            // If the API is temporarily unavailable, prefer the authenticated
+            // metadata recovery copy when it carries the newer history.
+            const localCompleted = localBackup?.istighfarData?.historicalCompleted ?? 0;
+            const metadataCompleted = metadataBackup.istighfarData?.historicalCompleted ?? 0;
+            if (metadataCompleted >= localCompleted) {
+              await importAllData(metadataBackup);
+              local = await readLocalData();
+            }
+          } else if (localBackup) {
+            await Promise.allSettled([
+              saveAccountBackup(session.access_token, localBackup),
+              saveAccountMetadataBackup(localBackup),
+            ]);
+          }
+        }
+        if (active) applyLocalData(local);
+      } catch (error) {
+        // Offline or a temporarily unavailable cloud backup must never block local use.
+        console.warn('Account backup sync failed; using device data instead.', error);
+        if (active) {
+          try { applyLocalData(await readLocalData()); } catch {}
+        }
+      } finally {
+        if (active) {
+          cloudSyncReady.current = true;
+          setLoading(false);
+        }
+      }
+    };
+    void initialize();
+    return () => { active = false; cloudSyncReady.current = false; };
+  }, [authLoading, session?.user.id, session?.access_token]);
+
+  // Save after local changes. This keeps onboarding, profile fields and progress
+  // attached to the same authenticated account on every device.
+  useEffect(() => {
+    if (!cloudSyncReady.current || !session?.user.id) return;
+    const backup = accountSnapshot({ settings, counters, records, istighfarRecords, istighfarData });
+    if (!backup) return;
+    const timer = window.setTimeout(() => {
+      void Promise.allSettled([
+        saveAccountBackup(session.access_token, backup),
+        saveAccountMetadataBackup(backup),
+      ]).then((results) => {
+        if (results.every((result) => result.status === 'rejected')) {
+          console.warn('Could not save account backup.', results);
+        }
+      });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [session?.user.id, session?.access_token, settings, counters, records, istighfarRecords, istighfarData]);
+
+  // Reload local state after a manual backup restore without re-downloading cloud data.
   const loadData = async () => {
     try {
       setLoading(true);
-      const [savedSettings, savedCounters, savedRecords, savedIstighfar, savedIstighfarData] = await Promise.all([
-        getSettings(),
-        getCounters(),
-        getDailyRecords(),
-        getIstighfarRecords(),
-        getIstighfarData(),
-      ]);
-
-      if (savedSettings) {
-        // Ensure reminder defaults for backward compatibility
-        const sanitized: UserSettings = {
-          ...savedSettings,
-          gender: savedSettings.gender || 'male',
-          reminderEnabled: savedSettings.reminderEnabled ?? false,
-          reminderTime: savedSettings.reminderTime || '21:00',
-          dhikrRemindersEnabled: savedSettings.dhikrRemindersEnabled ?? false,
-          dhikrReminderTimes: savedSettings.dhikrReminderTimes ?? [
-            { time: '08:00', enabled: true },
-            { time: '12:00', enabled: true },
-            { time: '16:00', enabled: true },
-            { time: '20:00', enabled: true },
-          ],
-          adhkarReminders: {
-            ...DEFAULT_ADHKAR_REMINDERS,
-            ...(savedSettings.adhkarReminders || {}),
-          },
-        };
-        setSettings(sanitized);
-      } else {
-        setSettings(null);
-      }
-      setCounters(savedCounters);
-      setRecords(savedRecords);
-      setIstighfarRecords(savedIstighfar);
-      setIstighfarData(savedIstighfarData);
-      // Load dhikr reminder times from settings
-      if (savedSettings?.dhikrReminderTimes && Array.isArray(savedSettings.dhikrReminderTimes)) {
-        setDhikrReminderTimes(savedSettings.dhikrReminderTimes);
-      }
-      if (savedSettings?.adhkarReminders) {
-        setAdhkarReminders({
-          ...DEFAULT_ADHKAR_REMINDERS,
-          ...savedSettings.adhkarReminders,
-        });
-      }
+      applyLocalData(await readLocalData());
     } catch (error) {
       console.error('Failed to load local data:', error);
     } finally {
@@ -201,59 +350,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Reconcile web subscriptions on reconnect or travel. Android uses local alarms.
   useEffect(() => {
-    loadData();
+    if (Capacitor.getPlatform() === 'android') return;
+    const refresh = () => { if (document.visibilityState !== 'hidden') void reconcilePush().catch(() => {}); };
+    refresh();
+    window.addEventListener('online', refresh);
+    window.addEventListener('qada-prayer-settings-changed', refresh);
+    window.addEventListener(QADA_TRACKING_CHANGED, refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('qada-prayer-settings-changed', refresh);
+      window.removeEventListener(QADA_TRACKING_CHANGED, refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
 
-  // Daily reminder background check interval
   useEffect(() => {
-    if (!settings || !settings.reminderEnabled || !settings.reminderTime) return;
-
-    const checkReminder = async () => {
-      const now = new Date();
-      const currentHours = String(now.getHours()).padStart(2, '0');
-      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-      const currentTimeStr = `${currentHours}:${currentMinutes}`;
-      const todayDate = getTodayDateString();
-
-      // Trigger if today has not been notified and current time is equal or past configured reminder time
-      if (
-        settings.lastReminderDate !== todayDate &&
-        currentTimeStr >= settings.reminderTime
-      ) {
-        // Send Web/PWA Notification
-        sendNotification({
-          title: 'تذكير قضاء الصلوات 🤲',
-          body: 'حان موعد تسجيل صلواتك المقضية اليوم للمحافظة على وردك واستمراريتك.',
-          tag: 'qada-daily-reminder',
-          data: { url: '/app' },
-        });
-
-        if (settings.soundEnabled) playSoftClickSound();
-        if (settings.hapticsEnabled) triggerHaptic();
-
-        setShowReminderDialog(true);
-
-        const updatedSettings: UserSettings = {
-          ...settings,
-          lastReminderDate: todayDate,
-          updatedAt: new Date().toISOString(),
-        };
-        await saveSettings(updatedSettings);
-        setSettings(updatedSettings);
-      }
-    };
-
-    checkReminder();
-    const interval = setInterval(checkReminder, 30000);
-    return () => clearInterval(interval);
-  }, [
-    settings?.reminderEnabled,
-    settings?.reminderTime,
-    settings?.lastReminderDate,
-    settings?.soundEnabled,
-    settings?.hapticsEnabled,
-  ]);
+    if (loading || authLoading) return;
+    try {
+      publishQadaTracking(qadaTrackingSnapshot(Boolean(settings?.hasCompletedOnboarding), counters, records));
+    } catch (error) {
+      console.warn('Could not update daily prayer reminder', error);
+    }
+  }, [loading, authLoading, settings?.hasCompletedOnboarding, counters, records]);
 
   // Sync theme immediately and listen for system changes in auto mode
   useEffect(() => {
@@ -312,97 +433,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Dhikr reminder background check
-  useEffect(() => {
-    if (!settings || !settings.dhikrRemindersEnabled || !dhikrReminderTimes.length) return;
-
-    const checkDhikrReminders = async () => {
-      const now = new Date();
-      const currentHour = String(now.getHours()).padStart(2, '0');
-      const currentMinute = String(now.getMinutes()).padStart(2, '0');
-      const currentTimeStr = `${currentHour}:${currentMinute}`;
-      const todayDate = getTodayDateString();
-      const lastDates = settings.lastDhikrReminderDates || {};
-
-      for (const reminder of dhikrReminderTimes) {
-        if (!reminder.enabled) continue;
-        if (lastDates[reminder.time] === todayDate) continue;
-        if (currentTimeStr >= reminder.time) {
-          // Pick a random dhikr
-          const dhikr = ADHKAR_LIST[Math.floor(Math.random() * ADHKAR_LIST.length)];
-          const bodyText = `${dhikr.text}\n(${dhikr.source})`;
-
-          await sendNotification({
-            title: 'أذكار 🤲',
-            body: bodyText,
-            tag: `dhikr-${reminder.time}`,
-            data: { url: '/app?tab=dhikr' },
-          });
-
-          if (settings.soundEnabled) playSoftClickSound();
-          if (settings.hapticsEnabled) triggerHaptic();
-        }
-      }
-    };
-
-    checkDhikrReminders();
-    const interval = setInterval(checkDhikrReminders, 30000);
-    return () => clearInterval(interval);
-  }, [settings?.dhikrRemindersEnabled, dhikrReminderTimes, settings?.lastDhikrReminderDates]);
-
-  // Adhkar reminder background check (independent per-category toggles)
-  useEffect(() => {
-    if (!settings) return;
-
-    const ADHKAR_NOTIFICATION_META: Record<
-      AdhkarCategory,
-      { title: string; label: string }
-    > = {
-      morning: { title: 'أذكار الصباح 🌅', label: 'صباحك ذكر، فابدأ يومك بطمأنينة.' },
-      evening: { title: 'أذكار المساء 🌇', label: 'حان وقت أذكار المساء، اختم يومك بسلام.' },
-      sleep: { title: 'أذكار النوم 🌙', label: 'احفظ ذكرك قبل النوم، ونم على طمأنينة.' },
-    };
-
-    const checkAdhkarReminders = async () => {
-      const now = new Date();
-      const currentHour = String(now.getHours()).padStart(2, '0');
-      const currentMinute = String(now.getMinutes()).padStart(2, '0');
-      const currentTimeStr = `${currentHour}:${currentMinute}`;
-      const todayDate = getTodayDateString();
-      const lastDates = settings.lastAdhkarReminderDates || {};
-      let changed = false;
-      const changedDates = { ...lastDates };
-
-      const categories: AdhkarCategory[] = ['morning', 'evening', 'sleep'];
-      for (const category of categories) {
-        const reminder = (settings.adhkarReminders || {})[category];
-        if (!reminder || !reminder.enabled) continue;
-        if (changedDates[category] === todayDate) continue;
-        if (currentTimeStr < reminder.time) continue;
-
-        dispatchAdhkarReminder(category);
-        if (settings.soundEnabled) playSoftClickSound();
-        if (settings.hapticsEnabled) triggerHaptic();
-        changedDates[category] = todayDate;
-        changed = true;
-      }
-
-      if (changed) {
-        const updatedSettings: UserSettings = {
-          ...settings,
-          lastAdhkarReminderDates: changedDates,
-          updatedAt: new Date().toISOString(),
-        };
-        await saveSettings(updatedSettings);
-        setSettings(updatedSettings);
-      }
-    };
-
-    checkAdhkarReminders();
-    const interval = setInterval(checkAdhkarReminders, 30000);
-    return () => clearInterval(interval);
-  }, [settings?.adhkarReminders, settings?.lastAdhkarReminderDates, settings?.soundEnabled, settings?.hapticsEnabled]);
-
   // Update a single adhkar category reminder setting
   const updateAdhkarReminder = async (category: AdhkarCategory, setting: AdhkarReminderSetting) => {
     if (!settings) return;
@@ -450,8 +480,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [toast]);
 
   const stats = useMemo(() => {
-    return computeStatsSummary(counters, records);
-  }, [counters, records]);
+    return { ...computeStatsSummary(counters, records), currentStreak: dailyStreak.currentStreak, longestStreak: dailyStreak.longestStreak };
+  }, [counters, records, dailyStreak.currentStreak, dailyStreak.longestStreak]);
 
   // Setup istighfar historical tracking
   const setupIstighfar = async (
@@ -483,6 +513,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       historicalTotalTarget,
       historicalCompleted,
       historicalRemaining,
+      operations: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -497,8 +528,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showToast('يرجى إدخال عدد صحيح أكبر من صفر', 'error');
       return false;
     }
-    if (count > istighfarData.remaining) {
-      showToast(`لا يمكنك تسجيل أكثر من المتبقي (${istighfarData.remaining})`, 'error');
+    if (count > istighfarData.historicalRemaining) {
+      showToast(`لا يمكنك تسجيل أكثر من المتبقي التاريخي (${istighfarData.historicalRemaining})`, 'error');
       return false;
     }
 
@@ -512,31 +543,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...istighfarData,
       completed: newCompleted,
       remaining: newRemaining,
+      historicalCompleted: istighfarData.historicalCompleted + count,
       historicalRemaining: newHistoricalRemaining,
+      operations: [...(istighfarData.operations || []), newIstighfarOperation(count)],
       updatedAt: new Date().toISOString(),
     };
 
     await saveIstighfarData(updated);
     setIstighfarData(updated);
-
-    // Also add to daily istighfar records
-    const todayStr = getTodayDateString();
-    const existing = istighfarRecords.find((r) => r.date === todayStr);
-    const dailyRecord: IstighfarRecord = {
-      id: existing ? existing.id : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      date: todayStr,
-      count: (existing ? existing.count : 0) + count,
-      timestamp: Date.now(),
-    };
-    setIstighfarRecords((prev) => {
-      const filtered = prev.filter((r) => r.date !== todayStr);
-      return [dailyRecord, ...filtered];
-    });
-    try {
-      await saveIstighfarRecord(dailyRecord);
-    } catch (err) {
-      console.warn('Storage sync error:', err);
-    }
 
     if (settings?.soundEnabled) playSoftClickSound();
     if (settings?.hapticsEnabled) triggerHaptic();
@@ -602,8 +616,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const todayIstighfarCount = useMemo(() => {
     const todayStr = getTodayDateString();
     const todayRecord = istighfarRecords.find((r) => r.date === todayStr);
-    return todayRecord ? todayRecord.count : 0;
-  }, [istighfarRecords]);
+    return todayRecord ? Math.min(DAILY_ISTIGHFAR_TARGET, Math.max(0, todayRecord.count)) : 0;
+  }, [istighfarRecords, streakToday]);
 
   // Compute istighfar stats
   const istighfarStats = useMemo((): IstighfarStats => {
@@ -614,13 +628,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { totalCount, completedDays, dailyAverage };
   }, [istighfarRecords]);
 
-  // Increment istighfar counter
+  // Increment istighfar counter. The daily 70 are a separate practice:
+  // once they are complete, the same tap advances the personal goal ledger.
   const incrementIstighfar = async () => {
-    if (todayIstighfarCount >= 70) return;
-
     const todayStr = getTodayDateString();
-    const newCount = todayIstighfarCount + 1;
     const existing = istighfarRecords.find((r) => r.date === todayStr);
+    const currentCount = existing?.count || 0;
+    if (currentCount >= DAILY_ISTIGHFAR_TARGET) {
+      if (istighfarData?.hasCompletedSetup && istighfarData.historicalRemaining > 0) {
+        const transition = applyIstighfarTap({
+          todayCount: currentCount,
+          historicalRemaining: istighfarData.historicalRemaining,
+          historicalCompleted: istighfarData.historicalCompleted,
+        });
+        await recordIstighfarBatch(transition.historicalPortion || 1);
+      } else {
+        showToast('أكملت هدف اليوم: 70 استغفارًا 🤍', 'info');
+      }
+      return;
+    }
+    const transition = applyIstighfarTap({
+      todayCount: currentCount,
+      historicalRemaining: istighfarData?.historicalRemaining ?? 0,
+      historicalCompleted: istighfarData?.historicalCompleted ?? 0,
+    });
+
+    const newCount = transition.todayCount;
 
     const record: IstighfarRecord = {
       id: existing ? existing.id : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -639,14 +672,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       await saveIstighfarRecord(record);
+      encourageProgress(newCount === DAILY_ISTIGHFAR_TARGET ? 'ما شاء الله! أكملت هدف اليوم: 70 استغفارًا!' : 'أحسنت! زاد استغفارك اليوم. واصل بهدوء!', newCount % 10 === 0);
     } catch (err) {
       console.warn('Storage sync error:', err);
     }
 
-    if (newCount === 70) {
+    if (newCount === DAILY_ISTIGHFAR_TARGET) {
+      void recordDailyActivity('istighfar');
       showToast('أكملت 70 استغفارًا اليوم 🤍', 'success');
     }
   };
+
+  // Record a batch performed away from the phone in the historical personal
+  // ledger. This action is completely independent from today's 70 taps.
+  async function recordIstighfarBatch(amount: number | string): Promise<boolean> {
+    const parsedAmount = parseIstighfarAmount(amount);
+    if (parsedAmount <= 0) {
+      showToast('يرجى إدخال عدد صحيح أكبر من صفر', 'error');
+      return false;
+    }
+    if (!istighfarData) return false;
+    const historicalRemaining = Math.max(0, istighfarData.historicalRemaining || 0);
+    if (historicalRemaining <= 0) {
+      showToast('اكتمل هدفك الشخصي للاستغفار', 'info');
+      return false;
+    }
+    const appliedAmount = Math.min(parsedAmount, historicalRemaining);
+    const updated: IstighfarData = {
+      ...istighfarData,
+      completed: istighfarData.completed + appliedAmount,
+      remaining: Math.max(0, istighfarData.totalEstimated - istighfarData.completed - appliedAmount),
+      historicalCompleted: istighfarData.historicalCompleted + appliedAmount,
+      historicalRemaining: historicalRemaining - appliedAmount,
+      operations: [...(istighfarData.operations || []), newIstighfarOperation(appliedAmount)],
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await saveIstighfarData(updated);
+      setIstighfarData(updated);
+    } catch (err) {
+      console.warn('Storage sync error:', err);
+      showToast('تعذر حفظ العدد، حاول مرة أخرى', 'error');
+      return false;
+    }
+    if (settings?.soundEnabled) playSoftClickSound();
+    if (settings?.hapticsEnabled) triggerHaptic();
+    showToast(`تمت إضافة ${appliedAmount} استغفارًا إلى الهدف الشخصي`, 'success');
+    const completedPersonalGoal = updated.historicalRemaining === 0;
+    encourageProgress(completedPersonalGoal ? 'مبارك! وصلت إلى هدفك الشخصي للاستغفار!' : 'رائع! تقدّمت في هدفك الشخصي للاستغفار.', completedPersonalGoal);
+    return true;
+  }
 
   // Decrement istighfar counter
   const decrementIstighfar = async () => {
@@ -701,6 +776,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       menstruationCalculationMode?: 'average' | 'detailed';
       averageMenstruationDays?: number;
       periodHistory?: Array<{ startDate: string; endDate: string }>;
+      calculationMethod?: CalculationMethod;
+      exactPeriod?: ExactPeriodSettings;
     }
   ) => {
     const gender = options?.gender || 'male';
@@ -709,7 +786,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (options?.customCounters) {
       initialCounters = options.customCounters;
     } else {
-      const menstruationInfo: MenstruationInfo | undefined = gender === 'female'
+      const method = options?.calculationMethod || 'age_estimate';
+      const menstruationInfo: MenstruationInfo | undefined = gender === 'female' && method !== 'exact_period'
         ? {
             gender: 'female',
             menstruationCalculationMode: options?.menstruationCalculationMode || 'average',
@@ -717,7 +795,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             periodHistory: options?.periodHistory,
           }
         : undefined;
-      const calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency, menstruationInfo);
+      let calc;
+      if (method === 'exact_period') {
+        const period = options?.exactPeriod;
+        let days = 0;
+        if (period?.mode === 'dates' && period.startDate && period.endDate) {
+          const start = new Date(`${period.startDate}T00:00:00Z`).getTime();
+          const end = new Date(`${period.endDate}T00:00:00Z`).getTime();
+          days = Number.isFinite(start) && Number.isFinite(end) && end >= start ? Math.floor((end - start) / 86400000) + 1 : 0;
+        } else if (period?.mode === 'duration') {
+          const amount = Math.max(0, Number(period.amount) || 0);
+          days = amount * (period.unit === 'weeks' ? 7 : period.unit === 'months' ? 30 : period.unit === 'years' ? 365 : 1);
+        }
+        let excludedDays = 0;
+        if (gender === 'female' && options?.periodHistory?.length) {
+          const rangeStart = period?.startDate ? new Date(`${period.startDate}T00:00:00Z`).getTime() : 0;
+          const rangeEnd = period?.endDate ? new Date(`${period.endDate}T00:00:00Z`).getTime() : Number.MAX_SAFE_INTEGER;
+          excludedDays = options.periodHistory.reduce((sum, entry) => {
+            const start = new Date(`${entry.startDate}T00:00:00Z`).getTime();
+            const end = new Date(`${entry.endDate}T00:00:00Z`).getTime();
+            if (!Number.isFinite(start) || !Number.isFinite(end)) return sum;
+            const overlapStart = Math.max(start, rangeStart);
+            const overlapEnd = Math.min(end, rangeEnd);
+            return overlapEnd >= overlapStart ? sum + Math.floor((overlapEnd - overlapStart) / 86400000) + 1 : sum;
+          }, 0);
+        }
+        calc = calculateMissedPrayersForDays(days, 0, excludedDays);
+      } else {
+        calc = calculateMissedPrayers(pubertyAge, currentAge, prayerFrequency, menstruationInfo);
+      }
       initialCounters = createInitialCounters(calc.perPrayer);
     }
 
@@ -728,6 +834,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       pubertyAge,
       currentAge,
       prayerFrequency,
+      calculationMethod: options?.calculationMethod || 'age_estimate',
+      exactPeriod: options?.exactPeriod,
       menstruationCalculationMode: options?.menstruationCalculationMode || 'average',
       averageMenstruationDays: options?.averageMenstruationDays || 7,
       periodHistory: options?.periodHistory || [],
@@ -849,6 +957,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await saveCounters(newCounters);
       await saveDailyRecord(newRecord);
+      void recordDailyActivity('qada_prayer');
+      const finished = Object.values(newCounters).every(counter => counter.remaining === 0);
+      encourageProgress(finished ? 'ما شاء الله! أكملت قضاء الصلوات المسجّلة. تقبّل الله منك!' : 'أحسنت! سجّلت قضاء الصلاة. خطوة جميلة في طريقك!', finished || totalToday >= 5);
     } catch (err) {
       console.warn('Storage sync error:', err);
     }
@@ -917,6 +1028,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await saveCounters(newCounters);
       await saveDailyRecord(newRecord);
+      void recordDailyActivity('qada_prayer');
+      const finished = newCounters[prayerKey].remaining === 0;
+      encourageProgress(finished ? `ما شاء الله! أكملت قضاء صلاة ${prayerArabicNames[prayerKey]} المسجّلة!` : `أحسنت في قضاء صلاة ${prayerArabicNames[prayerKey]}! تقبّل الله منك.`, finished || newCounters[prayerKey].completed % 10 === 0);
     } catch (err) {
       console.warn('Storage sync error:', err);
     }
@@ -955,6 +1069,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Update Settings
+  const updateQadaPlan = async (prayer: PrayerKey, target: number) => {
+    const current = latestPlanSettings.current;
+    if (!current || !isValidDailyTarget(target)) return;
+    const updated: UserSettings = {
+      ...current,
+      qadaPlan: { ...normalizeQadaPlan(current.qadaPlan), [prayer]: target },
+      updatedAt: new Date().toISOString(),
+    };
+    latestPlanSettings.current = updated;
+    setSettings(updated);
+    // Serialize rapid taps so an older IndexedDB write cannot win the race.
+    planSaveQueue.current = planSaveQueue.current.catch(() => {}).then(() => saveSettings(updated));
+    await planSaveQueue.current;
+  };
+
   const updateSettings = async (newSettingsObj: Partial<UserSettings>) => {
     if (!settings) return;
     const updated: UserSettings = {
@@ -1131,6 +1260,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recordQuickPrayer,
         updatePrayerRemainingCount,
         updateSettings,
+        updateQadaPlan,
         deleteRecord,
         exportBackup,
         importBackup,
@@ -1140,6 +1270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         todayIstighfarCount,
         istighfarStats,
         incrementIstighfar,
+        recordIstighfarBatch,
         decrementIstighfar,
         istighfarData,
         setupIstighfar,
@@ -1164,7 +1295,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // We do NOT reduce daily remaining here; this is about applying today's count to the historical ledger
           const updated: IstighfarData = {
             ...istighfarData,
+            historicalCompleted: istighfarData.historicalCompleted + count,
             historicalRemaining: newHistoricalRemaining,
+            operations: [...(istighfarData.operations || []), newIstighfarOperation(count)],
             updatedAt: new Date().toISOString(),
           };
           await saveIstighfarData(updated);

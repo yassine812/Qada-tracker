@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle, LockKeyhole, UserRound } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import { QadaLogo } from '../components/QadaLogo';
 import { authClient, accountRedirect } from '../services/auth';
 import { useAuth } from '../context/AuthContext';
 import { authErrorMessage, passwordProblem } from '../services/authPolicy.mjs';
@@ -18,6 +19,13 @@ export function AccountPage() {
   const [message, setMessage] = useState('');
   const [online, setOnline] = useState(navigator.onLine);
   useEffect(() => { if (recovery) setMode('recovery'); }, [recovery]);
+  // A successful sign-in should open the app immediately instead of showing
+  // the signed-in account summary on the login route.
+  useEffect(() => {
+    if (session && !recovery && mode !== 'recovery' && window.location.pathname === '/account') {
+      window.location.replace('/app');
+    }
+  }, [session, recovery, mode]);
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     window.addEventListener('online', update); window.addEventListener('offline', update);
@@ -70,22 +78,20 @@ export function AccountPage() {
   const inputClass = 'w-full rounded-xl border border-[#C6A15B]/40 bg-white/5 px-4 py-3 text-base text-[#F6F1E7] outline-none focus:border-[#C6A15B] focus:ring-2 focus:ring-[#C6A15B]/40';
   const buttonClass = 'w-full rounded-xl bg-[#C6A15B] px-5 py-3 font-bold text-[#18231C] disabled:opacity-50 disabled:cursor-not-allowed';
   const signedIn = !!session && mode !== 'recovery';
-  return <main dir="rtl" className="min-h-dvh bg-[#18231C] px-4 py-8 text-[#F6F1E7] sm:py-14">
+  return <main dir="rtl" className="qada-account-page min-h-dvh bg-[#18231C] px-4 py-8 text-[#F6F1E7] sm:py-14">
     <div className="mx-auto max-w-md">
-      <a href="/app" className="mb-8 inline-flex items-center gap-2 text-sm text-[#A9B7A3]"><ArrowRight size={18} /> العودة إلى التطبيق</a>
+      <a href="/" className="mb-8 inline-flex items-center gap-2 text-sm text-[#A9B7A3]"><ArrowRight size={18} /> العودة إلى الصفحة الرئيسية</a>
       <section className="space-y-6 rounded-3xl border border-[#C6A15B]/25 bg-[#223128] p-6 shadow-xl sm:p-8">
-        <div className="flex items-center gap-3"><UserRound className="text-[#C6A15B]" /><span className="font-brand-serif text-3xl">قضاء</span></div>
-        <h1 className="text-2xl font-bold">{signedIn ? 'حسابك' : titles[mode]}</h1>
-        <p className="text-sm leading-7 text-[#A9B7A3]">الحساب اختياري. التسجيل لا يرفع سجلات عباداتك ولا يزامنها بين الأجهزة. تبقى محفوظة في هذا المتصفح، ولا يحميها تسجيل الخروج على جهاز مشترك.</p>
+        <QadaLogo width={118} className="text-[#D5B77A]" />
+        <h1 className="text-2xl font-bold">{signedIn ? 'الملف الشخصي' : titles[mode]}</h1>
+        {!signedIn && <p className="text-sm leading-7 text-[#A9B7A3]">أنشئ حسابك أو سجّل دخولك للمتابعة في قضاء. تُستعاد إعدادات البداية وتقدّم الصلوات والاستغفار بأمان على أجهزتك الأخرى عند استخدام الحساب نفسه.</p>}
         {!authClient && <p role="status" className="rounded-xl bg-amber-200/10 p-4 text-sm leading-7 text-amber-100">خدمة الحسابات لم تُفعّل بعد. يمكنك استخدام التطبيق دون حساب.</p>}
         {!online && <p role="status" className="text-sm text-amber-100">أنت غير متصل. التسجيل والدخول واستعادة كلمة المرور تحتاج إلى الإنترنت.</p>}
         {(error || sessionError) && <p role="alert" className="rounded-xl bg-red-300/10 p-3 text-sm leading-7 text-red-100">{error || sessionError}</p>}
         {message && <p role="status" className="rounded-xl bg-green-300/10 p-3 text-sm leading-7 text-green-100">{message}</p>}
-        {loading ? <p role="status">جارٍ التحقق من الجلسة…</p> : signedIn ? <div className="space-y-4">
-          <p className="flex items-center gap-2"><CheckCircle size={18} className="text-[#C6A15B]" /> تم تسجيل الدخول</p>
-          <p dir="ltr" className="break-all text-left text-[#A9B7A3]">{session.user.email}</p>
-          <a href="/app" className={`${buttonClass} block text-center`}>افتح التطبيق</a>
-          <button type="button" onClick={signOut} disabled={busy} className="w-full rounded-xl border border-[#A9B7A3]/40 py-3">{busy ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج من هذا المتصفح'}</button>
+        {loading ? <p role="status">جارٍ التحقق من الجلسة…</p> : signedIn ? <div role="status" className="flex min-h-[260px] flex-col items-center justify-center gap-4 text-center">
+          <QadaLogo width={118} className="text-[#D5B77A]" />
+          <div><p className="text-xl font-bold">مرحبًا بعودتك</p><p className="mt-1 text-sm text-[#A9B7A3]">جارٍ فتح التطبيق…</p></div>
         </div> : <>
           <form onSubmit={submit} className="space-y-4" aria-busy={busy}>
             <fieldset disabled={!authClient || busy || !online} className="space-y-4 disabled:opacity-60">
@@ -104,8 +110,6 @@ export function AccountPage() {
             {(mode === 'login' || mode === 'recovery') && <button disabled={busy} onClick={() => changeMode('forgot')}>نسيت كلمة المرور؟</button>}
           </div>
         </>}
-        <div className="border-t border-white/10 pt-4 text-center"><a href="/app" className="text-sm underline underline-offset-4">المتابعة دون حساب</a></div>
-        <p className="flex items-center justify-center gap-2 text-xs text-[#A9B7A3]"><LockKeyhole size={14} /> تُدار بيانات الدخول بواسطة Supabase</p>
       </section>
     </div>
   </main>;

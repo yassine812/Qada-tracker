@@ -4,6 +4,30 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 
+test('Android installation has branded, valid icons and a stable standalone app identity', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8'));
+  assert.equal(manifest.id, '/app'); assert.equal(manifest.start_url, '/app');
+  assert.equal(manifest.display, 'standalone'); assert.equal(manifest.name, 'قضاء');
+  assert.equal(manifest.prefer_related_applications, false);
+  for (const icon of manifest.icons) {
+    const data = readFileSync(new URL('../public' + icon.src, import.meta.url));
+    assert.equal(data.subarray(1, 4).toString(), 'PNG');
+    const width = data.readUInt32BE(16), height = data.readUInt32BE(20);
+    assert.equal(`${width}x${height}`, icon.sizes);
+    assert.ok(width >= 192);
+  }
+  assert.ok(manifest.icons.some(icon => icon.purpose === 'maskable'));
+  assert.deepEqual(readFileSync(new URL('../public/icons/qada-192-v2.png', import.meta.url)), readFileSync(new URL('../public/icons/icon-192.png', import.meta.url)));
+  const favicon = readFileSync(new URL('../public/favicon.ico', import.meta.url));
+  assert.equal(favicon.readUInt16LE(2), 1); assert.equal(favicon.readUInt16LE(4), 1);
+  assert.equal(favicon[6], 48); assert.equal(favicon.readUInt32LE(18), 22);
+  for (const path of ['../public/icon.svg', '../public/images/qada-wordmark.svg']) {
+    const svg = readFileSync(new URL(path, import.meta.url), 'utf8');
+    assert.match(svg, /<path d="[Mm]/);
+    assert.ok(!svg.includes('System.Windows'), 'SVG must contain real outlined Arabic geometry');
+  }
+});
+
 function fixture(file, dependencies = {}) {
   const states = [], effects = [], events = new Map();
   let cursor = 0, mounted = false;

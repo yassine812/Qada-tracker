@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { StarEightPoint } from '../landing/IslamicOrnaments';
+import { QadaBoy } from '../QadaBoy';
 
 interface WelcomeIllustrationProps {
   type?: string;
@@ -39,10 +40,18 @@ export const WelcomeIllustration: React.FC<WelcomeIllustrationProps> = ({ type =
 
       {/* Main Symbolic Islamic Artwork (Mihrab & Glowing Lantern) */}
       <motion.div
+        className="absolute z-20 w-32 h-36 sm:w-36 sm:h-40 drop-shadow-[0_10px_20px_rgba(198,161,91,0.2)]"
+        animate={{ y: [3, -8, 3], rotate: [-2, 2, -2] }}
+        transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut' }}
+        aria-label="رفيق قضاء يرحب بك"
+      >
+        <QadaBoy emotion="happy" reaction={1} />
+      </motion.div>
+      <motion.div
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="relative z-10 w-full h-full flex items-center justify-center"
+        className="relative z-10 w-full h-full flex items-center justify-center opacity-35"
       >
         <svg
           viewBox="0 0 120 120"

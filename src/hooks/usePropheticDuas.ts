@@ -15,6 +15,7 @@ import {
   savePropheticDuaFavorites,
 } from '../storage/indexedDb';
 import { PropheticDuaCycleState } from '../types';
+import { pushRequest } from '../services/notificationService';
 
 export interface UsePropheticDuasResult {
   currentDua: PropheticDua;
@@ -43,7 +44,24 @@ export function usePropheticDuas(): UsePropheticDuasResult {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const dailyDua = useMemo(() => getDailyPropheticDua(), []);
+  const [dailyDua, setDailyDua] = useState(() => getDailyPropheticDua());
+  useEffect(() => {
+    const date = new Date().toLocaleDateString('en-CA');
+    const key = `qada-server-dua-${date}`;
+    try {
+      const cached = getPropheticDuaById(localStorage.getItem(key) || '');
+      if (cached) setDailyDua(cached);
+    } catch { /* Offline storage can be disabled. */ }
+    let live = true;
+    pushRequest(`daily-dua?date=${date}`).then(result => {
+      const dua = getPropheticDuaById(result.duaId);
+      if (dua && live) {
+        setDailyDua(dua);
+        try { localStorage.setItem(key, dua.id); } catch { /* Optional cache. */ }
+      }
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   // Initialize from storage or build initial randomized bag
   useEffect(() => {
@@ -103,7 +121,11 @@ export function usePropheticDuas(): UsePropheticDuasResult {
       } catch (err) {
         console.error('Failed to init prophetic duas cycle state:', err);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          const notificationDua = getPropheticDuaById(new URLSearchParams(window.location.search).get('dua') || '');
+          if (notificationDua) setCurrentDua(notificationDua);
+          setIsLoading(false);
+        }
       }
     }
 

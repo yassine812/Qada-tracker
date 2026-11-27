@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { StarEightPoint } from './IslamicOrnaments';
+import { QadaLogo } from '../QadaLogo';
+import { useAuth } from '../../context/AuthContext';
 
 interface LandingNavbarProps {
   onStartApp: () => void;
 }
 
 export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
+  const { session } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -45,17 +48,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
             }}
             className="group flex items-center gap-3 select-none"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#26352A]/80 border border-[#C6A15B]/30 flex items-center justify-center text-[#C6A15B] transition-transform duration-300 group-hover:scale-105 shadow-sm">
-              <StarEightPoint size={18} color="#C6A15B" />
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold font-landing-display tracking-tight text-[#F6F1E7]">
-                قضاء
-              </span>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-[#A9B7A3]/80 font-sans font-medium">
-                QADA
-              </span>
-            </div>
+            <QadaLogo width={88} className="text-[#D5B77A]" />
           </a>
         </div>
 
@@ -91,7 +84,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
           </button>
 
           {/* Primary Navbar CTA */}
-          <a href="/account" className="text-[#F6F1E7] font-medium underline-offset-4 hover:underline">تسجيل الدخول</a>
+          {!session && <a href="/account" className="text-[#F6F1E7] font-medium underline-offset-4 hover:underline">تسجيل الدخول</a>}
           <button
             type="button"
             onClick={onStartApp}
@@ -182,7 +175,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ onStartApp }) => {
             الأسئلة
           </button>
           <div className="pt-2">
-            <a href="/account" className="mb-4 block py-3 text-center font-semibold text-[#F6F1E7]">تسجيل الدخول / إنشاء حساب</a>
+            {!session && <a href="/account" className="mb-4 block py-3 text-center font-semibold text-[#F6F1E7]">تسجيل الدخول / إنشاء حساب</a>}
             <button
               type="button"
               onClick={() => {

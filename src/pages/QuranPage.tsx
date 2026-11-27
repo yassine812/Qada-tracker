@@ -1,3 +1,5 @@
+import { FeatureHelp } from '../components/guide/FeatureHelp';
+import { flushSync } from 'react-dom';
 import React, {
   useState,
   useEffect,
@@ -21,10 +23,11 @@ import {
   Layers,
   Home,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useApp } from '../context/AppContext';
+import { encourageProgress } from '../services/companionFeedback';
+import { useStreak } from '../context/StreakContext';
 import { TactileButton } from '../components/ui/MotionPrimitives';
-import { StarEightPoint } from '../components/landing/IslamicOrnaments';
 import {
   getAllSurahs,
   getMushafPage,
@@ -89,9 +92,12 @@ interface MushafPageContentProps {
   isPlayingAudio: boolean;
   isDragging: boolean;
   onAyahClick: (ayah: MushafPageAyah) => void;
+  canRefit: () => boolean;
 }
 
 const QURAN_LINE_HEIGHT = 2.08;
+// Reuse the fitted typography when a prepared sheet becomes the current page.
+const fittedPageSizes = new Map<string, number>();
 
 const MushafPageContent = React.memo<MushafPageContentProps>(
   ({
@@ -103,6 +109,7 @@ const MushafPageContent = React.memo<MushafPageContentProps>(
     isPlayingAudio,
     isDragging,
     onAyahClick,
+    canRefit,
   }) => {
     // ref on the scrollable text wrapper — NOT the container
     const textRef = useRef<HTMLDivElement>(null);
@@ -120,83 +127,76 @@ const MushafPageContent = React.memo<MushafPageContentProps>(
       const parent = el.parentElement;
       if (!parent || parent.clientHeight === 0) return;
 
-      const availH = parent.clientHeight;
-
-      // Set constant line-height for measurement
-      el.style.lineHeight = String(QURAN_LINE_HEIGHT);
-
-      // Quick check: does 17px fit?
-      el.style.fontSize = '17px';
-      if (el.scrollHeight <= availH) {
-        // Already fine — leave at 17px
-        return;
-      }
-
-      // Binary-search between 8 and 17
-      let lo = 8,
-        hi = 17;
-      for (let i = 0; i < 30; i++) {
-        if (hi - lo < 0.2) break;
-        const mid = (lo + hi) / 2;
-        el.style.fontSize = `${mid}px`;
-        if (el.scrollHeight <= availH) {
-          lo = mid;
-        } else {
-          hi = mid;
+      let disposed = false;
+      let hasFitted = false;
+      let deferredFit: ReturnType<typeof setTimeout> | undefined;
+      const fit = () => {
+        if (disposed || !parent.clientHeight) return;
+        clearTimeout(deferredFit);
+        // A late font load or resize must not typeset Arabic during a swipe.
+        if (hasFitted && !canRefit()) {
+          deferredFit = setTimeout(fit, 80);
+          return;
         }
-      }
-
-      // Apply a tiny safety margin (0.15px) so the last line never clips
-      el.style.fontSize = `${Math.max(8, lo - 0.15)}px`;
-    }, [data.pageNumber]);
+        hasFitted = true;
+        const availH = parent.clientHeight - 8;
+        el.style.lineHeight = String(QURAN_LINE_HEIGHT);
+        const fitKey = `${data.pageNumber}:${parent.clientWidth}:${availH}:${document.fonts.status}`;
+        const cachedSize = fittedPageSizes.get(fitKey);
+        if (cachedSize !== undefined) {
+          el.style.fontSize = `${cachedSize}px`;
+          if (el.scrollHeight <= availH && el.scrollWidth <= parent.clientWidth) return;
+        }
+        let lo = 8, hi = Math.min(42, parent.clientWidth / 13);
+        for (let i = 0; i < 30 && hi - lo > 0.1; i++) {
+          const mid = (lo + hi) / 2;
+          el.style.fontSize = `${mid}px`;
+          if (el.scrollHeight <= availH && el.scrollWidth <= parent.clientWidth) lo = mid;
+          else hi = mid;
+        }
+        const size = Math.max(8, lo - 0.15);
+        el.style.fontSize = `${size}px`;
+        if (fittedPageSizes.size >= 96) fittedPageSizes.delete(fittedPageSizes.keys().next().value!);
+        fittedPageSizes.set(fitKey, size);
+      };
+      fit();
+      const observer = new ResizeObserver(fit);
+      observer.observe(parent);
+      void document.fonts.ready.then(fit);
+      return () => { disposed = true; clearTimeout(deferredFit); observer.disconnect(); };
+    }, [data.pageNumber, canRefit]);
 
     return (
       <div
-        className="w-full h-full rounded-2xl sm:rounded-3xl flex flex-col overflow-hidden relative"
-        style={{
-          background:
-            'linear-gradient(160deg, var(--mushaf-bg-top) 0%, var(--mushaf-bg-bottom) 100%)',
-          border: '2px solid var(--mushaf-border)',
-          boxShadow: 'var(--mushaf-shadow)',
-        }}
+        className="mushaf-paper w-full h-full flex flex-col overflow-hidden relative"
+        data-mushaf-page={data.pageNumber}
       >
-        {/* ── Corner ornaments ── */}
-        {['top-2 right-2', 'top-2 left-2', 'bottom-2 right-2', 'bottom-2 left-2'].map(
-          (pos) => (
-            <div key={pos} className={`absolute ${pos} pointer-events-none z-10`}>
-              <StarEightPoint size={10} color="var(--mushaf-accent)" />
-            </div>
-          )
-        )}
-
         {/* Inner frame */}
         <div
-          className="absolute inset-[7px] border rounded-xl pointer-events-none z-10"
+          className="absolute inset-[4px] border pointer-events-none z-10"
           style={{ borderColor: 'var(--mushaf-border-soft)' }}
         />
 
-        {/* ── TOP: surah + juz ── */}
+        {/* ── TOP: printed-style turquoise ornament + surah plate ── */}
+        {data.ayahs[0]?.ayahNumberInSurah === 1 && <div className="mushaf-ornament-band shrink-0 z-20">
+          <div className="mushaf-surah-plate font-spiritual-serif text-[0.9rem] font-bold">
+            سُورَةُ {data.surahsPresent[0]?.arabicName || ''}
+          </div>
+        </div>}
         <div
-          className="shrink-0 flex items-center justify-between px-5 border-b border-[#C6A15B]/15 z-20"
-          style={{ paddingTop: '10px', paddingBottom: '8px' }}
+          className="mushaf-running-title shrink-0 flex items-center justify-between z-20"
         >
-          <span
-            className="text-[10.5px] font-bold font-spiritual-serif"
-            style={{ color: 'var(--mushaf-muted)' }}
-          >
-            سورة {data.surahsPresent[0]?.arabicName || ''}
+          <span className="text-[10.5px] font-bold font-sans" style={{ color: 'var(--mushaf-muted)' }}>
+            سورة {data.surahsPresent[0]?.arabicName}
           </span>
-          <span
-            className="text-[10.5px] font-bold font-sans"
-            style={{ color: 'var(--mushaf-muted)' }}
-          >
+          <span className="text-[10.5px] font-bold font-sans" style={{ color: 'var(--mushaf-muted)' }}>
             الجزء {data.juz}
           </span>
         </div>
 
         {/* ── MIDDLE: auto-fitting Quran text ── */}
         {/* This div is the PARENT measured by useLayoutEffect */}
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col justify-center px-3 py-1 z-20">
+        <div className="mushaf-text-area flex-1 min-h-0 overflow-hidden flex flex-col justify-center z-20">
           {/* textRef: the element whose scrollHeight is measured */}
           <div
             ref={textRef}
@@ -209,50 +209,17 @@ const MushafPageContent = React.memo<MushafPageContentProps>(
               opacity: 1,
             }}
           >
-            {/* Surah header(s) if a new surah starts on this page */}
-            {data.surahsPresent.map((sInfo) => {
-              if (!sInfo.startsOnThisPage) return null;
-              return (
-                <div key={`sh-${sInfo.number}`} className="text-center mb-1">
-                  <div
-                    className="inline-block px-4 rounded-xl border"
-                    style={{
-                      paddingTop: '3px',
-                      paddingBottom: '3px',
-                      background: 'var(--mushaf-pill-bg)',
-                      borderColor: 'var(--mushaf-border-soft)',
-                    }}
-                  >
-                    <span
-                      className="font-spiritual-serif font-bold text-[0.82em]"
-                      style={{ color: 'var(--mushaf-text)' }}
-                    >
-                      سُورَةُ {sInfo.arabicName}
-                    </span>
-                    <span
-                      className="text-[0.6em] block -mt-0.5"
-                      style={{ color: 'var(--mushaf-muted)' }}
-                    >
-                      {sInfo.revelationType}
-                    </span>
-                  </div>
-                  {/* Bismillah — shown for all surahs except Al-Fatihah (1) and At-Tawbah (9) */}
-                  {sInfo.number !== 1 && sInfo.number !== 9 && (
-                    <div className="mt-0.5">
-                      <span
-                        className="font-quran text-[0.88em]"
-                        style={{ color: 'var(--mushaf-text)' }}
-                      >
-                        {BISMILLAH_UTHMANI}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
             {/* ── ALL Ayat on this page ── */}
             {data.ayahs.map((ayah) => {
+              // A page can contain the end of one surah and the beginning of
+              // another. The intro must be inserted at the exact ayah boundary
+              // (not before the whole page), otherwise the new surah's banner
+              // appears above the previous surah's final verses.
+              const surahInfo = data.surahsPresent.find(
+                (sInfo) => sInfo.number === ayah.surahNumber
+              );
+              const startsNewSurah = ayah.ayahNumberInSurah === 1 && surahInfo?.startsOnThisPage;
+              const isTopPlateSurah = ayah.surahNumber === data.surahsPresent[0]?.number;
               const cleanText = getCleanAyahText(
                 ayah.surahNumber,
                 ayah.ayahNumberInSurah,
@@ -270,8 +237,27 @@ const MushafPageContent = React.memo<MushafPageContentProps>(
                 activeBookmark?.ayahNumberInSurah === ayah.ayahNumberInSurah;
 
               return (
-                <span
-                  key={ayah.globalAyahNumber}
+                <React.Fragment key={ayah.globalAyahNumber}>
+                  {startsNewSurah && surahInfo && <div className="text-center mb-1">
+                    {!isTopPlateSurah && <div className="mushaf-ornament-band mushaf-surah-divider" data-surah-start={ayah.surahNumber}>
+                      <div className="mushaf-surah-plate font-spiritual-serif text-[0.9em] font-bold">
+                        سُورَةُ {surahInfo.arabicName}
+                      </div>
+                    </div>}
+                    {/* Bismillah belongs immediately before this surah's first ayah. */}
+                    {surahInfo.number !== 1 && surahInfo.number !== 9 && (
+                      <div className="mt-0.5">
+                        <span
+                          className="font-quran text-[0.88em]"
+                          style={{ color: 'var(--mushaf-text)' }}
+                        >
+                          {BISMILLAH_UTHMANI}
+                        </span>
+                      </div>
+                    )}
+                  </div>}
+                  <span
+                  data-verse={`${ayah.surahNumber}:${ayah.ayahNumberInSurah}`}
                   onClick={(e) => {
                     if (isUnderlying) return;
                     // During a committed drag the pointer is captured to <main>,
@@ -294,44 +280,23 @@ const MushafPageContent = React.memo<MushafPageContentProps>(
                   {cleanText}
                   {/* Verse number badge */}
                   <span
-                    className="inline-flex items-center justify-center align-middle mx-[2px] rounded-full border font-bold font-sans select-none"
-                    style={{
-                      fontSize: '0.62em',
-                      lineHeight: '1.5',
-                      minWidth: '1.5em',
-                      padding: '0 3px',
-                      color: 'var(--mushaf-accent)',
-                      borderColor: 'var(--mushaf-border)',
-                      background: 'var(--mushaf-badge-bg)',
-                    }}
+                    className="mushaf-ayah-medallion select-none"
                   >
-                    {ayah.ayahNumberInSurah}
+                    <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 2C28 2 28 7 32 7C37 5 40 9 39 13C45 14 46 19 43 24C46 29 45 34 39 35C40 39 37 43 32 41C28 41 28 46 24 46C20 46 20 41 16 41C11 43 8 39 9 35C3 34 2 29 5 24C2 19 3 14 9 13C8 9 11 5 16 7C20 7 20 2 24 2Z"/><ellipse cx="24" cy="24" rx="15" ry="18"/><path d="M18 8L24 5L30 8M18 40L24 43L30 40"/></svg>
+                    <span>{ayah.ayahNumberInSurah.toLocaleString('ar-EG')}</span>
                   </span>
-                </span>
+                  </span>
+                </React.Fragment>
               );
             })}
           </div>
         </div>
 
-        {/* ── BOTTOM: page number ── */}
-        <div
-          className="shrink-0 flex items-center justify-center border-t border-[#C6A15B]/15 z-20"
-          style={{ paddingTop: '7px', paddingBottom: '10px' }}
-        >
-          <span
-            className="font-sans font-bold text-[11px]"
-            style={{ color: 'var(--mushaf-accent)' }}
-          >
-            {data.pageNumber}
-          </span>
+        {/* ── BOTTOM: printed-style ornament + page number ── */}
+        <div className="mushaf-ornament-band mushaf-ornament-band-bottom shrink-0 z-20">
+          <span className="mushaf-surah-plate mushaf-page-folio">{data.pageNumber}</span>
         </div>
 
-        {/* ── Corner grab cue (bottom-left for LEFT→RIGHT swipe hint) ── */}
-        {!isUnderlying && (
-          <div className="absolute bottom-0 left-0 w-10 h-10 pointer-events-none z-30 opacity-50">
-            <div className="w-0 h-0 border-b-[28px] border-b-[#C6A15B]/30 border-r-[28px] border-r-transparent rounded-bl-2xl" />
-          </div>
-        )}
       </div>
     );
   }
@@ -344,6 +309,8 @@ MushafPageContent.displayName = 'MushafPageContent';
 // ─────────────────────────────────────────────────────────────────
 
 export const QuranPage: React.FC = () => {
+  const reducedMotion = useReducedMotion();
+  const { recordDailyActivity, cache, today } = useStreak();
   const { setActiveTab, showToast } = useApp();
 
   // ── Current page ──
@@ -379,12 +346,35 @@ export const QuranPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<QuranSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // iOS Safari zooms the page when a focused input is smaller than 16px. Keep
+  // the search field at a readable mobile size and blur it on close so the
+  // visual viewport returns to the reader instead of staying magnified.
+  const closeSearch = useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+    requestAnimationFrame(() => {
+      const focused = document.activeElement;
+      if (focused instanceof HTMLElement) focused.blur();
+      if (window.visualViewport && window.visualViewport.scale > 1.01) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }, []);
+
   // ── Drag / Gesture state ──
-  // The Mushaf page div receives pointer events and translateX during drag.
+  // A flat horizontal carousel: the current and adjacent pages move together.
   // LEFT → RIGHT (deltaX > 0) = NEXT PAGE
   // RIGHT → LEFT (deltaX < 0) = PREVIOUS PAGE
   const viewportRef = useRef<HTMLDivElement>(null);
   const mushafDivRef = useRef<HTMLDivElement>(null);
+  const dragWidthRef = useRef(360);
+  const dragFrameRef = useRef<number | null>(null);
+  const selectAyah = useCallback((ayah: MushafPageAyah) => setActiveAyah(ayah), []);
 
   // Gesture state — all in refs so they never cause re-renders during drag
   const isPointerDownRef = useRef(false);       // pointer is held
@@ -393,22 +383,43 @@ export const QuranPage: React.FC = () => {
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const currentDeltaXRef = useRef(0);
+  const dragStartedAtRef = useRef(0);
+  const dragOffsetRef = useRef(0);
   const capturedPointerIdRef = useRef<number>(-1);
   const isAnimatingRef = useRef(false);
+  const canRefit = useCallback(() => !isPointerDownRef.current && !isAnimatingRef.current, []);
+  const turnAnimationRef = useRef<Animation | null>(null);
+  const queuedTurnsRef = useRef<Array<'next' | 'prev'>>([]);
+  const turnHandlersRef = useRef<{ next: () => void; prev: () => void } | null>(null);
+  const queuedFrameRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
+  const [turnPageData, setTurnPageData] = useState<MushafPageData | null>(null);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      turnAnimationRef.current?.cancel();
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
+      if (queuedFrameRef.current !== null) cancelAnimationFrame(queuedFrameRef.current);
+      queuedTurnsRef.current = [];
+    };
+  }, []);
 
   // Track drag visually by updating the mushaf div's transform directly
   // (no React re-render needed during drag — keeps it 60fps)
   const setMushafTransform = useCallback((tx: number, withTransition: boolean) => {
     const el = mushafDivRef.current;
     if (!el) return;
-    el.style.transition = withTransition
-      ? 'transform 0.32s cubic-bezier(0.25, 1, 0.5, 1)'
-      : 'none';
-    el.style.transform = `translateX(${tx}px)`;
-  }, []);
+    el.style.transition = withTransition && !reducedMotion ? 'transform 260ms cubic-bezier(.25,.8,.25,1)' : 'none';
+    dragOffsetRef.current = reducedMotion ? 0 : tx;
+    el.style.transform = `translate3d(${dragOffsetRef.current}px,0,0)`;
+  }, [reducedMotion]);
 
-  // Reveal the underlying page during drag
-  const [showUnderlying, setShowUnderlying] = useState<'next' | 'prev' | null>(null);
+  const paintDrag = useCallback(() => {
+    dragFrameRef.current = null;
+    const dx = currentDeltaXRef.current;
+    setMushafTransform(Math.max(-dragWidthRef.current, Math.min(dragWidthRef.current, dx)), false);
+  }, [setMushafTransform]);
 
   const allSurahs = useMemo(() => getAllSurahs(), []);
 
@@ -417,7 +428,20 @@ export const QuranPage: React.FC = () => {
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
+    const preparationTimers = new Set<ReturnType<typeof setTimeout>>();
+    const prepareNeighbor = (data: MushafPageData, setData: (page: MushafPageData) => void) => {
+      const prepare = () => {
+        if (!mounted) return;
+        if (isPointerDownRef.current || isAnimatingRef.current) {
+          preparationTimers.add(setTimeout(prepare, 80));
+          return;
+        }
+        setData(data);
+      };
+      // Let the promoted sheet paint before typesetting the next unseen page.
+      preparationTimers.add(setTimeout(prepare, 120));
+    };
+    setLoading(pageData?.pageNumber !== currentPage);
     setPageError(null);
     setActiveAyah(null);
     setTafsirData(null);
@@ -439,17 +463,17 @@ export const QuranPage: React.FC = () => {
 
     if (currentPage < 604)
       getMushafPage(currentPage + 1)
-        .then((d) => { if (mounted) setNextPageData(d); })
+        .then((d) => prepareNeighbor(d, setNextPageData))
         .catch(() => {});
     else setNextPageData(null);
 
     if (currentPage > 1)
       getMushafPage(currentPage - 1)
-        .then((d) => { if (mounted) setPrevPageData(d); })
+        .then((d) => prepareNeighbor(d, setPrevPageData))
         .catch(() => {});
     else setPrevPageData(null);
 
-    return () => { mounted = false; };
+    return () => { mounted = false; preparationTimers.forEach(clearTimeout); };
   }, [currentPage]);
 
   // Audio cleanup on page change
@@ -502,51 +526,107 @@ export const QuranPage: React.FC = () => {
   // ─────────────────────────────────────────────────────────────
 
   const doPageTurn = useCallback(
-    (newPage: number, direction: 'next' | 'prev') => {
-      if (newPage < 1 || newPage > 604 || isAnimatingRef.current) return;
+    async (newPage: number, direction: 'next' | 'prev') => {
+      if (newPage === currentPage || newPage < 1 || newPage > 604 || isAnimatingRef.current) return;
       isAnimatingRef.current = true;
-
-      const containerW = viewportRef.current?.offsetWidth ?? 360;
-      const exitX = direction === 'next' ? containerW : -containerW;
-      const enterX = direction === 'next' ? -containerW : containerW;
-
-      // 1. Animate current page exit
-      setMushafTransform(exitX, true);
-
-      setTimeout(() => {
-        // 2. Snap to enter position (no transition), switch page data
-        setMushafTransform(enterX, false);
-        setCurrentPage(newPage);
-        setShowUnderlying(null);
-
-        // 3. One frame later: animate in
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setMushafTransform(0, true);
-            setTimeout(() => {
-              isAnimatingRef.current = false;
-            }, 350);
+      try {
+        // Commit the destination before moving the carousel, including jumps.
+        const prepared = [nextPageData, prevPageData].find(page => page?.pageNumber === newPage);
+        const target = prepared || await getMushafPage(newPage);
+        if (!mountedRef.current) return;
+        flushSync(() => setTurnPageData(target));
+        const el = mushafDivRef.current;
+        if (el && !reducedMotion) {
+          const width = viewportRef.current?.clientWidth || dragWidthRef.current;
+          const destination = direction === 'next' ? width : -width;
+          const distance = Math.abs(destination - dragOffsetRef.current);
+          const duration = Math.max(120, Math.min(380, 360 * distance / width));
+          el.style.transition = 'none';
+          const animation = el.animate([
+            { transform: `translate3d(${dragOffsetRef.current}px,0,0)` },
+            { transform: `translate3d(${destination}px,0,0)` },
+          ], {
+            duration,
+            easing: 'cubic-bezier(.25,.8,.25,1)', fill: 'forwards',
           });
+          turnAnimationRef.current = animation;
+          // Cancellation/backgrounding must never leave navigation locked.
+          let timeout: ReturnType<typeof setTimeout> | undefined;
+          await Promise.race([
+            animation.finished.catch(() => {}),
+            new Promise<void>(resolve => { timeout = setTimeout(resolve, duration + 150); }),
+          ]);
+          clearTimeout(timeout);
+        }
+        if (!mountedRef.current) return;
+        // Promote the existing DOM in one commit before releasing the old
+        // animation. A RAF alone does not guarantee React has committed yet.
+        flushSync(() => {
+          if (newPage === currentPage + 1) { setPrevPageData(pageData); setNextPageData(null); }
+          else if (newPage === currentPage - 1) { setNextPageData(pageData); setPrevPageData(null); }
+          setPageData(target);
+          setCurrentPage(newPage);
+          setLoading(false);
+          setActiveAyah(null);
+          setTurnPageData(null);
         });
-      }, 280);
+        turnAnimationRef.current?.cancel();
+        turnAnimationRef.current = null;
+        setMushafTransform(0, false);
+      } catch {
+        queuedTurnsRef.current = [];
+        if (mountedRef.current) {
+          setMushafTransform(0, true);
+          setTurnPageData(null);
+          showToast('تعذر فتح الصفحة. حاول مرة أخرى.');
+        }
+      } finally {
+        turnAnimationRef.current?.cancel();
+        turnAnimationRef.current = null;
+        isAnimatingRef.current = false;
+        // Read the latest committed page on the next frame. Repeated taps
+        // should flow into another turn rather than finish or drop this one.
+        if (mountedRef.current && queuedTurnsRef.current.length) {
+          queuedFrameRef.current = requestAnimationFrame(() => {
+            queuedFrameRef.current = null;
+            const next = queuedTurnsRef.current.shift();
+            if (next) turnHandlersRef.current?.[next]();
+          });
+        }
+      }
     },
-    [setMushafTransform]
+    [currentPage, pageData, nextPageData, prevPageData, reducedMotion, setMushafTransform, showToast]
   );
 
   const goToNextPage = useCallback(() => {
+    if (isAnimatingRef.current) {
+      if (queuedTurnsRef.current.length < 6) queuedTurnsRef.current.push('next');
+      return;
+    }
     if (currentPage < 604) doPageTurn(currentPage + 1, 'next');
+    else queuedTurnsRef.current = [];
   }, [currentPage, doPageTurn]);
 
   const goToPrevPage = useCallback(() => {
+    if (isAnimatingRef.current) {
+      if (queuedTurnsRef.current.length < 6) queuedTurnsRef.current.push('prev');
+      return;
+    }
     if (currentPage > 1) doPageTurn(currentPage - 1, 'prev');
+    else queuedTurnsRef.current = [];
   }, [currentPage, doPageTurn]);
+
+  useLayoutEffect(() => {
+    turnHandlersRef.current = { next: goToNextPage, prev: goToPrevPage };
+  }, [goToNextPage, goToPrevPage]);
 
   // Keyboard
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (activeAyah || isSurahIndexOpen || isJuzIndexOpen || isSearchOpen) return;
-      if (e.key === 'ArrowRight') goToNextPage();
-      else if (e.key === 'ArrowLeft') goToPrevPage();
+      if (e.target instanceof HTMLElement && (e.target.isContentEditable || e.target.closest('input, textarea, select'))) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); if (!e.repeat) goToNextPage(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); if (!e.repeat) goToPrevPage(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -576,7 +656,9 @@ export const QuranPage: React.FC = () => {
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       // When Tafsir or a modal is open, gestures are suspended
-      if (isSurahIndexOpen || isJuzIndexOpen || isSearchOpen || isAnimatingRef.current) return;
+      if (!e.isPrimary || e.button !== 0 || isSurahIndexOpen || isJuzIndexOpen || isSearchOpen || activeAyah) return;
+      // Never jump a moving sheet to its end under a new finger gesture.
+      if (isAnimatingRef.current || queuedTurnsRef.current.length) return;
 
       isPointerDownRef.current = true;
       hasCommittedToDragRef.current = false;
@@ -584,24 +666,30 @@ export const QuranPage: React.FC = () => {
       startXRef.current = e.clientX;
       startYRef.current = e.clientY;
       currentDeltaXRef.current = 0;
+      dragStartedAtRef.current = performance.now();
+      dragWidthRef.current = viewportRef.current?.clientWidth || 360;
       capturedPointerIdRef.current = e.pointerId;
-      setShowUnderlying(null);
       // ⚠️  Do NOT call setPointerCapture here.
       // Doing so would prevent click events from reaching child ayah elements.
     },
-    [isSurahIndexOpen, isJuzIndexOpen, isSearchOpen]
+    [isSurahIndexOpen, isJuzIndexOpen, isSearchOpen, activeAyah]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isPointerDownRef.current || isAnimatingRef.current) return;
+      if (!isPointerDownRef.current || isAnimatingRef.current || e.pointerId !== capturedPointerIdRef.current) return;
 
       const deltaX = e.clientX - startXRef.current;
       const deltaY = e.clientY - startYRef.current;
+      if ((deltaX > 0 && currentPage === 604) || (deltaX < 0 && currentPage === 1)) {
+        currentDeltaXRef.current = 0;
+        setMushafTransform(0, true);
+        return;
+      }
 
       // If not yet committed to a drag, check if we should
       if (!hasCommittedToDragRef.current) {
-        if (Math.abs(deltaX) > 12) {
+        if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
           // Clearly a horizontal drag — commit now and capture the pointer
           hasCommittedToDragRef.current = true;
           isDraggingRef.current = true;
@@ -618,30 +706,16 @@ export const QuranPage: React.FC = () => {
 
       currentDeltaXRef.current = deltaX;
 
-      if (deltaX > 8 && currentPage < 604) {
-        setShowUnderlying('next');
-      } else if (deltaX < -8 && currentPage > 1) {
-        setShowUnderlying('prev');
-      } else {
-        setShowUnderlying(null);
-      }
-
-      const containerW = viewportRef.current?.offsetWidth ?? 360;
-      const maxDrag = containerW * 1.05;
-      const capped = Math.max(-maxDrag, Math.min(maxDrag, deltaX));
-      const resist =
-        capped > 0
-          ? Math.sqrt(capped / maxDrag) * maxDrag
-          : -Math.sqrt(-capped / maxDrag) * maxDrag;
-
-      setMushafTransform(resist * 0.82, false);
+      // Coalesce events into one compositor update per display frame. No React
+      // state, layout reads, or typography work belongs in the touch loop.
+      if (dragFrameRef.current === null) dragFrameRef.current = requestAnimationFrame(paintDrag);
     },
-    [currentPage, setMushafTransform]
+    [currentPage, setMushafTransform, paintDrag]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isPointerDownRef.current) return;
+      if (!isPointerDownRef.current || e.pointerId !== capturedPointerIdRef.current) return;
       isPointerDownRef.current = false;
 
       if (!hasCommittedToDragRef.current) {
@@ -652,15 +726,18 @@ export const QuranPage: React.FC = () => {
       }
 
       // This was a committed drag
+      currentDeltaXRef.current = e.clientX - startXRef.current;
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
+      paintDrag();
       try { e.currentTarget.releasePointerCapture(capturedPointerIdRef.current); } catch {}
       hasCommittedToDragRef.current = false;
       isDraggingRef.current = false;
 
       const deltaX = currentDeltaXRef.current;
-      const containerW = viewportRef.current?.offsetWidth ?? 360;
-      const threshold = containerW * 0.22;
-
-      setShowUnderlying(null);
+      const containerW = dragWidthRef.current;
+      const elapsed = Math.max(1, performance.now() - dragStartedAtRef.current);
+      const isFlick = Math.abs(deltaX) > 30 && Math.abs(deltaX) / elapsed > 0.45;
+      const threshold = isFlick ? 30 : Math.min(60, containerW * 0.15);
 
       if (deltaX > threshold && currentPage < 604) {
         doPageTurn(currentPage + 1, 'next');
@@ -670,14 +747,16 @@ export const QuranPage: React.FC = () => {
         setMushafTransform(0, true);
       }
     },
-    [currentPage, doPageTurn, setMushafTransform]
+    [currentPage, doPageTurn, setMushafTransform, paintDrag]
   );
 
   const handlePointerCancel = useCallback(() => {
+    if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
+    dragFrameRef.current = null;
     isPointerDownRef.current = false;
     hasCommittedToDragRef.current = false;
     isDraggingRef.current = false;
-    setShowUnderlying(null);
+    // Keep the prepared sheet behind the returning page during snap-back.
     setMushafTransform(0, true);
   }, [setMushafTransform]);
 
@@ -751,6 +830,7 @@ export const QuranPage: React.FC = () => {
       };
       saveBookmark(bm);
       setActiveBookmark(bm);
+      encourageProgress('أحسنت! حفظت موضعك في القرآن لتتابع وردك. بارك الله في قراءتك!');
     }
   };
 
@@ -868,11 +948,12 @@ export const QuranPage: React.FC = () => {
 
   return (
     <div
-      className="relative w-full h-[calc(100dvh-130px)] sm:h-[calc(100dvh-140px)] flex flex-col select-none overflow-hidden"
+      className="qada-guide-quran qada-fullscreen-reader relative w-full flex flex-col select-none overflow-hidden"
+      data-guide-page="quran"
       dir="rtl"
     >
       {/* ══ 1. HEADER BAR ══ */}
-      <header className="h-11 px-2 flex items-center justify-between border-b border-[#C6A15B]/20 bg-[#FAF7F2]/90 dark:bg-[#18231C]/90 backdrop-blur-md shrink-0 z-30 rounded-2xl mb-2">
+      <header className="qada-reader-toolbar h-11 px-1 flex items-center justify-between gap-1 border-b border-[#C6A15B]/20 bg-[#FAF7F2]/90 dark:bg-[#18231C]/90 shrink-0 z-30" data-guide="quran">
         <div className="flex items-center gap-1.5">
           {/* Back to Dashboard */}
           <button
@@ -880,6 +961,7 @@ export const QuranPage: React.FC = () => {
             onClick={() => setActiveTab('dashboard')}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-[#C6A15B]/20 text-xs font-bold text-[#26352A] dark:text-[#E8DDD0] transition-colors cursor-pointer"
             title="العودة إلى الرئيسية"
+            aria-label="العودة إلى الرئيسية"
           >
             <Home className="w-3.5 h-3.5 text-[#C6A15B]" />
             <span className="hidden sm:inline">الرئيسية</span>
@@ -907,7 +989,7 @@ export const QuranPage: React.FC = () => {
         </div>
 
         {/* Current surah name */}
-        <div className="text-center">
+        <div className="hidden sm:block text-center">
           {pageData?.surahsPresent?.[0] && (
             <span className="text-xs sm:text-sm font-bold font-spiritual-serif text-[#1D211E] dark:text-[#F6F1E7]">
               سورة {pageData.surahsPresent[0].arabicName}
@@ -917,6 +999,11 @@ export const QuranPage: React.FC = () => {
 
         {/* Search + Bookmark */}
         <div className="flex items-center gap-1">
+          <button type="button" aria-label={cache.events.some(e => e.date === today && e.type === 'quran') ? 'تم تسجيل قراءة اليوم' : 'قرأت من القرآن اليوم'} title="قرأت من القرآن اليوم" disabled={cache.events.some(e => e.date === today && e.type === 'quran')} className="w-10 h-10 flex items-center justify-center rounded-xl text-[#C6A15B] disabled:bg-[#C6A15B]/15" onClick={() => {
+            void recordDailyActivity('quran');
+            encourageProgress('أحسنت! سجّلت قراءتك اليوم. واصل على مهل.');
+          }}><Check size={18} /></button>
+          <FeatureHelp topic="quran" />
           <button
             type="button"
             onClick={() => setIsSearchOpen(true)}
@@ -943,7 +1030,7 @@ export const QuranPage: React.FC = () => {
       </header>
 
       {/* ══ 2. MUSHAF VIEWPORT + OPTIONAL DESKTOP TAFSIR PANEL ══ */}
-      <div className="flex-grow flex items-stretch justify-center gap-3 w-full overflow-hidden">
+      <div className="flex-1 min-h-0 flex items-stretch justify-center gap-3 w-full overflow-hidden">
         {/* ── Mushaf viewport (pointer target) ── */}
         <main
           ref={viewportRef}
@@ -951,60 +1038,45 @@ export const QuranPage: React.FC = () => {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
-          className={`relative h-full overflow-hidden [perspective:1400px] transition-all duration-300 cursor-grab active:cursor-grabbing ${
+          className={`relative h-full overflow-hidden cursor-grab active:cursor-grabbing ${
             activeAyah ? 'w-full lg:w-[56%] max-w-xl' : 'w-full max-w-xl'
           }`}
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'pan-y pinch-zoom' }}
         >
-          {/* Underlying page (revealed as current slides away) */}
-          {showUnderlying === 'next' && nextPageData && (
-            <div className="absolute inset-1 z-10 pointer-events-none">
-              <MushafPageContent
-                data={nextPageData}
-                isUnderlying
-                activeAyah={null}
-                activeBookmark={activeBookmark}
-                playingAyahNumber={null}
-                isPlayingAudio={false}
-                isDragging={false}
-                onAyahClick={() => {}}
-              />
-            </div>
-          )}
-          {showUnderlying === 'prev' && prevPageData && (
-            <div className="absolute inset-1 z-10 pointer-events-none">
-              <MushafPageContent
-                data={prevPageData}
-                isUnderlying
-                activeAyah={null}
-                activeBookmark={activeBookmark}
-                playingAyahNumber={null}
-                isPlayingAudio={false}
-                isDragging={false}
-                onAyahClick={() => {}}
-              />
-            </div>
-          )}
-
-          {/* Current Mushaf page — translated by drag/animation */}
-          {pageData && !loading && (
-            <div
-              ref={mushafDivRef}
-              className="absolute inset-1 z-20"
-              style={{ willChange: 'transform', transform: 'translateX(0)', transition: 'none' }}
+          <div ref={mushafDivRef} className="mushaf-swipe-track absolute inset-0">
+          {/* Keep sheets keyed by page number. Promoting a prepared page must
+              not rebuild its Arabic text, refit its font, or flash a new DOM. */}
+          {!loading && Array.from(new Map(
+            [prevPageData, nextPageData, pageData, turnPageData]
+              .filter((page): page is MushafPageData => Boolean(page))
+              .map(page => [page.pageNumber, page] as const)
+          ).values()).map(sheet => {
+            const isCurrent = sheet.pageNumber === currentPage;
+            const direction = sheet.pageNumber > currentPage ? 'next' : 'prev';
+            const isDestination = turnPageData ? sheet.pageNumber === turnPageData.pageNumber : Math.abs(sheet.pageNumber - currentPage) === 1;
+            return <div
+              key={sheet.pageNumber}
+              aria-hidden={!isCurrent}
+              inert={!isCurrent}
+              className={`mushaf-sheet absolute inset-0 p-1 ${isCurrent ? 'mushaf-current-sheet' : 'pointer-events-none'}`}
+              style={{
+                visibility: isCurrent || isDestination ? 'visible' : 'hidden',
+                transform: `translate3d(${isCurrent ? 0 : direction === 'next' ? -100 : 100}%,0,0)`,
+              }}
             >
               <MushafPageContent
-                data={pageData}
-                isUnderlying={false}
-                activeAyah={activeAyah}
+                data={sheet}
+                activeAyah={isCurrent ? activeAyah : null}
                 activeBookmark={activeBookmark}
-                playingAyahNumber={playingAyahNumber}
-                isPlayingAudio={isPlayingAudio}
-                isDragging={isDraggingRef.current}
-                onAyahClick={(ayah) => setActiveAyah(ayah)}
+                playingAyahNumber={isCurrent ? playingAyahNumber : null}
+                isPlayingAudio={isCurrent && isPlayingAudio}
+                isDragging={false}
+                onAyahClick={selectAyah}
+                canRefit={canRefit}
               />
-            </div>
-          )}
+            </div>;
+          })}
+          </div>
 
           {loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-20">
@@ -1089,7 +1161,7 @@ export const QuranPage: React.FC = () => {
       </div>
 
       {/* ══ 3. BOTTOM PAGE TURN BAR ══ */}
-      <footer className="h-12 px-3 flex items-center justify-between border-t border-[#C6A15B]/20 bg-[#FAF7F2]/90 dark:bg-[#18231C]/90 backdrop-blur-md shrink-0 z-30 rounded-2xl mt-2">
+      <footer className="h-12 px-3 flex items-center justify-between border-t border-[#C6A15B]/20 bg-[#FAF7F2]/90 dark:bg-[#18231C]/90 shrink-0 z-30">
         {/* Next Page (LEFT → RIGHT) */}
         <button
           type="button"
@@ -1313,7 +1385,7 @@ export const QuranPage: React.FC = () => {
                 </h3>
                 <button
                   type="button"
-                  onClick={() => setIsSearchOpen(false)}
+                  onClick={closeSearch}
                   className="p-1.5 text-[#7E8C7F] hover:text-black dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -1327,7 +1399,9 @@ export const QuranPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="اكتب كلمة أو جملة (مثال: الله نور)..."
-                  className="w-full pr-10 pl-3 py-2 rounded-xl bg-white dark:bg-[#18231C] border border-[#C6A15B]/30 text-xs focus:outline-none focus:border-[#C6A15B]"
+                  className="w-full pr-10 pl-3 py-2 rounded-xl bg-white dark:bg-[#18231C] border border-[#C6A15B]/30 text-base sm:text-xs focus:outline-none focus:border-[#C6A15B]"
+                  autoComplete="off"
+                  autoCapitalize="none"
                 />
               </div>
 
@@ -1342,7 +1416,7 @@ export const QuranPage: React.FC = () => {
                     onClick={() => {
                       const p = getSurahStartPage(r.surahNumber);
                       doPageTurn(p, p > currentPage ? 'next' : 'prev');
-                      setIsSearchOpen(false);
+                      closeSearch();
                     }}
                     className="p-3 rounded-xl bg-white/70 dark:bg-[#18231C]/70 hover:bg-[#C6A15B]/15 cursor-pointer text-xs space-y-1"
                   >

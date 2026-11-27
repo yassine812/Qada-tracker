@@ -9,6 +9,16 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab }) => {
+  const selectTab = (tab: TabType) => {
+    // A tab is a new page in the app experience: never preserve a scroll
+    // position from the previous page, especially on long desktop screens.
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    onSelectTab(tab);
+    window.requestAnimationFrame(() => window.scrollTo(0, 0));
+  };
+
   const navItems: {
     id: TabType;
     label: string;
@@ -23,9 +33,9 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 backdrop-blur-xl border-t transition-colors duration-300"
+      className="qada-app-nav fixed bottom-0 inset-x-0 z-40 backdrop-blur-xl border-t transition-colors duration-300"
       style={{
-        background: 'rgba(var(--qada-bg), 0.85)',
+        background: 'var(--qada-bg)',
         borderColor: 'var(--qada-border)',
         paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
       }}
@@ -39,7 +49,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
           return (
             <motion.button
               key={item.id}
-              onClick={() => onSelectTab(item.id)}
+              onClick={() => selectTab(item.id)}
               whileTap={{ scale: 0.9 }}
               className="relative flex flex-col items-center justify-center py-1 px-3 lg:px-6 rounded-2xl min-w-[56px] min-h-[48px] cursor-pointer select-none transition-colors"
               aria-label={item.label}
@@ -76,7 +86,7 @@ export const Navigation: React.FC<NavigationProps> = ({ currentTab, onSelectTab 
                   className="text-[11px] lg:text-sm leading-none font-landing-display tracking-tight transition-all duration-200"
                   style={{
                     fontWeight: isActive ? 700 : 500,
-                    color: isActive ? 'var(--qada-text)' : 'var(--qada-text-muted)',
+                    color: 'inherit',
                   }}
                 >
                   {item.label}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StarEightPoint, SubtleArch } from './IslamicOrnaments';
 import { PublicFooter } from '../PublicFooter';
+import { QadaLogo } from '../QadaLogo';
 
 interface FinalCtaSectionProps {
   onStartApp: () => void;
@@ -60,7 +61,7 @@ export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onStartApp }) 
           </div>
 
           <p className="text-xs text-[#A9B7A3]/70 mt-6 tracking-wide">
-            المتابعة الأساسية مجانية • دون حساب • سجلاتك محفوظة على جهازك
+            سجّل دخولك وابدأ متابعة رحلتك • خصوصيتك أولاً
           </p>
         </div>
       </div>
@@ -68,12 +69,7 @@ export const FinalCtaSection: React.FC<FinalCtaSectionProps> = ({ onStartApp }) 
       {/* Lower Footer Branding & Legal / Spiritual Notes */}
       <div className="py-12 max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-[#A9B7A3]/70">
         <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded-lg bg-[#26352A] border border-[#C6A15B]/20 flex items-center justify-center text-[#C6A15B]">
-            <StarEightPoint size={12} color="#C6A15B" />
-          </div>
-          <span className="font-landing-display font-semibold text-[#F6F1E7]">
-            قضاء
-          </span>
+          <QadaLogo width={64} className="text-[#D5B77A]" />
           <span className="text-white/20">•</span>
           <span>رفيقك للعودة إلى الله</span>
         </div>

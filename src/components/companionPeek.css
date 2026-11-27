@@ -1,0 +1,39 @@
+/* The character leans in from the physical left edge in both RTL and LTR.
+   Guides keep the original standing pose and layout. */
+.qada-companion.qada-companion-peek {
+  left:0; bottom:calc(112px + env(safe-area-inset-bottom,0px));
+  width:108px; height:140px; display:block; gap:0;
+  filter:drop-shadow(2px 5px 8px #152f2417);
+}
+.qada-companion-peek .qada-companion-character {
+  position:absolute; left:0; bottom:0; width:112px; height:140px;
+  transform-origin:8px 100px;
+}
+.qada-companion-peek .qada-companion-character>span { display:block; width:100%; height:100%; }
+.qada-companion-peek .qada-companion-copy {
+  left:87px; bottom:78px; width:208px; max-width:calc(100vw - 103px);
+  max-height:min(45dvh,280px); overflow-y:auto; overscroll-behavior:contain;
+  text-align:start; padding:14px 14px 5px; border-radius:20px 20px 20px 6px;
+  border-color:var(--qada-border-strong,#c6a15b55);
+  box-shadow:0 8px 24px #142f2412; transform-origin:left bottom;
+  pointer-events:auto;
+}
+.qada-companion-peek .qada-companion-copy::after { display:none; }
+.qada-companion-peek .qada-companion-copy p { font-size:13px; line-height:1.8; min-height:0; }
+.qada-companion-bubble-footer { display:flex; align-items:center; gap:2px; margin-top:8px; border-top:1px solid var(--qada-border); }
+.qada-companion-signature { margin-inline-end:auto; font-size:10px; color:var(--qada-text-muted); }
+.qada-companion-signature span { color:var(--qada-primary); margin-inline-start:3px; }
+.qada-companion-peek .qada-companion-voice,
+.qada-companion-peek .qada-companion-dismiss { position:static; width:40px; height:40px; flex-shrink:0; border:0; border-radius:12px; background:transparent; box-shadow:none; color:var(--qada-text-secondary); }
+.qada-companion-peek .qada-companion-voice:hover,
+.qada-companion-peek .qada-companion-dismiss:hover { background:var(--qada-primary-soft); color:var(--qada-primary); }
+.qada-companion-peek .qada-companion-voice[aria-pressed="true"] { color:var(--qada-primary); background:transparent; }
+@media(min-width:768px) {
+  .qada-companion.qada-companion-peek { bottom:calc(124px + env(safe-area-inset-bottom,0px)); }
+  .qada-companion-peek .qada-companion-copy { width:230px; }
+}
+@media(max-height:480px) {
+  .qada-companion.qada-companion-peek { bottom:86px; height:112px; }
+  .qada-companion-peek .qada-companion-character { height:112px; width:94px; }
+  .qada-companion-peek .qada-companion-copy { left:76px; bottom:48px; padding:9px 12px; }
+}

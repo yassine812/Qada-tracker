@@ -6,27 +6,29 @@
   "scope": "/",
   "id": "/app",
   "display": "standalone",
+  "display_override": ["standalone"],
+  "prefer_related_applications": false,
   "orientation": "portrait",
-  "background_color": "#FAF7F2",
-  "theme_color": "#26352A",
+  "background_color": "#dce6dd",
+  "theme_color": "#205740",
   "lang": "ar",
   "dir": "rtl",
   "categories": ["lifestyle", "utilities", "productivity"],
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/qada-192-v2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/qada-512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512-maskable.png",
+      "src": "/icons/qada-maskable-v2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

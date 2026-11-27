@@ -1,16 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { PrayerClockHero } from './PrayerClockHero';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Sunrise,
-  Sun,
-  SunMedium,
-  Sunset,
-  Moon,
-  Clock,
   MapPin,
   Compass,
-  Settings2,
-  ChevronDown,
-  Sparkles,
   Check,
   X
 } from 'lucide-react';
@@ -18,13 +10,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   calculateTodayPrayerTimes,
   getPrayerSettings,
+  hasSavedPrayerSettings,
   savePrayerSettings,
   PrayerSettings,
   CalculatedPrayers,
   POPULAR_CITIES,
   CityOption
 } from '../utils/prayerTimes';
-import { StarEightPoint } from './landing/IslamicOrnaments';
 import { TactileButton } from './ui/MotionPrimitives';
 
 export const PrayerTimesSection: React.FC = () => {
@@ -46,9 +38,9 @@ export const PrayerTimesSection: React.FC = () => {
   }, [settings]);
 
   // Handle GPS location
-  const handleUseGps = () => {
+  const handleUseGps = useCallback((automatic = false) => {
     if (!navigator.geolocation) {
-      setGpsError('تحديد الموقع الجغرافي غير مدعوم في هذا المتصفح');
+      if (!automatic) setGpsError('تحديد الموقع الجغرافي غير مدعوم في هذا المتصفح');
       return;
     }
 
@@ -71,12 +63,24 @@ export const PrayerTimesSection: React.FC = () => {
         setIsCityModalOpen(false);
       },
       () => {
-        setGpsError('تعذر تحديد الموقع، يرجى تفعيل إذن الوصول أو اختيار المدينة يدوياً');
+        if (!automatic) setGpsError('تعذر تحديد الموقع، يرجى تفعيل إذن الوصول أو اختيار المدينة يدوياً');
         setLocatingGps(false);
       },
       { timeout: 10000 }
     );
-  };
+  }, [settings]);
+
+  // First visit: request the device location once so prayer times are useful
+  // immediately. A manual city choice is persisted and is never overwritten.
+  useEffect(() => {
+    if (hasSavedPrayerSettings()) return;
+    try {
+      const attemptKey = 'qada_prayer_location_auto_attempted';
+      if (localStorage.getItem(attemptKey)) return;
+      localStorage.setItem(attemptKey, '1');
+    } catch { /* fall back to the default city and manual picker */ }
+    handleUseGps(true);
+  }, [handleUseGps]);
 
   // Handle manual city selection
   const handleSelectCity = (city: CityOption) => {
@@ -103,151 +107,9 @@ export const PrayerTimesSection: React.FC = () => {
     );
   }, [citySearchQuery]);
 
-  const getPrayerIcon = (id: string) => {
-    switch (id) {
-      case 'fajr':
-        return <Sunrise className="w-4 h-4" />;
-      case 'sunrise':
-        return <Sun className="w-4 h-4" />;
-      case 'dhuhr':
-        return <SunMedium className="w-4 h-4" />;
-      case 'asr':
-        return <SunMedium className="w-4 h-4" />;
-      case 'maghrib':
-        return <Sunset className="w-4 h-4" />;
-      case 'isha':
-      default:
-        return <Moon className="w-4 h-4" />;
-    }
-  };
-
   return (
     <div className="space-y-4">
-      {/* ═══════ PRAYER TIMES HORIZONTAL TIMELINE CONTAINER ═══════ */}
-      <div className="relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-white/90 dark:bg-[#18231C]/90 border border-[#C6A15B]/25 shadow-lg shadow-black/5 backdrop-blur-sm">
-        {/* Top Bar: Section Title + Location Picker Pill */}
-        <div className="flex items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#C6A15B]/15 text-[#C6A15B] flex items-center justify-center">
-              <Compass className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
-                أوقات الصلاة
-              </h2>
-              <p className="text-[11px] text-[#7E8C7F]">
-                حساب فلكي دقيق • موثق
-              </p>
-            </div>
-          </div>
-
-          {/* Location Selector Pill */}
-          <button
-            type="button"
-            onClick={() => setIsCityModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/5 hover:bg-[#C6A15B]/15 border border-[#C6A15B]/20 text-xs font-semibold text-[#26352A] dark:text-[#E8DDD0] transition-colors cursor-pointer"
-          >
-            <MapPin className="w-3.5 h-3.5 text-[#C6A15B]" />
-            <span>{settings.cityName}</span>
-            <ChevronDown className="w-3 h-3 text-[#7E8C7F]" />
-          </button>
-        </div>
-
-        {/* Highlighted Next Prayer Banner with Live Countdown */}
-        {prayersData.nextPrayer && (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-l from-[#26352A] to-[#1F2E24] text-[#F6F1E7] border border-[#C6A15B]/30 shadow-md flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#18231C] border border-[#C6A15B]/30 text-[#C6A15B] flex items-center justify-center">
-                {getPrayerIcon(prayersData.nextPrayer.id)}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#C6A15B]/25 text-[#C6A15B]">
-                    الصلاة القادمة
-                  </span>
-                  <span className="text-xs text-[#A9B7A3] font-mono">
-                    {prayersData.nextPrayer.formattedTime}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold font-spiritual-serif text-white mt-0.5">
-                  صلاة {prayersData.nextPrayer.name}
-                </h3>
-              </div>
-            </div>
-
-            {/* Live Ticking Countdown */}
-            <div className="text-left">
-              <span className="text-[10px] text-[#A9B7A3] block">متبقي:</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-[#C6A15B] tracking-wider">
-                {prayersData.timeRemaining}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Continuous Horizontal Prayer Timeline */}
-        <div className="relative pt-2">
-          {/* Connecting Track */}
-          <div className="absolute top-7 inset-x-4 h-0.5 bg-[#C6A15B]/20 dark:bg-white/10 -z-0" />
-
-          <div className="grid grid-cols-6 gap-1 sm:gap-2 relative z-10">
-            {prayersData.prayers.map((prayer) => {
-              const isNext = prayer.isNext;
-              const isCurrent = prayer.isCurrent;
-
-              return (
-                <div
-                  key={prayer.id}
-                  className={`flex flex-col items-center text-center p-2 rounded-2xl transition-all duration-200 ${
-                    isNext
-                      ? 'bg-[#C6A15B]/15 border border-[#C6A15B]/40 shadow-xs scale-105'
-                      : isCurrent
-                      ? 'bg-black/5 dark:bg-white/5 border border-transparent'
-                      : 'hover:bg-black/5 dark:hover:bg-white/5'
-                  }`}
-                >
-                  {/* Indicator Dot on Timeline */}
-                  <div
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1.5 transition-all ${
-                      isNext
-                        ? 'bg-[#C6A15B] text-white shadow-sm ring-4 ring-[#C6A15B]/20'
-                        : isCurrent
-                        ? 'bg-[#26352A] dark:bg-[#E8DDD0] text-white dark:text-[#18231C]'
-                        : 'bg-white dark:bg-[#18231C] border border-[#C6A15B]/30 text-[#7E8C7F]'
-                    }`}
-                  >
-                    {getPrayerIcon(prayer.id)}
-                  </div>
-
-                  {/* Prayer Name */}
-                  <span
-                    className={`text-[11px] sm:text-xs font-bold leading-tight ${
-                      isNext
-                        ? 'text-[#C6A15B]'
-                        : isCurrent
-                        ? 'text-[#1D211E] dark:text-[#F6F1E7]'
-                        : 'text-[#7E8C7F] dark:text-[#A9B7A3]'
-                    }`}
-                  >
-                    {prayer.name}
-                  </span>
-
-                  {/* Prayer Time in Western digits */}
-                  <span
-                    className={`text-[10px] sm:text-[11px] font-mono mt-1 ${
-                      isNext
-                        ? 'font-bold text-[#1D211E] dark:text-[#F6F1E7]'
-                        : 'text-[#7E8C7F]'
-                    }`}
-                  >
-                    {prayer.formattedTime}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <PrayerClockHero data={prayersData} settings={settings} locating={locatingGps} onLocation={() => setIsCityModalOpen(true)} />
 
       {/* ═══════ CITY SELECTION MODAL ═══════ */}
       <AnimatePresence>
@@ -278,7 +140,7 @@ export const PrayerTimesSection: React.FC = () => {
 
               {/* GPS Button */}
               <TactileButton
-                onClick={handleUseGps}
+                onClick={() => handleUseGps(false)}
                 disabled={locatingGps}
                 className="w-full py-3 px-4 rounded-2xl bg-[#26352A] dark:bg-[#C6A15B] text-white dark:text-[#18231C] font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
               >

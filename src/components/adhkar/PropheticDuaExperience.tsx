@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   RefreshCw,
@@ -45,6 +45,21 @@ export const PropheticDuaExperience: React.FC = () => {
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
   const [showBookInfoModal, setShowBookInfoModal] = useState(false);
   const [currentRepetition, setCurrentRepetition] = useState(0);
+  const duaStartRef = useRef<HTMLDivElement>(null);
+  const focusedDuaRef = useRef<string | number | null>(null);
+
+  useLayoutEffect(() => {
+    // The Adhkar launcher is at the bottom of a long page. Do not inherit it.
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  const focusDuaStart = useCallback(() => {
+    const node = duaStartRef.current;
+    if (!node || node.dataset.duaId !== String(currentDua.id) || focusedDuaRef.current === currentDua.id) return;
+    focusedDuaRef.current = currentDua.id;
+    node.focus({ preventScroll: true });
+    node.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }, [currentDua.id]);
 
   const targetRepetition = currentDua.repetition || 1;
 
@@ -111,7 +126,7 @@ export const PropheticDuaExperience: React.FC = () => {
   const isCurrentDailyDua = currentDua.id === dailyDua.id;
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="qada-dua-workspace space-y-5" dir="rtl">
       {/* ════════ TOP BAR & HEADER ════════ */}
       <div className="flex items-center justify-between gap-2 px-1">
         <div>
@@ -199,7 +214,7 @@ export const PropheticDuaExperience: React.FC = () => {
       </div>
 
       {/* ════════ MAIN EDITORIAL DUA CARD ════════ */}
-      <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-white/95 to-[#F9F7F1]/90 dark:from-[#1F2E24] dark:to-[#18241C] border border-[#C6A15B]/30 shadow-lg text-center">
+      <div className="qada-dua-paper relative overflow-hidden rounded-3xl p-6 sm:p-8 text-center">
         {/* Subtle Decorative Arch in background */}
         <div className="absolute -top-8 -left-8 opacity-10 dark:opacity-5 pointer-events-none">
           <SubtleArch className="w-36 h-48 text-[#C6A15B]" color="#C6A15B" />
@@ -231,11 +246,15 @@ export const PropheticDuaExperience: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentDua.id}
+            ref={duaStartRef}
+            data-dua-id={currentDua.id}
+            tabIndex={-1}
+            onAnimationComplete={focusDuaStart}
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.98 }}
             transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10"
+            className="relative z-10 scroll-mt-24 outline-none"
           >
             {/* Dua Number & Title */}
             <div className="mb-4">

@@ -96,6 +96,7 @@ export const AdhkarSourceSheet: React.FC<{
                 </p>
               )}
 
+              {item.sourceUrl && <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-[#C6A15B] underline underline-offset-4">قراءة النص في المصدر</a>}
               <div className="flex items-center gap-1.5 text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
                 <BookOpen className="w-3 h-3 text-[#C6A15B]" />
                 <span>نُصوص الأذكار منقولة حرفيًا من مصادر موثوقة (كتاب حصن المسلم) دون تحريف.</span>

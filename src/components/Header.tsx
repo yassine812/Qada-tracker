@@ -1,10 +1,35 @@
-import React from 'react';
-import { Moon, Sun, Flame, UserRound } from 'lucide-react';
+import { FeatureHelp } from './guide/FeatureHelp';
+import React, { useEffect, useRef, useState } from 'react';
+import { Moon, Sun, Flame, UserRound, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { StarEightPoint } from './landing/IslamicOrnaments';
+import { authClient } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
+import { QadaLogo } from './QadaLogo';
 import { InstallButton } from './InstallButton';
 export const Header: React.FC = () => {
   const { settings, updateSettings, stats } = useApp();
+  const { session } = useAuth();
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) setAccountMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setAccountMenuOpen(false); };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
+
+  const signOut = async () => {
+    setAccountMenuOpen(false);
+    if (authClient) await authClient.auth.signOut();
+    window.location.assign('/account');
+  };
 
   const isDark =
     settings?.theme === 'dark' ||
@@ -34,7 +59,7 @@ export const Header: React.FC = () => {
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
+      className="qada-app-header fixed top-0 inset-x-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
       style={{
         background: isDark ? 'rgba(24, 35, 28, 0.85)' : 'rgba(250, 247, 242, 0.88)',
         borderColor: 'var(--qada-border)',
@@ -49,23 +74,38 @@ export const Header: React.FC = () => {
           className="flex items-center gap-2 group cursor-pointer"
           title="العودة للصفحة الرئيسية"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#26352A]/10 dark:bg-[#C6A15B]/15 border border-[#C6A15B]/30 flex items-center justify-center text-[#C6A15B] transition-transform group-hover:scale-105">
-            <StarEightPoint size={14} color="#C6A15B" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="font-bold text-lg font-landing-display tracking-tight text-[#1D211E] dark:text-[#F6F1E7]">
-              قضاء
-            </span>
-            <span className="text-[9px] uppercase tracking-widest text-[#7E8C7F] dark:text-[#A9B7A3] font-mono">
-              QADA
-            </span>
-          </div>
+          <QadaLogo width={78} className="text-[#285543] dark:text-[#D5B77A]" />
         </button>
 
         {/* Left (end in RTL): Controls & Streak badge */}
         <div className="flex items-center gap-2">
-          <a href="/account" aria-label="الحساب وتسجيل الدخول" title="الحساب وتسجيل الدخول" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#526055] dark:text-[#A9B7A3]"><UserRound className="h-4 w-4" /></a>
+          <div ref={accountMenuRef} className="relative">
+            <button
+              type="button"
+              aria-label="قائمة الحساب"
+              aria-expanded={accountMenuOpen}
+              title="قائمة الحساب"
+              onClick={() => setAccountMenuOpen(open => !open)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#526055] dark:text-[#A9B7A3] hover:bg-black/5 dark:hover:bg-white/5"
+            >
+              <UserRound className="h-4 w-4" />
+            </button>
+            {accountMenuOpen && (
+              <div role="menu" className="absolute left-0 top-[calc(100%+0.5rem)] z-50 min-w-44 overflow-hidden rounded-2xl border border-[#C6A15B]/30 bg-[#F6F1E7] p-1 text-right shadow-xl dark:bg-[#1F2E24]">
+                <a role="menuitem" href="/profile" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1D211E] hover:bg-black/5 dark:text-[#F6F1E7] dark:hover:bg-white/5">الملف الشخصي</a>
+                {session ? (
+                  <button role="menuitem" type="button" onClick={signOut} className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#9E3A3A] hover:bg-[#9E3A3A]/10">
+                    <LogOut className="h-4 w-4" />
+                    تسجيل الخروج
+                  </button>
+                ) : (
+                  <a role="menuitem" href="/account" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl px-4 py-3 text-sm font-semibold text-[#1D211E] hover:bg-black/5 dark:text-[#F6F1E7] dark:hover:bg-white/5">تسجيل الدخول</a>
+                )}
+              </div>
+            )}
+          </div>
           <InstallButton className="min-h-9 px-2 rounded-lg text-xs text-[#526055] dark:text-[#A9B7A3] bg-black/5 dark:bg-white/5" />
+          <FeatureHelp topic="navigation" />
           {/* Streak indicator if user has an active streak */}
           {stats && stats.currentStreak > 0 && (
             <div

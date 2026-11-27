@@ -1,0 +1,18 @@
+.qada-launch-welcome { position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:none; margin:0; padding:20px; border:0; background:radial-gradient(ellipse at 50% 30%,#c6a15b12,transparent 65%),var(--qada-bg,#182b21); color:var(--qada-text); overflow:auto; }
+.qada-launch-welcome[open] { display:grid; place-items:center; }
+.qada-launch-welcome::backdrop { background:#081d17a8; backdrop-filter:blur(8px); }
+.qada-launch-card { position:relative; width:min(100%,380px); padding:22px 24px 26px; border:1px solid var(--qada-border-strong); border-radius:32px; background:radial-gradient(ellipse at 50% 0%,#c6a15b22,transparent 65%),var(--qada-surface-1); text-align:center; box-shadow:0 24px 80px #0004; }
+.qada-launch-close { position:absolute; top:12px; left:12px; display:grid; place-items:center; width:40px; height:40px; border-radius:50%; color:var(--qada-text-muted); cursor:pointer; }
+.qada-launch-close:hover { background:var(--qada-primary-soft); }
+.qada-launch-illustration { position:relative; display:grid; place-items:center; height:172px; margin:0 auto 12px; }
+.qada-launch-halo { position:absolute; width:138px; height:138px; border-radius:50%; background:#c6a15b16; border:1px solid #c6a15b28; box-shadow:0 0 0 14px #c6a15b08; }
+.qada-launch-boy { position:relative; width:140px; height:168px; }
+.qada-launch-star { position:absolute; color:var(--qada-accent); font-size:24px; }
+.qada-launch-star-one { top:26px; right:52px; }
+.qada-launch-star-two { bottom:35px; left:48px; font-size:30px; }
+.qada-launch-eyebrow { margin:0 0 10px; color:var(--qada-accent); font-size:12px; }
+.qada-launch-card h1 { margin:0; font-size:24px; font-weight:750; line-height:1.6; overflow-wrap:anywhere; }
+.qada-launch-message { margin:12px 0 22px; color:var(--qada-text-secondary); font-size:14px; line-height:1.9; }
+.qada-launch-continue { width:100%; min-height:48px; padding:12px; border-radius:16px; background:#c6a15b; color:#182b21; font-size:14px; font-weight:750; cursor:pointer; }
+.qada-launch-card button:focus-visible { outline:2px solid var(--qada-accent); outline-offset:4px; }
+@media(max-height:560px) { .qada-launch-illustration { height:100px; }.qada-launch-boy { width:90px; height:108px; }.qada-launch-halo { width:90px; height:90px; }.qada-launch-card { padding:14px 20px; }.qada-launch-card h1 { font-size:20px; }.qada-launch-message { margin:8px 0 12px; } }

@@ -10,8 +10,8 @@ interface PhilosophyPillar {
 export const PhilosophySection: React.FC = () => {
   const pillars: PhilosophyPillar[] = [
     {
-      title: 'لا تحتاج إلى حساب',
-      description: 'ابدأ فوراً دون طلب بريد إلكتروني، رقم هاتف، أو كلمة مرور. لا حواجز بينك وبين هدفك.',
+      title: 'حسابك يرافق تقدمك',
+      description: 'أنشئ حسابك وسجّل دخولك للوصول إلى قضاء ومتابعة رحلتك في بيئة موثوقة.',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -22,8 +22,8 @@ export const PhilosophySection: React.FC = () => {
       ),
     },
     {
-      title: 'بياناتك محفوظة على جهازك',
-      description: 'تُحفظ إعداداتك وسجلات المتابعة في متصفح جهازك، دون حساب أو مزامنة سحابية تلقائية. احتفظ بنسخة احتياطية عند الحاجة.',
+      title: 'خصوصيتك أولاً',
+      description: 'نستخدم حسابك لإدارة الدخول واستعادة إعدادات البداية وتقدّمك الأساسي بأمان على أجهزتك الأخرى.',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />

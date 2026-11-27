@@ -12,12 +12,12 @@ Les compteurs religieux restent exclusivement dans IndexedDB/localStorage. **Cet
 
 - Projet du propriétaire créé : `qolmdufbnzulyayxccxc` (Qada), Free, Frankfurt.
 - URL et clé publishable configurées dans `.env.local` ignoré par Git. Aucune clé secrète ni mot de passe de base copié.
-- Site URL : `https://qada-tracker-yassine.netlify.app/account`. Les six destinations exactes ci-dessous sont enregistrées.
+- Site URL principal : `https://qada-tracker-five.vercel.app/account`. Les destinations Vercel et Netlify ci-dessous sont enregistrées pour conserver le miroir.
 - Email activé, confirmation obligatoire, changement sécurisé d'email et de mot de passe activés. La valeur backend du minimum de caractères reste à relire après l'enregistrement ; le frontend impose 10.
 - Backend joint réellement : une connexion avec des identifiants fictifs est refusée avec `invalid_credentials` (HTTP 400), sans session créée. Aucun compte de test créé et aucun email envoyé lors de ce contrôle.
 - TypeScript, build configuré et 53 tests réussis. Cela ne remplace pas un test complet de confirmation/récupération par email.
 - Gmail choisi par le propriétaire. Formulaire SMTP préparé, **pas encore enregistré** : `smtp.gmail.com:465`, expéditeur et utilisateur Gmail du propriétaire, nom `قضاء | Qada`. Le propriétaire doit créer et saisir son mot de passe d'application Google lui-même, puis enregistrer. Ne jamais mettre ce secret dans le dépôt.
-- Pas encore publié sur Netlify/Vercel. Il reste à finaliser SMTP, tester les parcours réels, configurer les variables de build des hébergeurs et déployer.
+- Version web publiée sur Vercel : `https://qada-tracker-five.vercel.app`. Il reste au propriétaire de finaliser SMTP et de tester les parcours email réels.
 
 1. Créer un projet Supabase dans le compte du propriétaire, sur l'offre Free si elle convient. Le propriétaire choisit et conserve le mot de passe de la base. Ne pas saisir ce mot de passe dans le code ou la conversation.
 2. Dans Authentication, activer Email et la confirmation des emails. Définir une longueur minimale de mot de passe de **10** et conserver les limites anti-abus. Activer les protections supplémentaires disponibles avant une ouverture publique.

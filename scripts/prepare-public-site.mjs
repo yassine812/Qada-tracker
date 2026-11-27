@@ -25,6 +25,7 @@ const escape = (value) => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;
 const dist = resolve('dist');
 let shell = await readFile(join(dist, 'index.html'), 'utf8');
 if (client) shell = shell.replace('</head>', `<meta name="google-adsense-account" content="${client}">\n</head>`);
+if (origin) shell = shell.replace('</head>', `<link rel="canonical" href="${escape(origin)}">\n</head>`);
 await writeFile(join(dist, 'index.html'), shell);
 await writeFile(join(dist, 'ads.txt'), client
   ? `google.com, ${client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n`
@@ -49,7 +50,7 @@ try {
     const markup = renderToStaticMarkup(createElement(InfoPage, { path: route }));
     let html = shell.replace('<div id="root"></div>', `<div id="root">${markup}</div>`)
       .replace(/<title>.*?<\/title>/, `<title>${title} | قضاء</title>`);
-    if (origin) html = html.replace('</head>', `<link rel="canonical" href="${escape(origin + route)}">\n</head>`);
+    if (origin) html = html.replace(`<link rel="canonical" href="${escape(origin)}">`, `<link rel="canonical" href="${escape(origin + route)}">`);
     const directory = join(dist, route.slice(1));
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'index.html'), html);

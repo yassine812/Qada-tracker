@@ -142,6 +142,7 @@ export const CircularProgressRing: React.FC<{
       <svg
         width={size}
         height={size}
+        viewBox={`0 0 ${size} ${size}`}
         className="transform -rotate-90 origin-center overflow-visible"
       >
         {/* Background Track */}

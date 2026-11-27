@@ -3,8 +3,13 @@ build/
 dist/
 coverage/
 artifacts/
+supabase/.temp/
 .netlify/
+.vercel/
 .DS_Store
 *.log
 .env*
 !.env.example
+
+.vercel
+.env*

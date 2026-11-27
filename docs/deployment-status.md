@@ -1,10 +1,10 @@
 # État de publication — 9 septembre 2026
 
-- Site public : https://qada-tracker-yassine.netlify.app
-- Projet Netlify : https://app.netlify.com/projects/qada-tracker-yassine/overview
+- Site public principal : https://qada-tracker-five.vercel.app
+- Hébergement miroir : https://qada-tracker-yassine.netlify.app
 - Déploiement manuel du contenu compilé de `dist` uniquement. Aucun accès GitHub supplémentaire, achat de domaine ou abonnement payant activé.
 - AdSense : propriété vérifiée par balise HTML ; demande d'examen envoyée, statut observé `Getting ready` / `Review requested`. Ce n'est pas une approbation.
-- L'identifiant public de l'éditeur et l'origine du site sont configurés localement dans `.env.production.local` (ignoré par Git). Aucun mot de passe n'est enregistré dans le projet.
+- L'origine de production est configurée sur Vercel (`SITE_URL=https://qada-tracker-five.vercel.app`). Aucun mot de passe n'est enregistré dans le projet.
 - Les annonces restent désactivées. Avant activation : approbation Google, coordonnées publiques autorisées par le propriétaire, bloc publicitaire et CMP certifiée indépendante à configurer et tester. Ne pas activer Auto ads sur les écrans de suivi.
 
 ## Vérification technique

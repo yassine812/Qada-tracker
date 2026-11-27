@@ -1,4 +1,12 @@
+import { FeatureHelp } from '../components/guide/FeatureHelp';
+import { AppPageHeader } from '../components/ui/AppPageHeader';
+import { PrayerDailyPlan, DailyPlanSummary } from '../components/PrayerDailyPlan';
+import { normalizeQadaPlan } from '../utils/qadaPlan';
+import { getTodayDateString } from '../utils/streak';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { loadFastingState, type FastingState, type FastingRecord } from '../storage/fastingState';
+import { encourageProgress } from '../services/companionFeedback';
+import { useStreak } from '../context/StreakContext';
 import {
   Plus, Minus, Sunrise, Sun, SunMedium, Sunset, Moon,
   Check, TrendingUp, Info, Calendar, Sparkles, AlertCircle,
@@ -29,12 +37,45 @@ const prayerIcons: Record<PrayerKey, React.ComponentType<{ className?: string }>
   isha: Moon,
 };
 
+const formatProgressPercent = (percentage: number) => {
+  if (percentage <= 0) return '0%';
+  if (percentage < 1) return `${percentage.toFixed(1)}%`;
+  return `${Math.round(percentage)}%`;
+};
+
+const PrayerProgressRing: React.FC<{ percentage: number }> = ({ percentage }) => {
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const safePercentage = Math.max(0, Math.min(100, percentage));
+  const offset = circumference - (safePercentage / 100) * circumference;
+  return <div className="qada-prayer-progress-ring" role="progressbar" aria-label={`نسبة إنجاز الصلاة ${formatProgressPercent(percentage)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={safePercentage}>
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <circle className="qada-prayer-progress-track" cx="24" cy="24" r={radius} />
+      <circle className="qada-prayer-progress-value" cx="24" cy="24" r={radius} strokeDasharray={circumference} strokeDashoffset={offset} />
+    </svg>
+    <span>{formatProgressPercent(percentage)}</span>
+  </div>;
+};
+
 // ══════════════════════════════════════════════════════════════════
 // 1. PRAYERS TRACKER (الصلوات الفائتة)
 // ══════════════════════════════════════════════════════════════════
-const PrayerQadaList: React.FC = () => {
-  const { counters, recordQuickPrayer, updatePrayerRemainingCount } = useApp();
+export const PrayerQadaList: React.FC = () => {
+  const { counters, records, settings, updateQadaPlan, recordQuickPrayer, updatePrayerRemainingCount } = useApp();
   const [justCompletedPrayer, setJustCompletedPrayer] = useState<PrayerKey | null>(null);
+  const [selectedPrayer, setSelectedPrayer] = useState<PrayerKey>('fajr');
+  const [today, setToday] = useState(getTodayDateString);
+  useEffect(() => {
+    const refresh = () => setToday(getTodayDateString());
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, []);
+  const plans = normalizeQadaPlan(settings?.qadaPlan);
+  const completedToday = useMemo(() => Object.fromEntries(PRAYERS_LIST.map(({ key }) => [key,
+    records.filter(record => record.date === today).reduce((sum, record) => sum + (record[key] || 0), 0),
+  ])) as Record<PrayerKey, number>, [records, today]);
 
   const handleQuickAdd = useCallback(async (key: PrayerKey) => {
     const ok = await recordQuickPrayer(key, 1);
@@ -58,13 +99,15 @@ const PrayerQadaList: React.FC = () => {
   const totalCompleted = prayerKeys.reduce((sum, key) => sum + (counters[key]?.completed || 0), 0);
   const totalAll = totalRemaining + totalCompleted;
   const overallPercentage = totalAll > 0 ? Math.round((totalCompleted / totalAll) * 100) : 0;
+  const selectedPrayerData = PRAYERS_LIST.find(({ key }) => key === selectedPrayer) || PRAYERS_LIST[0];
 
   return (
-    <div className="space-y-6">
+    <div className="qada-prayer-workspace space-y-4">
       {/* Overview Progress Area */}
-      <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm backdrop-blur-sm">
+      <div className="qada-surface-card relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm backdrop-blur-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
+            <FeatureHelp topic="prayers" />
             <StarEightPoint size={14} color="#C6A15B" />
             <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold">
               سجل الصلوات الفائتة
@@ -90,21 +133,38 @@ const PrayerQadaList: React.FC = () => {
         <AnimatedProgressBar percentage={overallPercentage} height="h-2" />
       </div>
 
-      {/* Prayer Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
+      <div className="qada-prayer-orbit" role="tablist" aria-label="اختر الصلاة التي تريد متابعتها">
         {PRAYERS_LIST.map((prayer) => {
+          const Icon = prayerIcons[prayer.key];
+          const item = counters[prayer.key];
+          const total = item.completed + item.remaining;
+          const percentage = total > 0 ? (item.completed / total) * 100 : 0;
+          const isSelected = selectedPrayer === prayer.key;
+          return <button key={prayer.key} type="button" role="tab" aria-selected={isSelected} className={`qada-prayer-orbit-item${isSelected ? ' is-selected' : ''}`} onClick={() => setSelectedPrayer(prayer.key)}>
+            <span className="qada-prayer-orbit-ring"><span className="qada-prayer-orbit-icon"><Icon /></span><b>{formatProgressPercent(percentage)}</b></span>
+            <strong>صلاة {prayer.arabicName}</strong>
+            <small>{formatNumber(item.completed)} منجزة</small>
+          </button>;
+        })}
+      </div>
+      <p className="qada-prayer-orbit-caption">اختر صلاة لعرض تفاصيلها وخطتها اليومية: <strong>صلاة {selectedPrayerData.arabicName}</strong></p>
+
+      {/* Prayer Cards Grid */}
+      <div className="qada-prayer-ledger grid grid-cols-1 gap-3 lg:gap-4">
+        {PRAYERS_LIST.filter(({ key }) => key === selectedPrayer).map((prayer) => {
           const item = counters[prayer.key];
           const Icon = prayerIcons[prayer.key];
           const isJustDone = justCompletedPrayer === prayer.key;
           const isComplete = item.remaining === 0;
           const prayerTotal = item.completed + item.remaining;
-          const prayerPct = prayerTotal > 0 ? Math.round((item.completed / prayerTotal) * 100) : 0;
+          const prayerPercentage = prayerTotal > 0 ? (item.completed / prayerTotal) * 100 : 0;
 
           return (
             <motion.div
               key={prayer.key}
+              data-guide={prayer.key === 'fajr' ? 'prayer-card' : undefined}
               layout
-              className={`relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border ${
+              className={`qada-surface-card relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border ${
                 isJustDone
                   ? 'bg-[#3C6E47]/10 border-[#3C6E47]/40 dark:bg-[#3C6E47]/20 shadow-md'
                   : 'bg-white/80 dark:bg-[#1F2E24] border-[#C6A15B]/15 hover:border-[#C6A15B]/40 shadow-sm'
@@ -115,7 +175,7 @@ const PrayerQadaList: React.FC = () => {
                 <SubtleArch className="w-8 h-12 text-[#C6A15B]" color="#C6A15B" />
               </div>
 
-              <div className="flex items-center justify-between gap-3 relative z-10">
+              <div className="flex flex-wrap items-center justify-between gap-3 relative z-10">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-xl bg-[#26352A]/5 dark:bg-[#C6A15B]/10 border border-[#C6A15B]/20 flex items-center justify-center text-[#C6A15B]">
                     <Icon className="w-6 h-6 stroke-[1.8]" />
@@ -126,7 +186,9 @@ const PrayerQadaList: React.FC = () => {
                       <h4 className="text-base font-bold font-landing-display text-[#1D211E] dark:text-[#F6F1E7]">
                         صلاة {prayer.arabicName}
                       </h4>
-                      {isComplete && (
+                      {/* A 0/0 counter is not a completed prayer: it means the
+                          person has not set their calculation yet. */}
+                      {isComplete && prayerTotal > 0 && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#3C6E47]/20 text-[#3C6E47] dark:text-[#6BA06B] font-bold">
                           تم القضاء
                         </span>
@@ -181,15 +243,21 @@ const PrayerQadaList: React.FC = () => {
                 </div>
               </div>
 
-              {/* Progress bar per prayer */}
-              <div className="mt-3 pt-2.5 border-t border-black/5 dark:border-white/5 flex items-center gap-3 text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">
-                <AnimatedProgressBar percentage={prayerPct} height="h-1" className="flex-1" />
-                <span className="font-mono">{prayerPct}%</span>
+              {/* Circular progress per prayer */}
+              <div className="qada-prayer-progress">
+                <PrayerProgressRing percentage={prayerPercentage} />
+                <div className="qada-prayer-progress-copy">
+                  <span>نسبة الإنجاز</span>
+                  <strong>{prayerPercentage >= 100 ? 'تم إكمالها' : prayerPercentage <= 0 ? 'ابدأ بخطوة' : `${formatProgressPercent(prayerPercentage)} مكتمل`}</strong>
+                </div>
               </div>
+              <PrayerDailyPlan prayer={prayer.key} name={prayer.arabicName} remaining={item.remaining} completed={item.completed}
+                target={plans[prayer.key]} today={completedToday[prayer.key]} onChange={target => updateQadaPlan(prayer.key, target)} />
             </motion.div>
           );
         })}
       </div>
+      <DailyPlanSummary plans={plans} />
     </div>
   );
 };
@@ -197,19 +265,6 @@ const PrayerQadaList: React.FC = () => {
 // ══════════════════════════════════════════════════════════════════
 // 2. FASTING TRACKER (الصيام)
 // ══════════════════════════════════════════════════════════════════
-interface FastingRecord {
-  id: string;
-  date: string; // YYYY-MM-DD
-  days: number; // number of fasts completed that session
-  reason?: string;
-  timestamp: number;
-}
-
-interface FastingState {
-  remainingDays: number; // current Qada fasting balance (missed days)
-  completedDays: number; // total completed fasts (historical total)
-  records: FastingRecord[]; // history of completed fasts
-}
 
 type FastingReasonType = 'QADA' | 'SPECIAL_CASE';
 
@@ -227,32 +282,9 @@ const FASTING_REASONS: { key: string; label: string; reasonType: FastingReasonTy
 const QADA_REASONS = FASTING_REASONS.filter((r) => r.reasonType === 'QADA');
 const SPECIAL_CASE_REASONS = FASTING_REASONS.filter((r) => r.reasonType === 'SPECIAL_CASE');
 
-const DEFAULT_FASTING_STATE: FastingState = {
-  remainingDays: 0,
-  completedDays: 0,
-  records: [],
-};
-
-function loadFastingState(): FastingState {
-  try {
-    const raw = localStorage.getItem('qada_fasting_state');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return {
-          remainingDays: Number.isFinite(parsed.remainingDays) ? Math.max(0, Math.floor(parsed.remainingDays)) : 0,
-          completedDays: Number.isFinite(parsed.completedDays) ? Math.max(0, Math.floor(parsed.completedDays)) : 0,
-          records: Array.isArray(parsed.records) ? parsed.records : [],
-        };
-      }
-    }
-  } catch {
-    // ignore corrupt state
-  }
-  return { ...DEFAULT_FASTING_STATE };
-}
 
 const FastingTracker: React.FC = () => {
+  const { recordDailyActivity } = useStreak();
   const { settings } = useApp();
   const isFemale = settings?.gender === 'female';
 
@@ -305,6 +337,8 @@ const FastingTracker: React.FC = () => {
       records: [record, ...prev.records],
     }));
     setJustRecorded(true);
+    void recordDailyActivity('fasting');
+    encourageProgress(state.remainingDays === toComplete ? 'ما شاء الله! أكملت أيام الصيام المسجّلة. تقبّل الله منك!' : 'أحسنت! سجّلت يوم صيام جديدًا. تقبّل الله صيامك!', state.remainingDays === toComplete);
     setTimeout(() => setJustRecorded(false), 1400);
   };
 
@@ -407,10 +441,11 @@ const FastingTracker: React.FC = () => {
   })();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <div className="qada-fasting-workspace grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       {/* Main Summary Card */}
-      <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm">
+      <div data-guide="fasting-card" className="qada-surface-card relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
+          <FeatureHelp topic="fasting" />
           <StarEightPoint size={14} color="#C6A15B" />
           <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold">
             قضاء الصيام والتطوع
@@ -470,7 +505,7 @@ const FastingTracker: React.FC = () => {
       </div>
 
       {/* Due days summary */}
-      <div className="lg:row-span-2 p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
+      <div className="qada-surface-card lg:row-span-2 p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
         <div className="flex items-center gap-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
           <Calendar className="w-4 h-4 text-[#C6A15B]" />
           <span>الأيام المستحقة</span>
@@ -668,7 +703,7 @@ const FastingTracker: React.FC = () => {
       </div>
 
       {/* Qada vs Fidya distinction */}
-      <div className="p-4 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
+      <div className="qada-surface-card p-4 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
         <div className="text-[11px] font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-[#C6A15B]" />
           <span>القضاء والفدية</span>
@@ -700,11 +735,11 @@ const FastingTracker: React.FC = () => {
       </div>
 
       {/* Fasting history */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
+      <div data-help="fastingHistory" className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
             <History className="w-4 h-4 text-[#C6A15B]" />
-            <span>سجل الصيام</span>
+            <span>سجل الصيام</span><FeatureHelp topic="fastingHistory" />
           </div>
           <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">{state.records.length} سجل</span>
         </div>
@@ -740,7 +775,7 @@ const FastingTracker: React.FC = () => {
       </div>
 
       {/* Sunnah Fasting Days Reminder */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
+      <div className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">
           <Calendar className="w-4 h-4 text-[#C6A15B]" />
           <span>أيام الصيام المستحبة</span>
@@ -1374,7 +1409,7 @@ const ZakatCalculator: React.FC = () => {
   })();
 
   return (
-    <div className="space-y-6 relative">
+    <div className="qada-zakat-workspace space-y-6 relative">
       {/* Atmospheric background glow */}
       <div className="absolute inset-x-0 -top-8 h-64 pointer-events-none overflow-hidden" aria-hidden="true">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-64 bg-[radial-gradient(ellipse_at_center,rgba(198,161,91,0.12)_0%,transparent_70%)]" />
@@ -1385,12 +1420,13 @@ const ZakatCalculator: React.FC = () => {
       {/* Content */}
       <div className="space-y-6 relative z-10">
       {/* Nisab Overview Card */}
-      <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm">
+      <div data-guide="zakat-card" className="qada-surface-card relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white/90 to-[#F6F1E7]/70 dark:from-[#26352A]/90 dark:to-[#18231C]/90 border border-[#C6A15B]/25 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <span className="text-xs uppercase tracking-wider text-[#7E8C7F] dark:text-[#A9B7A3] font-semibold">
               نصاب الزكاة الشرعي ({config.currentHijriYear} هـ)
             </span>
+            <FeatureHelp topic="zakat" />
             <button
               type="button"
               onClick={() => setInfoSheet(ZAKAT_INFO_SHEETS.nisab)}
@@ -1483,7 +1519,7 @@ const ZakatCalculator: React.FC = () => {
       </div>
 
       {/* Hawl state — must be explicit, never silently assumed */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
+      <div className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-3">
         <div className="flex items-center gap-1.5">
           <h4 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">حولان الحول</h4>
           <button
@@ -1528,10 +1564,10 @@ const ZakatCalculator: React.FC = () => {
       </div>
 
       {/* Input Fields */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
+      <div data-help="zakatAssets" className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-4">
         <h4 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-1.5">
           <StarEightPoint size={11} color="#C6A15B" />
-          <span>الأموال الخاضعة للحساب ({config.currencySymbol})</span>
+          <span>الأموال الخاضعة للحساب ({config.currencySymbol})</span><FeatureHelp topic="zakatAssets" />
           <button
             type="button"
             onClick={() => setInfoSheet(ZAKAT_INFO_SHEETS.assets)}
@@ -1601,9 +1637,9 @@ const ZakatCalculator: React.FC = () => {
       </div>
 
       {/* Live calculation breakdown — updates instantly with every input */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-2.5">
+      <div data-help="zakatResult" className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm space-y-2.5">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]">ملخص الحساب</h4>
+          <h4 className="text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7] flex items-center gap-2">ملخص الحساب <FeatureHelp topic="zakatResult" /></h4>
           <span className="text-[10px] text-[#7E8C7F] dark:text-[#A9B7A3]">{config.currencySymbol}</span>
         </div>
 
@@ -1653,7 +1689,7 @@ const ZakatCalculator: React.FC = () => {
       </div>
 
       {/* How the calculation works — expandable, keeps main screen clean */}
-      <div className="p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm">
+      <div className="qada-surface-card p-5 rounded-2xl bg-white/80 dark:bg-[#1F2E24] border border-[#C6A15B]/15 shadow-sm">
         <button
           type="button"
           onClick={() => setShowExplanation((s) => !s)}
@@ -1785,9 +1821,10 @@ export const IbadatPage: React.FC = () => {
   ];
 
   return (
-    <PageTransition className="space-y-6 pb-24 text-right select-none">
+    <PageTransition className="qada-app-page qada-guide-ibadat space-y-4 pb-24 text-right select-none" data-guide-page="ibadat">
+      <AppPageHeader eyebrow="رحلتك مع قضاء" title="عباداتك، خطوة بخطوة" description="تابع الصلاة والصيام، واحسب زكاتك في مكان واحد." />
       {/* Sub-Tab Navigation Bar */}
-      <div className="flex p-1 rounded-2xl bg-white/70 dark:bg-[#1F2E24] border border-[#C6A15B]/20 backdrop-blur-md">
+      <div className="qada-segmented-control flex p-1 rounded-2xl bg-white/70 dark:bg-[#1F2E24] border border-[#C6A15B]/20 backdrop-blur-md" data-guide="ibadat">
         {tabs.map((tab) => {
           const isActive = ibadatSubTab === tab.id;
           return (
@@ -1795,6 +1832,7 @@ export const IbadatPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setIbadatSubTab(tab.id)}
+              aria-pressed={isActive}
               className="relative flex-1 py-2.5 lg:py-3 rounded-xl text-xs lg:text-sm font-bold transition-colors cursor-pointer select-none"
               style={{
                 color: isActive ? 'var(--qada-primary)' : 'var(--qada-text-muted)',

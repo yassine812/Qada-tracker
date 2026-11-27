@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, Minus, ArrowLeft, ArrowRight, Info, Sparkles, Check } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, ArrowRight, Info, Sparkles, Check, Calculator, BarChart3, CalendarDays, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
-import { calculateMissedPrayers, createInitialCounters, formatArabicNumber } from '../utils/calculator';
-import { Gender } from '../types';
+import { calculateMissedPrayers, calculateMissedPrayersForDays, createInitialCounters, formatArabicNumber } from '../utils/calculator';
+import { CalculationMethod, ExactPeriodSettings, Gender } from '../types';
 import { PageTransition, TactileButton } from '../components/ui/MotionPrimitives';
 import { StarEightPoint } from '../components/landing/IslamicOrnaments';
 import { PersonalizedWelcomeScreen } from '../components/onboarding/PersonalizedWelcomeScreen';
@@ -21,6 +21,14 @@ export const OnboardingPage: React.FC = () => {
   // Step 1: Personal info
   const [userName, setUserName] = useState<string>('');
   const [gender, setGender] = useState<Gender | null>(null);
+
+  // Prayer calculation method is selected immediately after the name.
+  const [calculationMethod, setCalculationMethod] = useState<CalculationMethod | null>(null);
+  const [exactInputMode, setExactInputMode] = useState<'duration' | 'dates'>('duration');
+  const [exactAmount, setExactAmount] = useState<number>(2);
+  const [exactUnit, setExactUnit] = useState<NonNullable<ExactPeriodSettings['unit']>>('months');
+  const [exactStartDate, setExactStartDate] = useState('');
+  const [exactEndDate, setExactEndDate] = useState('');
 
   // Step 2: Ages
   const [pubertyAge, setPubertyAge] = useState<number>(14);
@@ -41,20 +49,25 @@ export const OnboardingPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validation for step navigation
-  const canProceedStep1 = gender !== null;
-  const canProceedStep2 = currentAge > pubertyAge && pubertyAge >= 7 && currentAge <= 120;
+  const canProceedStep1 = gender !== null && calculationMethod !== null;
+  const canProceedStep2 = calculationMethod === 'exact_period'
+    ? (exactInputMode === 'duration' ? exactAmount > 0 : !!exactStartDate && !!exactEndDate && exactEndDate >= exactStartDate)
+    : currentAge > pubertyAge && pubertyAge >= 7 && currentAge <= 120;
 
   // Live calculation for summary
-  const calc = gender
-    ? calculateMissedPrayers(
+  const exactDays = exactInputMode === 'duration'
+    ? Math.round(exactAmount * (exactUnit === 'weeks' ? 7 : exactUnit === 'months' ? 30 : exactUnit === 'years' ? 365 : 1))
+    : (exactStartDate && exactEndDate ? Math.max(0, Math.floor((new Date(`${exactEndDate}T00:00:00Z`).getTime() - new Date(`${exactStartDate}T00:00:00Z`).getTime()) / 86400000) + 1) : 0);
+  const calc = calculationMethod === 'exact_period'
+    ? calculateMissedPrayersForDays(exactDays, 0)
+    : calculateMissedPrayers(
         pubertyAge,
         currentAge,
         frequency,
         gender === 'female'
           ? { gender: 'female', menstruationCalculationMode: 'average', averageMenstruationDays }
           : undefined
-      )
-    : calculateMissedPrayers(pubertyAge, currentAge, frequency);
+      );
 
   const totalEffectiveMissed = calc.estimatedMissed;
 
@@ -81,11 +94,11 @@ export const OnboardingPage: React.FC = () => {
   const handleNext = () => {
     setErrorMsg(null);
     if (step === 1 && !canProceedStep1) {
-      setErrorMsg('يرجى اختيار الجنس للمتابعة');
+      setErrorMsg(calculationMethod ? 'يرجى اختيار الجنس للمتابعة' : 'يرجى اختيار طريقة حساب الصلوات أولاً');
       return;
     }
     if (step === 2 && !canProceedStep2) {
-      setErrorMsg('يجب أن يكون العمر الحالي أكبر من سن البلوغ');
+      setErrorMsg(calculationMethod === 'exact_period' ? 'يرجى إدخال مدة أو تاريخ فترة صحيح' : 'يجب أن يكون العمر الحالي أكبر من سن البلوغ');
       return;
     }
     if (step < totalSteps) {
@@ -108,7 +121,7 @@ export const OnboardingPage: React.FC = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    if (currentAge <= pubertyAge) {
+    if (calculationMethod !== 'exact_period' && currentAge <= pubertyAge) {
       setErrorMsg('يجب أن يكون العمر الحالي أكبر من سن البلوغ');
       return;
     }
@@ -120,6 +133,14 @@ export const OnboardingPage: React.FC = () => {
         gender: gender || 'male',
         menstruationCalculationMode: gender === 'female' ? 'average' : undefined,
         averageMenstruationDays: gender === 'female' ? averageMenstruationDays : undefined,
+        calculationMethod: calculationMethod || 'age_estimate',
+        exactPeriod: calculationMethod === 'exact_period' ? {
+          mode: exactInputMode,
+          amount: exactInputMode === 'duration' ? exactAmount : undefined,
+          unit: exactInputMode === 'duration' ? exactUnit : undefined,
+          startDate: exactInputMode === 'dates' ? exactStartDate : undefined,
+          endDate: exactInputMode === 'dates' ? exactEndDate : undefined,
+        } : undefined,
       });
 
       // Setup istighfar if user chose to
@@ -143,7 +164,7 @@ export const OnboardingPage: React.FC = () => {
 
   if (introPhase === 'name_input') {
     return (
-      <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col justify-between max-w-md mx-auto relative select-none" dir="rtl">
+      <div className="qada-onboarding-page min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col justify-between max-w-md mx-auto relative select-none" dir="rtl">
         {/* Top Brand Header */}
         <header className="flex items-center justify-between py-2">
           <div className="flex items-center gap-2">
@@ -190,7 +211,8 @@ export const OnboardingPage: React.FC = () => {
                 onChange={(e) => setUserName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    setIntroPhase('welcome');
+                    setIntroPhase('questions');
+                    setStep(1);
                   }
                 }}
                 placeholder="اكتب اسمك الكريم (مثال: ياسين، إبراهيم...)"
@@ -226,7 +248,7 @@ export const OnboardingPage: React.FC = () => {
         {/* Bottom Actions */}
         <div className="space-y-2 pt-4">
           <TactileButton
-            onClick={() => setIntroPhase('welcome')}
+            onClick={() => { setIntroPhase('questions'); setStep(1); }}
             className="w-full py-4 rounded-full bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:opacity-95 cursor-pointer"
           >
             <span>متابعة</span>
@@ -237,7 +259,8 @@ export const OnboardingPage: React.FC = () => {
             type="button"
             onClick={() => {
               setUserName('');
-              setIntroPhase('welcome');
+              setIntroPhase('questions');
+              setStep(1);
             }}
             className="w-full py-2.5 text-xs font-semibold text-[#7E8C7F] dark:text-[#A9B7A3] hover:text-[#1D211E] dark:hover:text-[#F6F1E7] text-center cursor-pointer"
           >
@@ -263,7 +286,7 @@ export const OnboardingPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col max-w-md mx-auto relative select-none" dir="rtl">
+    <div className="qada-onboarding-page min-h-screen bg-[#FAF7F2] dark:bg-[#18231C] text-[#1D211E] dark:text-[#F6F1E7] pb-12 pt-6 px-4 flex flex-col max-w-md mx-auto relative select-none" dir="rtl">
       {/* Top Brand Header */}
       <header className="flex items-center justify-between py-2 mb-3">
         <div className="flex items-center gap-2">
@@ -300,15 +323,15 @@ export const OnboardingPage: React.FC = () => {
       {/* Page Title */}
       <div className="text-center mb-6">
         <h1 className="font-bold text-2xl font-landing-display text-[#1D211E] dark:text-[#F6F1E7] mb-1">
-          {step === 1 && 'البيانات الشخصية'}
-          {step === 2 && 'العمر وسن البلوغ'}
-          {step === 3 && 'نسبة الالتزام السابقة'}
+          {step === 1 && 'كيف تريد حساب الصلوات الفائتة؟'}
+          {step === 2 && 'تفاصيل طريقة الحساب'}
+          {step === 3 && 'الاستثناءات الشرعية'}
           {step === 4 && 'ملخص الحساب التقديري'}
         </h1>
         <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
-          {step === 1 && 'معلومات بسيطة لمعايرة الحساب الشرعي بدقة'}
-          {step === 2 && 'لحساب عدد سنوات التكليف الفائتة'}
-          {step === 3 && 'تقدير ما كنت تؤديه من صلوات في تلك الفترة'}
+          {step === 1 && 'اختر طريقة واحدة قبل المتابعة'}
+          {step === 2 && 'ستظهر هنا الحقول المناسبة لاختيارك'}
+          {step === 3 && 'تُستثنى أيام العذر الشرعي من الحساب'}
           {step === 4 && 'النتيجة التقديرية لبدء رحلة القضاء المنظمة'}
         </p>
       </div>
@@ -331,6 +354,29 @@ export const OnboardingPage: React.FC = () => {
               exit={{ opacity: 0, x: 10 }}
               className="space-y-4"
             >
+              {/* Calculation method — first question after the name */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
+                <div>
+                  <label className="block text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7]">طريقة تقدير الصلوات</label>
+                  <p className="text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3] mt-1">اختر الطريقة الأقرب إلى حالتك</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'age_estimate' as CalculationMethod, label: 'تقدير بالعمر', desc: 'لا أعرف الفترة بدقة', Icon: Calculator },
+                    { id: 'percentage_estimate' as CalculationMethod, label: 'تقدير بالنسبة', desc: 'أعرف نسبة أدائي', Icon: BarChart3 },
+                    { id: 'exact_period' as CalculationMethod, label: 'فترة محددة', desc: 'أعرف الفترة بالضبط', Icon: CalendarDays },
+                  ].map((method) => {
+                    const selected = calculationMethod === method.id;
+                    return <button key={method.id} type="button" onClick={() => { setCalculationMethod(method.id); setErrorMsg(null); }} className={`relative min-h-[112px] rounded-2xl border p-2 flex flex-col items-center justify-center gap-1 text-center transition-all ${selected ? 'bg-[#26352A] dark:bg-[#C6A15B] text-[#F6F1E7] dark:text-[#18231C] border-[#C6A15B] shadow-md' : 'bg-black/5 dark:bg-white/5 border-transparent text-[#1D211E] dark:text-[#F6F1E7] hover:border-[#C6A15B]/40'}`}>
+                      {selected && <CheckCircle2 className="absolute top-2 left-2 w-4 h-4 text-[#C6A15B] dark:text-[#18231C]" />}
+                      <method.Icon className="w-6 h-6 text-[#C6A15B] dark:text-current" />
+                      <span className="text-xs font-bold leading-tight">{method.label}</span>
+                      <span className={`text-[9px] leading-tight ${selected ? 'opacity-80' : 'text-[#7E8C7F] dark:text-[#A9B7A3]'}`}>{method.desc}</span>
+                    </button>;
+                  })}
+                </div>
+              </div>
+
               {/* Registered Name Badge with Quick Edit */}
               <div className="p-4 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm flex items-center justify-between">
                 <div>
@@ -397,6 +443,79 @@ export const OnboardingPage: React.FC = () => {
               exit={{ opacity: 0, x: 10 }}
               className="space-y-4"
             >
+              {calculationMethod === 'exact_period' ? (
+                <div className="overflow-hidden rounded-[2rem] border border-[#C6A15B]/25 bg-gradient-to-br from-white to-[#F8F3EA] shadow-[0_12px_35px_rgba(39,55,43,0.08)] dark:from-[#26352A] dark:to-[#1F2E24] dark:shadow-black/20">
+                  <div className="flex items-start justify-between gap-3 border-b border-[#C6A15B]/15 px-5 pb-4 pt-5">
+                    <div className="flex items-center gap-3 text-right">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#26352A] text-[#C6A15B] shadow-sm dark:bg-[#C6A15B] dark:text-[#18231C]">
+                        <CalendarDays className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-extrabold text-[#1D211E] dark:text-[#F6F1E7]">الفترة التي تريد حسابها</h2>
+                        <p className="mt-1 text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">اختر طريقة إدخال الفترة التي تتذكرها</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#C6A15B]/12 px-2.5 py-1 text-[10px] font-bold text-[#947435] dark:bg-[#C6A15B]/15 dark:text-[#D8B66C]">٥ صلوات / يوم</span>
+                  </div>
+
+                  <div className="space-y-5 p-5">
+                    <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-[#1D211E]/[0.06] p-1 dark:bg-white/[0.06]">
+                      {[{ id: 'duration' as const, label: 'بالمدة', icon: '⌛' }, { id: 'dates' as const, label: 'بالتاريخ', icon: '◷' }].map((option) => {
+                        const selected = exactInputMode === option.id;
+                        return (
+                          <button key={option.id} type="button" onClick={() => setExactInputMode(option.id)} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-extrabold transition-all ${selected ? 'bg-[#26352A] text-[#F6F1E7] shadow-md dark:bg-[#C6A15B] dark:text-[#18231C]' : 'text-[#7E8C7F] hover:bg-white/70 dark:text-[#A9B7A3] dark:hover:bg-white/10'}`}>
+                            <span aria-hidden="true" className="text-sm opacity-80">{option.icon}</span>
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {exactInputMode === 'duration' ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7]">مدة الفترة التي لم تصلِّ فيها</label>
+                          <p className="mt-1 text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">أدخل قيمة تقريبية ثم اختر الوحدة</p>
+                        </div>
+                        <div className="grid grid-cols-[0.85fr_1.15fr] gap-3">
+                          <label className="relative block">
+                            <span className="sr-only">عدد الوحدات</span>
+                            <input type="number" min="1" inputMode="numeric" value={exactAmount} onChange={(e) => setExactAmount(Math.max(0, Number(e.target.value) || 0))} className="h-14 w-full rounded-2xl border border-[#C6A15B]/25 bg-white px-4 text-center text-xl font-extrabold text-[#1D211E] outline-none transition focus:border-[#C6A15B] focus:ring-2 focus:ring-[#C6A15B]/15 dark:bg-[#18231C] dark:text-[#F6F1E7]" />
+                          </label>
+                          <label className="relative block">
+                            <span className="sr-only">وحدة المدة</span>
+                            <select value={exactUnit} onChange={(e) => setExactUnit(e.target.value as typeof exactUnit)} className="h-14 w-full appearance-none rounded-2xl border border-[#C6A15B]/25 bg-white px-4 text-right text-base font-bold text-[#1D211E] outline-none transition focus:border-[#C6A15B] focus:ring-2 focus:ring-[#C6A15B]/15 dark:bg-[#18231C] dark:text-[#F6F1E7]">
+                              <option value="days">أيام</option>
+                              <option value="weeks">أسابيع</option>
+                              <option value="months">أشهر</option>
+                              <option value="years">سنوات</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-bold text-[#1D211E] dark:text-[#F6F1E7]">حدد بداية ونهاية الفترة</label>
+                          <p className="mt-1 text-[11px] text-[#7E8C7F] dark:text-[#A9B7A3]">سيُحسب اليومان ضمن المدة</p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <label className="space-y-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]"><span>تاريخ البداية</span><input type="date" value={exactStartDate} onChange={(e) => setExactStartDate(e.target.value)} className="h-14 w-full rounded-2xl border border-[#C6A15B]/25 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#C6A15B] focus:ring-2 focus:ring-[#C6A15B]/15 dark:bg-[#18231C] dark:text-[#F6F1E7]" /></label>
+                          <label className="space-y-2 text-xs font-bold text-[#1D211E] dark:text-[#F6F1E7]"><span>تاريخ النهاية</span><input type="date" value={exactEndDate} onChange={(e) => setExactEndDate(e.target.value)} className="h-14 w-full rounded-2xl border border-[#C6A15B]/25 bg-white px-3 text-sm font-semibold outline-none transition focus:border-[#C6A15B] focus:ring-2 focus:ring-[#C6A15B]/15 dark:bg-[#18231C] dark:text-[#F6F1E7]" /></label>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#C6A15B]/15 bg-[#C6A15B]/[0.08] px-4 py-3">
+                      <div className="text-right"><p className="text-[10px] font-semibold text-[#7E8C7F] dark:text-[#A9B7A3]">النتيجة المتوقعة</p><p className="mt-1 text-sm font-extrabold text-[#26352A] dark:text-[#F6F1E7]">{formatArabicNumber(exactDays)} يومًا</p></div>
+                      <div className="h-8 w-px bg-[#C6A15B]/20" />
+                      <div className="text-left"><p className="text-[10px] font-semibold text-[#7E8C7F] dark:text-[#A9B7A3]">الصلوات التقديرية</p><p className="mt-1 text-sm font-extrabold text-[#947435] dark:text-[#D8B66C]">{formatArabicNumber(calc.estimatedMissed)} صلاة</p></div>
+                    </div>
+                    <p className="text-center text-[11px] leading-6 text-[#7E8C7F] dark:text-[#A9B7A3]">يُحسب العدد بمعدل خمس صلوات عن كل يوم في الفترة المحددة.</p>
+                  </div>
+                </div>
+              ) : (
+              <>
               {/* Puberty Age */}
               <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
                 <div>
@@ -466,6 +585,8 @@ export const OnboardingPage: React.FC = () => {
                   </TactileButton>
                 </div>
               </div>
+              </>
+              )}
             </motion.div>
           )}
 
@@ -478,6 +599,7 @@ export const OnboardingPage: React.FC = () => {
               exit={{ opacity: 0, x: 10 }}
               className="space-y-4"
             >
+              {calculationMethod !== 'exact_period' && (
               <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -509,6 +631,7 @@ export const OnboardingPage: React.FC = () => {
                   <span>100% (التزام كامل)</span>
                 </div>
               </div>
+              )}
 
               {/* Menstruation Section (female only) */}
               {gender === 'female' && (
@@ -546,6 +669,14 @@ export const OnboardingPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {calculationMethod === 'exact_period' && gender !== 'female' && (
+                <div className="p-5 rounded-3xl bg-white dark:bg-[#1F2E24] border border-[#C6A15B]/20 shadow-sm text-center space-y-2">
+                  <CheckCircle2 className="w-8 h-8 mx-auto text-[#C6A15B]" />
+                  <h3 className="text-sm font-bold">لا توجد استثناءات إضافية</h3>
+                  <p className="text-xs leading-6 text-[#7E8C7F] dark:text-[#A9B7A3]">سيُحسب القضاء من الفترة المحددة مباشرة، بمعدل خمس صلوات لكل يوم.</p>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -567,7 +698,7 @@ export const OnboardingPage: React.FC = () => {
                   <span className="text-base font-normal text-[#C6A15B] mr-2">صلاة</span>
                 </div>
                 <p className="text-xs text-[#7E8C7F] dark:text-[#A9B7A3]">
-                  توزيع {calc.years} سنوات تكليف • نسبة فوات {100 - frequency}%
+                  {calculationMethod === 'exact_period' ? `فترة محددة • ${calc.days} يومًا` : `تقدير من ${calc.years} سنوات • نسبة فوات ${100 - frequency}%`}
                 </p>
 
                 <div className="grid grid-cols-5 gap-1.5 mt-5 pt-4 border-t border-black/5 dark:border-white/5">

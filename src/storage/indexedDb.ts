@@ -437,6 +437,7 @@ export async function exportAllData(): Promise<BackupData> {
   const counters = await getCounters();
   const records = await getDailyRecords();
   const istighfarRecords = await getIstighfarRecords();
+  const istighfarData = await getIstighfarData();
   const adhkarDailyStates = await getAdhkarDailyStates();
   const adhkarHistory = await getAdhkarHistory();
 
@@ -451,6 +452,7 @@ export async function exportAllData(): Promise<BackupData> {
     counters,
     records,
     istighfarRecords,
+    istighfarData: istighfarData || undefined,
     adhkarDailyStates,
     adhkarHistory,
   };

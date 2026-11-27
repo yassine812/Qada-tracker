@@ -1,0 +1,46 @@
+.qada-daily-plan { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--qada-border); color: var(--qada-text); }
+.qada-plan-toggle, .qada-plan-label, .qada-plan-rate, .qada-plan-facts, .qada-plan-facts > span, .qada-plan-summary-heading, .qada-plan-summary h3, .qada-plan-summary-month { display: flex; align-items: center; gap: 8px; }
+.qada-plan-toggle { width: 100%; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 4px 0; text-align: start; }
+.qada-plan-label svg, .qada-plan-rate { color: var(--qada-accent); }
+.qada-plan-rate svg { transition: transform .18s ease; }
+.qada-plan-facts { justify-content: space-between; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--qada-text-secondary); }
+.qada-plan-today { border-radius: 9px; background: var(--qada-primary-soft); padding: 4px 9px; }
+.qada-plan-estimate { margin-top: 9px; font-size: 12px; line-height: 1.9; color: var(--qada-text-secondary); }
+.qada-plan-estimate strong { color: var(--qada-text); }
+.qada-plan-estimate > span { font-size: 11px; }
+.qada-plan-editor { margin-top: 12px; padding: 12px; background: var(--qada-surface-2); border: 1px solid var(--qada-border); border-radius: 16px; }
+.qada-plan-editor > p { font-size: 12px; margin-bottom: 10px; color: var(--qada-text-secondary); }
+.qada-plan-presets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) 1.5fr; gap: 6px; }
+.qada-plan-presets button, .qada-plan-custom button { min-height: 40px; border-radius: 10px; border: 1px solid var(--qada-border); background: var(--qada-surface-1); font-size: 12px; font-weight: 700; }
+.qada-plan-presets button[aria-pressed=true], .qada-plan-custom .qada-plan-save { background: #c6a15b; color: #18231c; border-color: #c6a15b; }
+.qada-plan-custom { display: grid; grid-template-columns: 40px minmax(40px, 1fr) 40px 60px; gap: 6px; margin-top: 10px; }
+.qada-plan-custom button { display: flex; align-items: center; justify-content: center; }
+.qada-plan-custom input { width: 100%; height: 40px; background: var(--qada-surface-1); border: 1px solid var(--qada-border); border-radius: 10px; text-align: center; color: var(--qada-text); }
+.qada-plan-custom button:disabled { opacity: .4; cursor: not-allowed; }
+.qada-plan-editor .qada-plan-note { font-size: 10px; margin: 10px 0 0; line-height: 1.8; }
+.qada-plan-editor .qada-plan-error { color: var(--qada-danger); margin-top: 8px; }
+.qada-plan-empty { display: flex; gap: 6px; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--qada-border); font-size: 12px; color: var(--qada-text-secondary); }
+.qada-plan-summary { padding: 22px; border: 1px solid var(--qada-border); border-radius: 24px; }
+.qada-plan-summary-heading { justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.qada-plan-summary h3 { font-weight: 700; font-size: 15px; }
+.qada-plan-summary-heading p { color: var(--qada-text-secondary); font-size: 12px; margin-top: 6px; }
+.qada-plan-summary-total { display: flex; align-items: baseline; gap: 8px; }
+.qada-plan-summary-total strong { font-size: 30px; color: var(--qada-accent); }
+.qada-plan-summary-total span { font-size: 12px; }
+.qada-plan-breakdown { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+.qada-plan-breakdown > div { display: flex; flex-direction: column; gap: 6px; border-radius: 12px; background: var(--qada-surface-2); padding: 10px 4px; text-align: center; font-size: 12px; }
+.qada-plan-breakdown span { color: var(--qada-text-secondary); }
+.qada-plan-breakdown b { font-size: 12px; overflow-wrap: anywhere; }
+.qada-plan-summary-month { flex-wrap: wrap; font-size: 12px; margin-top: 16px; color: var(--qada-text-secondary); }
+.qada-plan-summary-month b { color: var(--qada-accent); }
+.qada-daily-plan button:focus-visible, .qada-plan-custom input:focus-visible { outline: 2px solid var(--qada-accent); outline-offset: 3px; }
+.qada-prayer-progress { display:flex; align-items:center; gap:10px; margin-top:12px; padding-top:10px; border-top:1px solid var(--qada-border); }
+.qada-prayer-progress-ring { position:relative; width:52px; height:52px; flex:0 0 52px; display:grid; place-items:center; color:var(--qada-accent); }
+.qada-prayer-progress-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.qada-prayer-progress-ring circle { fill:none; stroke-width:4; }
+.qada-prayer-progress-track { stroke:var(--qada-primary-soft); }
+.qada-prayer-progress-value { stroke:var(--qada-accent); stroke-linecap:round; transition:stroke-dashoffset .35s ease; }
+.qada-prayer-progress-ring span { position:absolute; inset:0; display:grid; place-items:center; font-size:10px; font-weight:800; font-variant-numeric:tabular-nums; }
+.qada-prayer-progress-copy { display:flex; flex-direction:column; gap:2px; color:var(--qada-text-secondary); font-size:11px; }
+.qada-prayer-progress-copy strong { color:var(--qada-text); font-size:12px; }
+@media (max-width: 480px) { .qada-plan-summary { padding: 16px; } .qada-plan-toggle { font-size: 12px; } .qada-plan-presets { gap: 4px; } }

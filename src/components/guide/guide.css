@@ -1,0 +1,60 @@
+.qada-guide-open .qada-companion { visibility: hidden; }
+/* The page and guide occupy separate lanes, leaving the target uncovered. */
+@media (min-width: 1024px) {
+  .qada-guide-open .qada-experience > main, .qada-guide-open .qada-help-content { width: calc(100% - 408px); max-width: 1120px; margin-left: 0; margin-right: 408px; padding: 80px 24px 120px; transition: none; }
+  .qada-guide-open .qada-dashboard .qada-progress-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.qada-guide-open .qada-experience { padding-bottom: 100vh; }
+.qada-guide-open .qada-help-content { padding-bottom: 100vh; }
+.qada-feature-help { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; color: var(--qada-accent); border: 1px solid #c6a15b40; background: #c6a15b0d; cursor: pointer; }
+.qada-feature-help:hover { background: #c6a15b25; }
+.qada-feature-help:focus-visible { outline: 2px solid #c6a15b; outline-offset: 3px; }
+.qada-feature-help-label { width: auto; height: auto; min-height: 36px; padding: 6px 10px; gap: 8px; border-radius: 12px; font-size: 12px; }
+.qada-guide-stage {
+  position: fixed; inset: 0; width: 100%; max-width: none; height: 100dvh; max-height: none;
+  margin: 0; padding: 0; border: 0; background: transparent; color: var(--qada-text); overflow: hidden;
+}
+.qada-guide-stage::backdrop { background: transparent; }
+.qada-guide-shade { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.qada-guide-focus { position: absolute; z-index: 1; pointer-events: none; outline: 2px solid #dfbc70; outline-offset: 0; border-radius: 18px; box-shadow: 0 0 20px #d5b56f30; }
+.qada-guide-panel {
+  position: absolute; z-index: 2; right: 20px; top: 50%; transform: translateY(-50%);
+  width: 368px; max-height: calc(100dvh - 40px); overflow-y: auto;
+  padding: 22px; border-radius: 26px; border: 1px solid #c6a15b80;
+  background: var(--qada-surface-1); box-shadow: 0 20px 70px #0006; isolation: isolate;
+}
+.qada-guide-stage button { cursor: pointer; }
+.qada-guide-stage button:focus-visible { outline: 2px solid #dfbc70; outline-offset: 4px; }
+.qada-guide-toolbar { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 11px; color: var(--qada-text-muted); }
+.qada-guide-toolbar button { padding: 7px; border-radius: 9px; color: var(--qada-text); background: #c6a15b12; }
+.qada-guide-meter { height: 4px; margin: 14px 0 22px; border-radius: 20px; background: #c6a15b22; overflow: hidden; }
+.qada-guide-meter span { display: block; height: 100%; background: #dfbc70; transition: width .25s ease; }
+.qada-guide-bubble { border: 1px solid #c6a15b35; border-radius: 18px; padding: 17px; background: #c6a15b09; position: relative; }
+.qada-guide-bubble::after { content: ''; position: absolute; bottom: -7px; right: 37px; width: 12px; height: 12px; background: var(--qada-surface-1); transform: rotate(45deg); border-right: 1px solid #c6a15b35; border-bottom: 1px solid #c6a15b35; }
+.qada-guide-panel h2 { font-size: 21px; font-weight: 800; line-height: 1.6; outline: none; }
+.qada-guide-bubble p { font-size: 14px; line-height: 1.85; margin-top: 10px; }
+.qada-guide-friend { display: flex; gap: 18px; align-items: center; position: relative; margin-top: 15px; }
+.qada-guide-boy { width: 85px; height: 102px; flex-shrink: 0; }
+.qada-guide-friend > p { color: var(--qada-text-muted); font-size: 12px; line-height: 1.8; }
+.qada-guide-voice { position: absolute; right: 61px; bottom: 0; border: 1px solid #c6a15b70; border-radius: 50%; background: var(--qada-surface-1); width: 36px; height: 36px; display: grid; place-items: center; }
+.qada-guide-controls { display: flex; gap: 10px; margin-top: 18px; }
+.qada-help-mobile-tip { display: none; }
+.qada-guide-controls button { display: flex; justify-content: center; gap: 8px; align-items: center; min-height: 44px; padding: 10px 15px; border-radius: 14px; font-weight: 700; font-size: 14px; }
+.qada-guide-controls button:disabled { opacity: .3; cursor: default; }
+.qada-guide-next { background: #d4ae64; color: #18231c; flex: 1; }
+@media (max-width: 1023px) {
+  .qada-guide-panel { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); right: 12px; left: 12px; transform: none; width: auto; max-height: 53dvh; padding: 14px 16px; border-radius: 22px; }
+  .qada-guide-meter { margin: 8px 0 12px; }
+  .qada-guide-story { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 12px; align-items: start; }
+  .qada-guide-panel h2 { font-size: 17px; line-height: 1.5; }
+  .qada-guide-bubble { padding: 0; background: none; border: 0; }
+  .qada-guide-bubble::after { display: none; }
+  .qada-guide-bubble p { font-size: 12px; line-height: 1.8; margin-top: 6px; }
+  .qada-guide-friend { margin: 0; display: block; }
+  .qada-guide-boy { width: 64px; height: 77px; }
+  .qada-guide-friend > p { display: none; }
+  .qada-guide-voice { right: 16px; bottom: -30px; width: 32px; height: 32px; }
+  .qada-guide-controls { margin-top: 16px; }
+  .qada-help-mobile-tip { display: block; font-size: 11px; line-height: 1.7; color: var(--qada-text-muted); margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .qada-guide-stage *, .qada-guide-meter span { animation: none !important; transition: none !important; } }

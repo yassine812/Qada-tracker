@@ -1,0 +1,16 @@
+.env*
+.git/
+.netlify/
+node_modules/
+dist/
+artifacts/
+/*.mp4
+ios/
+android/
+supabase/
+docs/
+scripts/configure-push-cloud.mjs
+scripts/generate-push-secrets.mjs
+scripts/activate-push-scheduler.mjs
+scripts/test-*
+server/search-engine/

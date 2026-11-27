@@ -1,0 +1,180 @@
+/* Shared page grammar: heading, segmented navigation, workspace, action. */
+.qada-app-theme { --qada-danger:var(--qada-error); }
+.qada-app-page { max-width:1088px; margin-inline:auto; }
+.qada-page-heading { padding:0 6px 8px; text-align:start; }
+.qada-page-heading h1 { margin:6px 0; font-size:clamp(24px,3vw,30px); font-weight:650; line-height:1.65; color:var(--qada-text); }
+.qada-page-heading p { font-size:13px; line-height:1.9; color:var(--qada-text-secondary); max-width:580px; }
+.qada-app-page .qada-segmented-control { background:var(--qada-surface-2); border:1px solid var(--qada-border-strong); border-radius:16px; padding:5px; gap:6px; box-shadow:none; }
+.qada-segmented-control button:not(.qada-feature-help) { min-height:44px; border-radius:12px; font-size:13px; }
+.qada-segmented-control button[aria-pressed=true] { color:var(--qada-on-primary)!important; }
+.qada-segmented-control button[aria-pressed=true]>.absolute { background:var(--qada-primary); border:1px solid transparent; box-shadow:0 3px 9px #162c1c18; border-radius:12px; }
+.qada-segmented-control .qada-feature-help { background:transparent; border:0; }
+
+/* The worship page is a frequent-use workspace: keep the orientation chrome
+   compact so the summary and first prayer remain visible without a long scroll. */
+.qada-guide-ibadat .qada-page-heading.qada-page-banner { padding:15px 20px 12px; margin-bottom:12px; border-radius:22px; }
+.qada-guide-ibadat .qada-page-arch,.qada-guide-ibadat .qada-page-flourish { display:none; }
+.qada-guide-ibadat .qada-page-meta { gap:7px; }
+.qada-guide-ibadat .qada-page-emblem { width:30px; height:30px; border-radius:10px; }
+.qada-guide-ibadat .qada-page-banner h1 { margin:7px 0 2px; font-size:clamp(21px,2.4vw,28px); line-height:1.4; }
+.qada-guide-ibadat .qada-page-banner p { font-size:12px; line-height:1.55; }
+.qada-guide-ibadat .qada-segmented-control button:not(.qada-feature-help) { min-height:40px; }
+.qada-guide-ibadat .qada-prayer-workspace { gap:12px!important; }
+.qada-guide-ibadat .qada-prayer-workspace>.qada-surface-card { padding:16px 20px; }
+.qada-guide-ibadat .qada-prayer-workspace>.qada-surface-card .mb-3 { margin-bottom:8px; }
+.qada-experience .qada-guide-ibadat .qada-prayer-ledger>.qada-surface-card { padding:16px 18px; }
+.qada-guide-dhikr { padding-top:4px; }
+.qada-guide-dhikr .qada-page-heading.qada-page-banner { padding:14px 20px 11px; margin-bottom:10px; border-radius:22px; }
+.qada-guide-dhikr .qada-page-arch,.qada-guide-dhikr .qada-page-flourish { display:none; }
+.qada-guide-dhikr .qada-page-emblem { width:30px; height:30px; border-radius:10px; }
+.qada-guide-dhikr .qada-page-banner h1 { margin:7px 0 2px; font-size:clamp(21px,2.4vw,28px); line-height:1.4; }
+.qada-guide-dhikr .qada-page-banner p { font-size:12px; line-height:1.55; }
+.qada-guide-dhikr .qada-segmented-control { margin-top:0; }
+.qada-guide-dhikr .qada-adhkar-home { gap:14px; }
+.qada-guide-dhikr .qada-adhkar-intro { padding:20px 24px; border-radius:22px; }
+.qada-guide-dhikr .qada-adhkar-intro h2 { font-size:23px; margin-bottom:4px; }
+.qada-guide-dhikr .qada-adhkar-intro p { font-size:12px; line-height:1.65; }
+.qada-prayer-orbit { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; padding:12px 4px 2px; }
+.qada-prayer-orbit-item { display:flex; min-width:0; flex-direction:column; align-items:center; gap:5px; color:var(--qada-text-secondary); text-align:center; }
+.qada-prayer-orbit-item strong { font-size:11px; font-weight:700; }
+.qada-prayer-orbit-item small { font-size:10px; color:var(--qada-text-muted); }
+.qada-prayer-orbit-ring { position:relative; display:grid; place-items:center; width:62px; height:62px; border:1px solid var(--qada-border); border-radius:50%; background:var(--qada-surface-2); transition:transform .2s ease, border-color .2s ease, background .2s ease; }
+.qada-prayer-orbit-ring::before { content:""; position:absolute; inset:4px; border:2px solid var(--qada-border); border-top-color:var(--qada-accent); border-radius:50%; transform:rotate(-35deg); opacity:.85; }
+.qada-prayer-orbit-icon { display:grid; place-items:center; width:31px; height:31px; border-radius:50%; color:var(--qada-accent); }
+.qada-prayer-orbit-icon svg { width:19px; height:19px; }
+.qada-prayer-orbit-ring b { position:absolute; bottom:7px; font-size:8px; font-weight:800; color:var(--qada-accent); }
+.qada-prayer-orbit-item.is-selected .qada-prayer-orbit-ring { transform:translateY(-3px); border-color:var(--qada-accent); background:var(--qada-primary-soft); box-shadow:0 8px 18px #c6a15b20; }
+.qada-prayer-orbit-item.is-selected strong { color:var(--qada-text); }
+.qada-prayer-orbit-caption { margin:-4px 4px 0; color:var(--qada-text-secondary); font-size:11px; text-align:center; }
+.qada-prayer-orbit-caption strong { color:var(--qada-text); }
+
+/* Fields look and behave the same on settings, calculators, dialogs and login. */
+.qada-app-theme :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
+  border-color:var(--qada-border-strong); border-radius:12px; background-color:var(--qada-surface-2); color:var(--qada-text); min-height:44px; font-size:16px;
+}
+.qada-app-theme :is(input,select,textarea):focus-visible { outline:2px solid var(--qada-primary); outline-offset:2px; }
+.qada-app-theme :is(input[type=checkbox],input[type=radio]) { accent-color:var(--qada-primary); width:17px; height:17px; flex-shrink:0; }
+.qada-app-theme .qada-modal-panel { border-radius:24px; background:var(--qada-surface-1); border-color:var(--qada-border-strong); color:var(--qada-text); box-shadow:0 18px 70px #071a2630; }
+.qada-app-theme .qada-modal-panel :is(h2,h3) { font-weight:650; }
+.qada-app-page button:disabled { cursor:not-allowed; }
+.qada-app-page :is(h2,h3,h4) { text-wrap:pretty; }
+
+/* Prayer entries become one ledger, not five independent floating cards. */
+.qada-prayer-workspace>.qada-surface-card { padding:26px; }
+.qada-prayer-ledger { gap:0!important; border:1px solid var(--qada-border); border-radius:24px; background:var(--qada-surface-1); overflow:hidden; }
+.qada-experience .qada-prayer-ledger>.qada-surface-card { border:0; border-bottom:1px solid var(--qada-border); border-radius:0; padding:24px; background:transparent; box-shadow:none; }
+.qada-prayer-ledger>.qada-surface-card>.absolute { display:none; }
+.qada-prayer-ledger .qada-daily-plan { margin-top:16px; padding-top:14px; }
+.qada-prayer-ledger button { min-height:44px; }
+.qada-prayer-workspace .qada-plan-summary { background:var(--qada-surface-1); box-shadow:none; border-color:var(--qada-border); }
+.qada-plan-breakdown { gap:0; background:var(--qada-surface-2); border-radius:14px; overflow:hidden; }
+.qada-plan-breakdown>div { background:transparent; border-radius:0; border-inline-start:1px solid var(--qada-border); }
+.qada-plan-breakdown>div:first-child { border-inline-start:0; }
+.qada-plan-presets button[aria-pressed=true],.qada-plan-custom .qada-plan-save { background:var(--qada-primary); color:var(--qada-bg); border-color:var(--qada-primary); }
+.qada-fasting-workspace { gap:0!important; padding:8px; background:var(--qada-surface-1); border:1px solid var(--qada-border); border-radius:24px; }
+.qada-experience .qada-fasting-workspace>.qada-surface-card { border:0; border-bottom:1px solid var(--qada-border); border-radius:0; background:transparent; box-shadow:none; padding:24px; }
+.qada-zakat-workspace>.absolute { display:none; }
+.qada-zakat-workspace>.relative { display:grid; grid-template-columns:minmax(0,1fr); gap:0; background:var(--qada-surface-1); border:1px solid var(--qada-border); border-radius:24px; overflow:hidden; }
+.qada-zakat-workspace>.relative>* { margin:0; min-width:0; }
+.qada-experience .qada-zakat-workspace>.relative>.qada-surface-card { border:0; border-bottom:1px solid var(--qada-border); border-radius:0; box-shadow:none; background:transparent; padding:26px; }
+.qada-zakat-workspace [data-guide=zakat-card] { background:var(--qada-surface-2)!important; }
+
+/* Adhkar is a calm library, with the same icons and rows as the daily dashboard. */
+.qada-adhkar-intro { background:var(--qada-surface-2); color:var(--qada-text); border:1px solid var(--qada-border); border-radius:24px; box-shadow:none; }
+.qada-adhkar-intro h2 { font-weight:600; font-size:24px; }
+.qada-adhkar-intro p { color:var(--qada-text-secondary); line-height:1.9; }
+.qada-adhkar-library { border-radius:24px; border:1px solid var(--qada-border); overflow:hidden; background:var(--qada-surface-1); }
+.qada-experience .qada-adhkar-library>.qada-surface-card { display:block; margin:0; padding:24px; background:transparent; border:0; border-bottom:1px solid var(--qada-border); border-radius:0; box-shadow:none; }
+.qada-experience .qada-adhkar-library>.qada-surface-card:last-child { border-bottom:0; }
+.qada-adhkar-library .qada-unified-icon { background:var(--qada-primary-soft); color:var(--qada-primary); }
+.qada-adhkar-library h3 { font-size:15px; }
+.qada-adhkar-library :is(.text-\[10px\],.text-\[9px\]) { font-size:11px; }
+.qada-adhkar-category-grid { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; border:0; overflow:visible; background:transparent; }
+.qada-experience .qada-adhkar-category-grid>.qada-adhkar-category-tile { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:7px; min-height:154px; padding:14px 8px; border:1px solid var(--qada-border); border-radius:22px; background:var(--qada-surface-1); box-shadow:var(--qada-panel-shadow); text-align:center; }
+.qada-experience .qada-adhkar-category-grid>.qada-adhkar-category-tile:nth-child(3n+1) { background:var(--qada-gold-soft); }
+.qada-experience .qada-adhkar-category-grid>.qada-adhkar-category-tile:nth-child(3n+2) { background:var(--qada-teal-soft); }
+.qada-experience .qada-adhkar-category-grid>.qada-adhkar-category-tile:nth-child(3n) { background:var(--qada-olive-soft); }
+.qada-adhkar-category-icon { display:grid; place-items:center; width:58px; height:58px; border:1px solid var(--qada-border-strong); border-radius:18px; color:var(--qada-primary); background:var(--qada-primary-soft); }
+.qada-adhkar-category-description { min-height:30px; color:var(--qada-text-secondary); font-size:10px; line-height:1.5; }
+.qada-adhkar-category-count { display:inline-flex; align-items:center; gap:4px; margin-top:auto; padding:5px 9px; border:1px solid var(--qada-border-strong); border-radius:999px; color:var(--qada-accent); background:var(--qada-primary-soft); font-size:10px; font-weight:800; direction:ltr; }
+.qada-adhkar-category-count.is-complete { color:var(--qada-success,#6ba06b); border-color:#6ba06b55; }
+.qada-dhikr-counter { padding:28px; background:var(--qada-surface-1); border:1px solid var(--qada-border); border-radius:24px; max-width:760px; margin-inline:auto; }
+.qada-dhikr-counter>div:first-child>span { display:none; }
+.qada-dhikr-counter>div:first-child h3 { font-weight:600; font-size:24px; }
+.qada-dhikr-counter .shadow-xl { box-shadow:0 6px 20px #213d2a0a; }
+.qada-dhikr-counter>.space-y-3 { border-top:1px solid var(--qada-border); padding-top:24px; }
+.qada-dhikr-counter>.space-y-3>div { border:0; background:transparent; padding-inline:0; }
+.qada-dhikr-counter>.space-y-3>.grid>div { background:var(--qada-surface-2); border:0; border-radius:14px; }
+.qada-dua-workspace { max-width:860px; margin-inline:auto; }
+.qada-dua-paper { background:var(--qada-surface-1); border:1px solid var(--qada-border); border-radius:24px; box-shadow:none; }
+.qada-dua-paper [data-dua-id] { color:var(--qada-text); }
+.qada-adhkar-reader:not(.qada-night-reader) { background:var(--qada-surface-1); border-color:var(--qada-border); border-radius:24px; }
+
+/* Settings read as one organized preferences page, not unrelated cards. */
+.qada-settings-layout { display:block; }
+.qada-settings-layout>.qada-page-heading { padding-bottom:24px; }
+.qada-experience .qada-settings-layout>.qada-surface-card { margin:0; border:0; border-bottom:1px solid var(--qada-border); border-radius:0; box-shadow:none; padding:26px; }
+.qada-experience .qada-settings-layout>.qada-surface-card:nth-child(2) { border-radius:24px 24px 0 0; }
+.qada-experience .qada-settings-layout>.qada-surface-card:last-of-type { border-radius:0 0 24px 24px; }
+.qada-settings-layout>.qada-surface-card>h3 { font-size:15px; margin-bottom:18px; font-weight:650; }
+.qada-settings-layout>.qada-surface-card>button { min-height:48px; }
+.qada-settings-layout #notifications { padding-top:30px; }
+.qada-settings-layout #notifications fieldset { padding-block:16px; border-top:1px solid var(--qada-border); }
+.qada-settings-layout #notifications legend { padding-top:12px; }
+.qada-notifications-page #notifications { background:var(--qada-surface-1); border:1px solid var(--qada-border); border-radius:24px; }
+
+/* Profile, achievements and account entry belong to the same application. */
+.qada-profile-page>.qada-help-content { max-width:1088px; }
+.qada-profile-page [data-help=profile] { border:1px solid var(--qada-border-strong)!important; border-radius:26px; background:linear-gradient(115deg,var(--qada-primary-soft),transparent 65%),var(--qada-surface-1)!important; padding:24px; box-shadow:inset 0 1px 0 #ffffff10!important; }
+.qada-profile-page :is(.streak-achievements,.streak-card) { border-color:var(--qada-border); border-radius:24px; box-shadow:none; }
+.qada-profile-page .streak-badge-tile { background:transparent; border:0; border-radius:16px; }
+.qada-profile-page .streak-badge-tile.earned { background:var(--qada-primary-soft); }
+.qada-profile-page .streak-badge-grid { background:var(--qada-surface-2); padding:12px; border-radius:18px; }
+.qada-account-page { background:var(--qada-bg)!important; color:var(--qada-text)!important; }
+.qada-account-page>div>section { border-color:var(--qada-border); background:var(--qada-surface-1); box-shadow:0 8px 40px #213d2a08; border-radius:24px; }
+.qada-account-page .text-\[\#A9B7A3\] { color:var(--qada-text-secondary); }
+.qada-account-page input { background:var(--qada-surface-2)!important; color:var(--qada-text)!important; }
+.qada-account-page button[type=submit] { background:var(--qada-primary); color:var(--qada-bg); min-height:48px; }
+.qada-account-page [role=alert] { color:var(--qada-error); background:var(--qada-error-soft); }
+.qada-account-page [role=status]:not(.flex) { color:var(--qada-text-secondary); }
+.qada-onboarding-page { background:var(--qada-bg)!important; color:var(--qada-text); }
+.qada-app-theme .qada-reader-toolbar { background:linear-gradient(115deg,var(--qada-primary-soft),transparent 65%),var(--qada-surface-1)!important; border-color:var(--qada-border-strong)!important; box-shadow:inset 0 1px 0 #ffffff10; border-radius:0 0 18px 18px; }
+.qada-app-theme .qada-reader-toolbar button { border-radius:12px; }
+@media(min-width:1024px) {
+  .qada-prayer-ledger>.qada-surface-card:nth-child(even) { border-inline-start:1px solid var(--qada-border); }
+  .qada-zakat-workspace>.relative { grid-template-columns:1fr 1fr; align-items:start; }
+  .qada-zakat-workspace>.relative>[data-guide=zakat-card],.qada-zakat-workspace>.relative>.flex { grid-column:1/-1; }
+  .qada-zakat-workspace>.relative>[data-help=zakatAssets] { grid-column:2; grid-row:2 / span 2; border-inline-start:1px solid var(--qada-border); }
+  .qada-zakat-workspace>.relative>[data-help=zakatResult] { grid-column:1; grid-row:3; }
+  .qada-zakat-workspace>.relative>.qada-surface-card:last-child { grid-column:1/-1; }
+  .qada-settings-layout { max-width:880px; }
+}
+@media(max-width:639px) {
+  .qada-page-heading h1 { font-size:24px; }.qada-page-heading p { font-size:12px; }
+  .qada-prayer-workspace>.qada-surface-card,.qada-experience .qada-prayer-ledger>.qada-surface-card,.qada-experience .qada-fasting-workspace>.qada-surface-card { padding:20px 16px; }
+  .qada-fasting-workspace { padding:4px; }
+  .qada-experience .qada-zakat-workspace>.relative>.qada-surface-card { padding:22px 16px; }
+  .qada-experience .qada-settings-layout>.qada-surface-card { padding:22px 16px; }
+  .qada-experience .qada-adhkar-library>.qada-surface-card { padding:20px 16px; }
+  .qada-adhkar-intro { padding:22px 18px; }.qada-adhkar-intro h2 { font-size:22px; }
+  .qada-dhikr-counter { padding:24px 16px; }.qada-dua-paper { padding:26px 18px; }
+  .qada-segmented-control button:not(.qada-feature-help) { font-size:12px; }
+  .qada-guide-ibadat .qada-page-heading.qada-page-banner { padding:14px 16px 11px; margin-bottom:10px; }
+  .qada-guide-ibadat .qada-page-banner h1 { font-size:21px; }
+  .qada-guide-ibadat .qada-prayer-workspace>.qada-surface-card { padding:14px 16px; }
+  .qada-experience .qada-guide-ibadat .qada-prayer-ledger>.qada-surface-card { padding:14px 15px; }
+  .qada-prayer-orbit { gap:4px; padding-inline:0; }
+  .qada-prayer-orbit-ring { width:54px; height:54px; }
+  .qada-prayer-orbit-ring::before { inset:3px; }
+  .qada-prayer-orbit-item strong { font-size:9px; }
+  .qada-prayer-orbit-item small { font-size:8px; }
+  .qada-adhkar-category-grid { gap:7px; }
+  .qada-experience .qada-adhkar-category-grid>.qada-adhkar-category-tile { min-height:144px; padding:12px 5px; border-radius:18px; }
+  .qada-adhkar-category-icon { width:50px; height:50px; border-radius:15px; }
+  .qada-adhkar-category-icon svg { width:22px; height:22px; }
+  .qada-adhkar-category-description { font-size:9px; }
+  .qada-guide-dhikr .qada-page-heading.qada-page-banner { padding:13px 16px 10px; margin-bottom:8px; }
+  .qada-guide-dhikr .qada-page-banner h1 { font-size:21px; }
+  .qada-guide-dhikr .qada-adhkar-intro { padding:18px 18px; }
+  .qada-guide-dhikr .qada-adhkar-intro h2 { font-size:21px; }
+}

@@ -1,3 +1,4 @@
+import { FeatureHelp } from '../guide/FeatureHelp';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, Check, ChevronDown, ChevronUp, Info, Sparkles } from 'lucide-react';
@@ -36,6 +37,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
   const [celebrating, setCelebrating] = useState(false);
   const [pulse, setPulse] = useState(0);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textScrollRef = useRef<HTMLDivElement>(null);
 
   const item = items[Math.min(index, items.length - 1)];
   const itemProgress = adhkar.getItemProgress(category, item.id);
@@ -45,6 +47,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
     category === 'sleep' || new Date().getHours() >= 20 || new Date().getHours() < 4;
 
   const isLongText = item.arabicText.length > 240;
+  useEffect(() => { textScrollRef.current?.scrollTo({ top: 0 }); }, [item.id]);
 
   // Reset when the category changes
   useEffect(() => {
@@ -190,7 +193,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl border ${
+      className={`qada-adhkar-reader ${isNight ? 'qada-night-reader' : ''} relative overflow-hidden rounded-3xl border ${
         isNight
           ? 'bg-gradient-to-b from-[#18202E] to-[#0E1520] border-[#C6A15B]/25'
           : 'bg-white/90 dark:bg-[#1F2E24] border-[#C6A15B]/25'
@@ -199,6 +202,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
       {isNight && <StarField />}
 
       {/* Header */}
+      <div className="px-4 pt-3"><FeatureHelp topic="adhkarReader" /></div>
       <div className="relative flex items-center justify-between px-4 pt-4">
         <div className="flex items-center gap-1.5">
           <TactileButton
@@ -248,6 +252,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
 
       {/* Scrollable dhikr text */}
       <div
+        ref={textScrollRef}
         className="relative px-6 sm:px-8 pt-5 pb-2 max-h-[42vh] overflow-y-auto qada-scroll-thin"
         dir="rtl"
       >
@@ -265,7 +270,7 @@ export const AdhkarReader: React.FC<AdhkarReaderProps> = ({
         </div>
 
         <p
-          className={`font-spiritual-serif font-bold leading-relaxed text-center ${
+          className={`font-spiritual-serif font-bold leading-relaxed text-center whitespace-pre-line ${
             isLongText ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'
           } ${isNight ? 'text-[#F6F1E7]' : 'text-[#1D211E] dark:text-[#F6F1E7]'}`}
         >

@@ -25,6 +25,8 @@ async function listFiles(directory, prefix = '') {
 const essential = [
   'index.html', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon.svg',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png',
+  'favicon.ico', 'icons/qada-48-v2.png', 'icons/qada-192-v2.png', 'icons/qada-512-v2.png', 'icons/qada-maskable-v2.png',
+  'images/qada-wordmark.svg',
   'qada-garden-poster.jpg', 'data/quran-uthmani.json', 'data/quran-en-sahih.json', 'data/quran-pages.json',
 ];
 const files = (await listFiles(dist)).filter((name) =>

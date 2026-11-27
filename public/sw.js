@@ -165,6 +165,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+  if (url.pathname.startsWith('/api/')) return;
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
   if (request.destination === 'video' || request.destination === 'audio' || request.headers.has('Range') || /\.(mp4|mp3|m4a)$/i.test(url.pathname)) return;
 
@@ -186,37 +187,107 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-self.addEventListener('push', (event) => {
-  let payload = {
-    title: 'قضاء 🤲', body: 'تذكير يومي', icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png', tag: 'qada-push', data: { url: '/app' },
-  };
-  if (event.data) {
-    try { payload = { ...payload, ...event.data.json() }; }
-    catch { payload.body = event.data.text() || payload.body; }
-  }
-  event.waitUntil(self.registration.showNotification(payload.title, {
-    body: payload.body, icon: payload.icon || '/icons/icon-192.png',
-    badge: payload.badge || '/icons/icon-192.png', tag: payload.tag || 'qada-push',
-    dir: 'rtl', lang: 'ar', vibrate: [200, 100, 200], data: payload.data || { url: '/app' },
-  }));
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  let targetUrl = new URL('/app', self.location.origin);
+// Durable device configuration and seen-message IDs survive worker termination/redeploy.
+function pushDb(store, mode, operation) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open('qada-web-push', 1);
+    open.onupgradeneeded = () => { open.result.createObjectStore('state'); open.result.createObjectStore('seen'); };
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction(store, mode);
+      const request = operation(tx.objectStore(store));
+      tx.oncomplete = () => { db.close(); resolve(request?.result); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    };
+  });
+}
+function safePushUrl(value) {
   try {
-    const proposed = new URL(event.notification.data?.url || '/app', self.location.origin);
-    if (proposed.origin === self.location.origin) targetUrl = proposed;
-  } catch { /* Keep the safe application destination. */ }
-  event.waitUntil((async () => {
-    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const client of clientList) {
-      if (new URL(client.url).origin === self.location.origin) {
-        await client.navigate(targetUrl.href);
-        return client.focus();
-      }
+    const url = new URL(value || '/app', self.location.origin);
+    if (url.origin === self.location.origin && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) return url.href;
+  } catch { /* Fall back to the app, never a remote website. */ }
+  return new URL('/app', self.location.origin).href;
+}
+async function pushReceipt(data, event) {
+  if (!data?.jobId) return;
+  try {
+    const client = await pushDb('state', 'readonly', store => store.get('client'));
+    if (!client) return;
+    await fetch(client.api + '/receipt', { method: 'POST', cache: 'no-store', credentials: 'omit',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + client.token, 'X-Qada-Device': client.id },
+      body: JSON.stringify({ jobId: data.jobId, event }) });
+  } catch { /* Delivery must not fail solely because acknowledgement is offline. */ }
+}
+let pushWork = Promise.resolve();
+self.addEventListener('push', event => {
+  // Serialize simultaneous events; durable seen IDs handle later workers and retries.
+  pushWork = pushWork.catch(() => {}).then(async () => {
+    let payload;
+    try { payload = event.data?.json(); } catch { return; }
+    if (!payload || typeof payload.title !== 'string' || typeof payload.body !== 'string') return;
+    const client = await pushDb('state', 'readonly', store => store.get('client'));
+    if (!client?.enabled || client.pendingDisable) return;
+    const id = payload.data?.notificationId;
+    if (typeof id !== 'string' || id.length > 160) return;
+    if (/^\d{4}-\d{2}-\d{2}:qada-tracker$/.test(id)) {
+      const tracking = client.preferences?.qadaTracking;
+      if (tracking && (!tracking.hasRemaining || tracking.completedDates?.includes(id.slice(0, 10)))) return;
     }
-    return self.clients.openWindow(targetUrl.href);
+    if (await pushDb('seen', 'readonly', store => store.get(id))) return;
+    const data = { ...payload.data, url: safePushUrl(payload.url || payload.data?.url) };
+    await self.registration.showNotification(payload.title.slice(0, 150), {
+      body: payload.body.slice(0, 1200), icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
+      tag: 'qada:' + id, renotify: false, dir: 'rtl', lang: 'ar', data,
+    });
+    await pushDb('seen', 'readwrite', store => store.put(Date.now(), id));
+    await pushReceipt(data, 'displayed');
+    await pushDb('seen', 'readwrite', store => {
+      const cursor = store.openCursor();
+      cursor.onsuccess = () => {
+        const entry = cursor.result;
+        if (entry) { if (entry.value < Date.now() - 30 * 86400000) entry.delete(); entry.continue(); }
+      };
+      return undefined;
+    });
+  });
+  event.waitUntil(pushWork);
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = safePushUrl(event.notification.data?.url);
+  event.waitUntil(Promise.all([
+    pushReceipt(event.notification.data, 'clicked'),
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of windows) if (new URL(client.url).origin === self.location.origin) {
+        try { await client.navigate(targetUrl); return await client.focus(); } catch { /* Try a new window. */ }
+      }
+      return self.clients.openWindow(targetUrl);
+    })(),
+  ]));
+});
+self.addEventListener('notificationclose', event => {
+  event.waitUntil(pushReceipt(event.notification.data, 'closed'));
+});
+self.addEventListener('pushsubscriptionchange', event => {
+  event.waitUntil((async () => {
+    const client = await pushDb('state', 'readonly', store => store.get('client'));
+    if (!client?.enabled || !client.publicKey || client.pendingDisable) return;
+    try {
+      const key = Uint8Array.from(atob(client.publicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+      const subscription = event.newSubscription || await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await fetch(client.api + '/subscribe', {
+        method: 'POST', cache: 'no-store', credentials: 'omit',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + client.token, 'X-Qada-Device': client.id },
+        body: JSON.stringify({ subscription: subscription.toJSON(), preferences: client.preferences, timezone, platform: 'Unknown' }),
+      });
+      if (!response.ok) throw new Error('subscription_sync_failed');
+      await pushDb('state', 'readwrite', store => store.put({ ...client, timezone }, 'client'));
+    } catch {
+      // Permission may have been revoked or renewal attempted offline; ask on next app open.
+      await pushDb('state', 'readwrite', store => store.put({ ...client, enabled: false }, 'client'));
+    }
   })());
 });

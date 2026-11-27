@@ -99,6 +99,36 @@ export function calculateMissedPrayers(
   };
 }
 
+/** Calculate qada directly from a known calendar period. */
+export function calculateMissedPrayersForDays(
+  totalDays: number,
+  prayerFrequencyPercent = 0,
+  excludedDays = 0,
+): CalculationResult {
+  const days = Math.max(0, Math.floor(totalDays));
+  const excluded = Math.min(days, Math.max(0, Math.floor(excludedDays)));
+  const applicableDays = Math.max(0, days - excluded);
+  const safeFrequency = Math.min(100, Math.max(0, prayerFrequencyPercent));
+  const totalObligatory = applicableDays * 5;
+  const estimatedMissed = Math.round(totalObligatory * ((100 - safeFrequency) / 100));
+  const base = Math.floor(estimatedMissed / 5);
+  let remainder = estimatedMissed % 5;
+  return {
+    years: days / 365,
+    days,
+    totalObligatory,
+    menstruationDaysExcluded: excluded,
+    estimatedMissed,
+    perPrayer: {
+      fajr: base + (remainder-- > 0 ? 1 : 0),
+      dhuhr: base + (remainder-- > 0 ? 1 : 0),
+      asr: base + (remainder-- > 0 ? 1 : 0),
+      maghrib: base + (remainder-- > 0 ? 1 : 0),
+      isha: base + (remainder-- > 0 ? 1 : 0),
+    },
+  };
+}
+
 export function createInitialCounters(perPrayer: CalculationResult['perPrayer']): PrayerCounters {
   return {
     fajr: {

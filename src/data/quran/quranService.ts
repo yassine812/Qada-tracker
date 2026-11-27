@@ -4,6 +4,7 @@ import { OFFLINE_SURAHS } from './offlineSurahs';
 import { OFFLINE_MUSHAF_PAGES } from './offlinePages';
 
 let fullPagesCache: Record<number, MushafPageData> | null = null;
+let fullPagesRequest: Promise<Record<number, MushafPageData>> | null = null;
 
 // In-memory cache for fast switching
 let fullUthmaniCache: any[] | null = null;
@@ -319,14 +320,15 @@ export async function getMushafPage(pageNumber: number): Promise<MushafPageData>
 
   // 3. Load from static JSON asset
   try {
-    const res = await fetch('/data/quran-pages.json');
-    if (res.ok) {
-      const data = await res.json();
+    // Current/previous/next mount together. Share one download and JSON parse.
+    fullPagesRequest ??= fetch('/data/quran-pages.json').then(async res => {
+      if (!res.ok) throw new Error('Quran pages unavailable');
+      const data = await res.json() as Record<number, MushafPageData>;
       fullPagesCache = data;
-      if (data[p]) {
-        return data[p];
-      }
-    }
+      return data;
+    }).finally(() => { fullPagesRequest = null; });
+    const data = await fullPagesRequest;
+    if (data[p]) return data[p];
   } catch {
     // ignore
   }
@@ -354,4 +356,3 @@ const JUZ_START_PAGES: Record<number, number> = {
 export function getJuzStartPage(juzNumber: number): number {
   return JUZ_START_PAGES[juzNumber] || 1;
 }
-

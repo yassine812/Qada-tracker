@@ -13,7 +13,10 @@ import {
   saveAdhkarDailyState,
   saveAdhkarHistoryEntry,
 } from '../storage/indexedDb';
-import { getTodayDateString } from '../utils/streak';
+import { activityDate } from '../services/streakModel';
+import { encourageProgress } from '../services/companionFeedback';
+import { useStreak } from '../context/StreakContext';
+import { migrateAdhkarFavorites, migrateAdhkarProgress } from '../services/adhkarProgress';
 
 const FAVORITES_KEY = 'qada_adhkar_favorites';
 
@@ -36,7 +39,7 @@ function loadFavorites(): string[] {
   try {
     const raw = localStorage.getItem(FAVORITES_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x: unknown) => typeof x === 'string') : [];
+    return Array.isArray(parsed) ? migrateAdhkarFavorites(parsed.filter((x: unknown) => typeof x === 'string')) : [];
   } catch {
     return [];
   }
@@ -70,7 +73,7 @@ export interface UseAdhkarResult {
 }
 
 export function useAdhkar(): UseAdhkarResult {
-  const todayStr = getTodayDateString();
+  const { recordDailyActivity, today: todayStr, cache: streakCache } = useStreak();
 
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<AdhkarDailyState>(() => makeEmptyState(todayStr));
@@ -82,6 +85,7 @@ export function useAdhkar(): UseAdhkarResult {
   // ── Daily rollover: migrate previous day's snapshot into history,
   //    then start a fresh state for today. ─────────────────────────
   const rolloverToToday = useCallback(async (loaded: AdhkarDailyState) => {
+    if (loaded) loaded = migrateAdhkarProgress(loaded);
     const activeToday = makeEmptyState(todayStr);
     if (loaded && loaded.date === todayStr) {
       setState(loaded);
@@ -148,7 +152,7 @@ export function useAdhkar(): UseAdhkarResult {
   useEffect(() => {
     const check = () => {
       const current = stateRef.current;
-      if (current.date !== getTodayDateString()) {
+      if (current.date !== todayStr) {
         rolloverToToday(current);
       }
     };
@@ -158,7 +162,7 @@ export function useAdhkar(): UseAdhkarResult {
       window.removeEventListener('focus', check);
       document.removeEventListener('visibilitychange', check);
     };
-  }, [rolloverToToday]);
+  }, [rolloverToToday, todayStr]);
 
   // ── Helpers ─────────────────────────────────────────────────────
   const getCategoryProgress = useCallback(
@@ -191,7 +195,8 @@ export function useAdhkar(): UseAdhkarResult {
       const item = items.find((it) => it.id === itemId);
       if (!item) return null;
 
-      const current = stateRef.current;
+      const actionDate = activityDate(new Date(), streakCache.timezone);
+      const current = stateRef.current.date === actionDate ? stateRef.current : makeEmptyState(actionDate);
       const catState = current.byCategory[category] || emptyCategoryProgress();
       const existing = catState.items[itemId];
       const completed = existing?.completed || false;
@@ -211,10 +216,16 @@ export function useAdhkar(): UseAdhkarResult {
         },
       };
       setState(updated);
+      stateRef.current = updated;
+      if (!completed) {
+        const allComplete = items.every(it => updated.byCategory[category].items[it.id]?.completed);
+        if (allComplete) void recordDailyActivity('adhkar');
+        encourageProgress(allComplete ? 'ما شاء الله! أكملت مجموعة الأذكار. تقبّل الله ذكرك!' : nowCompleted ? 'أحسنت! أكملت هذا الذكر. لنكمل معًا!' : 'ذكرٌ جميل! واصل على مهل، أنا أشجّعك.', nowCompleted);
+      }
       saveAdhkarDailyState(updated).catch(() => undefined);
       return { count, completed: completed || nowCompleted };
     },
-    []
+    [recordDailyActivity, streakCache.timezone]
   );
 
   const toggleFavorite = useCallback((itemId: string) => {

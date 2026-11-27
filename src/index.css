@@ -81,11 +81,11 @@
     --mushaf-bg-bottom: #F5F0E8;
     --mushaf-text: #1D211E;
     --mushaf-muted: #7E8C7F;
-    --mushaf-border: rgba(198,161,91,0.38);
-    --mushaf-border-soft: rgba(198,161,91,0.2);
-    --mushaf-accent: #C6A15B;
-    --mushaf-badge-bg: rgba(250,247,242,0.92);
-    --mushaf-pill-bg: rgba(38,53,42,0.05);
+    --mushaf-border: rgba(32,157,163,0.74);
+    --mushaf-border-soft: rgba(32,157,163,0.34);
+    --mushaf-accent: #247f83;
+    --mushaf-badge-bg: rgba(251,248,239,0.94);
+    --mushaf-pill-bg: rgba(32,157,163,0.1);
     --mushaf-shadow: 0 6px 36px rgba(24,35,28,0.13);
   }
 
@@ -127,16 +127,17 @@
     /* The Mushaf stays a physical paper surface: warm dark brown-olive paper
        with high-contrast warm ivory Quran text. The surrounding app is dark,
        the Mushaf is NOT — it must never inherit the app's dark text colors. */
-    --mushaf-bg-top: #2E2C22;
-    --mushaf-bg-bottom: #27251D;
-    --mushaf-text: #F3EBDD;
-    --mushaf-muted: #A9B7A3;
-    --mushaf-border: rgba(198,161,91,0.32);
-    --mushaf-border-soft: rgba(198,161,91,0.16);
-    --mushaf-accent: #C6A15B;
-    --mushaf-badge-bg: rgba(39,37,29,0.96);
-    --mushaf-pill-bg: rgba(243,235,221,0.07);
-    --mushaf-shadow: 0 10px 44px rgba(0,0,0,0.55);
+    /* The Quran reader keeps a calm paper surface in both app themes. */
+    --mushaf-bg-top: #FBF8EF;
+    --mushaf-bg-bottom: #F4EFDF;
+    --mushaf-text: #202321;
+    --mushaf-muted: #536E70;
+    --mushaf-border: rgba(32,157,163,0.74);
+    --mushaf-border-soft: rgba(32,157,163,0.34);
+    --mushaf-accent: #247f83;
+    --mushaf-badge-bg: rgba(251,248,239,0.94);
+    --mushaf-pill-bg: rgba(32,157,163,0.1);
+    --mushaf-shadow: 0 10px 44px rgba(20,65,62,0.24);
   }
 
   body {
@@ -708,6 +709,76 @@ input[type=range]::-webkit-slider-thumb:active {
   overflow: visible;
 }
 
+/* A quiet turquoise geometric frame gives the reader the feel of a printed
+   mushaf while remaining lightweight and sharp on mobile screens. */
+.mushaf-paper {
+  background: radial-gradient(ellipse at 30% 20%, #fffef5a6, transparent 70%), #f8f5e6;
+  color: #172822;
+  border: 1px solid #2e9ca5;
+  border-radius: 2px;
+  box-shadow: 0 4px 18px #102c2530;
+}
+.mushaf-text-area { padding: 8px 12px; }
+.mushaf-running-title { padding: 6px 14px 0; color: #597777; opacity: .75; }
+.mushaf-ornament-band {
+  position: relative;
+  height: 36px;
+  margin: 7px 8px 0;
+  border-radius: 0;
+  overflow: visible;
+  background-color: #2aa3a7;
+  background-image: url('/images/mushaf-rosette.svg');
+  background-size: 38px 38px;
+  box-shadow: inset 0 0 0 1px rgba(19,103,106,.35);
+}
+
+.mushaf-ornament-band::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255,255,255,.58);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.mushaf-surah-plate {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: min(44%, 230px);
+  padding: 0 24px;
+  line-height: 1.8;
+  border-radius: 24px / 50%;
+  border: 1px solid rgba(32,125,128,.34);
+  background: #f8f5e6;
+  color: #202321;
+  text-align: center;
+  box-shadow: 0 0 0 2px #f8f5e6;
+  white-space: nowrap;
+}
+
+.mushaf-ornament-band-bottom {
+  margin: 0 8px 5px;
+  border-radius: 0;
+}
+.mushaf-surah-divider { margin: .5em 0 .35em; height: 1.85em; min-height: 28px; }
+.mushaf-page-folio { min-width: 62px !important; font: 14px/2 Georgia, serif; }
+.mushaf-ayah-medallion { position: relative; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; width: 1.3em; height: 1.5em; margin: 0 .12em; color: #397f84; }
+.mushaf-ayah-medallion svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: .85; }
+.mushaf-ayah-medallion > span { font-family: 'Amiri', serif; font-size: .52em; line-height: 1; }
+.mushaf-swipe-track { will-change: transform; transform: translate3d(0,0,0); }
+.mushaf-sheet { backface-visibility:hidden; contain:layout paint; }
+@media(prefers-reduced-motion:reduce) { .mushaf-swipe-track { will-change:auto; } }
+
+@media (max-width: 640px) {
+  .mushaf-ornament-band { height: 30px; margin-left: 5px; margin-right: 5px; }
+  .mushaf-surah-divider { margin-inline: 0; height: 1.85em; }
+  .mushaf-surah-plate { min-width: 42%; padding-inline: 16px; }
+  .mushaf-text-area { padding: 5px 9px; }
+}
+
 
 /* Mobile hero video framing: preserve the garden and people on the right side */
 @media (max-width: 768px) {
@@ -898,6 +969,122 @@ input[type=range]::-webkit-slider-thumb:active {
 }
 
 /* Hides the native clear button of time inputs on narrow rows */
+.qada-ambient-light {
+  position: absolute;
+  width: min(70vw, 850px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(211, 172, 90, .14), transparent 65%);
+  animation: qada-light-drift 18s ease-in-out infinite alternate;
+}
+.qada-ambient-light-one { top: -20%; right: -12%; }
+.qada-ambient-light-two { bottom: -35%; left: -12%; animation-delay: -9s; background: radial-gradient(circle, rgba(125, 169, 144, .13), transparent 65%); }
+.qada-lantern { position: absolute; top: 60px; right: 2%; width: 72px; height: 215px; color: #c6a15b; opacity: .45; transform-origin: top center; animation: qada-lantern-sway 9s ease-in-out infinite alternate; filter: drop-shadow(0 8px 14px #c6a15b55); }
+.qada-welcome { padding: 26px !important; border: 1px solid #c6a15b35; border-radius: 28px; background: radial-gradient(ellipse at 0% 0%, #c6a15b22, transparent 65%), var(--qada-surface-1); }
+.qada-dashboard > div.rounded-2xl,
+.qada-dashboard > div.rounded-3xl,
+.qada-worship-cards > div { box-shadow: 0 8px 30px #10241a08, inset 0 1px 0 #ffffff18; }
+.dark .qada-dashboard > div.rounded-2xl,
+.dark .qada-dashboard > div.rounded-3xl,
+.dark .qada-worship-cards > div { background-image: linear-gradient(145deg, #ffffff05, transparent 60%); box-shadow: 0 12px 38px #091b1222, inset 0 1px 0 #ffffff0a; }
+.qada-worship-cards > :is(div, section) { min-height: 300px; }
+.qada-worship-cards > div:first-child > div > .my-auto { margin-block: 24px; }
+.qada-prayer-tiles > button { position: relative; overflow: hidden; min-height: 116px; border-radius: 20px; box-shadow: 0 5px 16px #10241a08; }
+.qada-prayer-tiles > button::after { content: ''; pointer-events: none; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, #c6a15b20 50%, transparent 80%); transform: translateX(110%); transition: transform .7s ease; }
+@media (hover: hover) {
+  .qada-prayer-tiles > button:hover::after { transform: translateX(-110%); }
+  .qada-worship-cards > div:hover { box-shadow: 0 14px 36px #10241a18, 0 0 0 1px #c6a15b35; }
+}
+.qada-prayer-tiles > button { animation: qada-card-arrive .6s both; }
+.qada-prayer-tiles > button:nth-child(2) { animation-delay: .06s; }
+.qada-prayer-tiles > button:nth-child(3) { animation-delay: .12s; }
+.qada-prayer-tiles > button:nth-child(4) { animation-delay: .18s; }
+.qada-prayer-tiles > button:nth-child(5) { animation-delay: .24s; }
+.qada-companion { position: fixed; left: 10px; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); z-index: 30; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 136px; margin: 0; color: var(--qada-text); pointer-events: none; }
+.qada-companion-copy { position: absolute; bottom: calc(100% + 10px); width: 100%; text-align: center; padding: 12px 10px; border: 1px solid #c6a15b55; border-radius: 19px; background: var(--qada-surface-1); box-shadow: 0 5px 20px #00000018; transform-origin: bottom center; }
+.qada-companion-copy::after { content: ''; position: absolute; bottom: -6px; left: calc(50% - 6px); width: 10px; height: 10px; background: var(--qada-surface-1); border-bottom: 1px solid #c6a15b55; border-right: 1px solid #c6a15b55; transform: rotate(45deg); }
+.qada-companion-copy p { font-size: 13px; font-weight: 700; margin: 0; }
+.qada-companion-character { width: 100px; height: 120px; flex-shrink: 0; pointer-events: none; }
+.qada-companion-dismiss { position: absolute; top: -7px; right: -7px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 1px solid #c6a15b70; border-radius: 50%; color: var(--qada-text); background: var(--qada-surface-1); box-shadow: 0 3px 10px #0000001c; cursor: pointer; pointer-events: auto; z-index: 4; }
+.qada-companion-dismiss:hover { background: #c6a15b22; }
+.qada-companion-dismiss:focus-visible { outline: 2px solid var(--qada-accent); outline-offset: 2px; }
+.qada-companion-wave { transform-box: view-box; transform-origin: 95px 102px; animation: qada-wave .8s ease-in-out; }
+.qada-companion-stars { animation: qada-sparkle .9s both; }
+/* Shared surface treatment, deliberately applied only to full content cards. */
+.qada-surface-card {
+  border-radius: 26px;
+  border-color: color-mix(in srgb, var(--qada-accent) 27%, transparent);
+  box-shadow: 0 10px 30px #17251c09, inset 0 1px 0 #ffffff40;
+  transition: border-color .25s ease, box-shadow .25s ease;
+  animation: qada-surface-reveal .5s ease both;
+}
+.qada-surface-card:not([class*="bg-gradient"]) {
+  background-image: radial-gradient(ellipse at 100% 0%, #c6a15b0e, transparent 65%);
+}
+.dark .qada-surface-card { box-shadow: 0 12px 32px #06120b25, inset 0 1px 0 #ffffff0c; }
+.qada-surface-card:focus-within { border-color: #c6a15b99; }
+@media (hover: hover) {
+  .qada-surface-card:hover { border-color: #c6a15b70; box-shadow: 0 14px 38px #17251c16, inset 0 1px 0 #c6a15b20; }
+}
+.qada-istighfar-card { display: flex; flex-direction: column; gap: 20px; padding: 24px; border: 1px solid #c6a15b45; background-color: var(--qada-surface-1); color: var(--qada-text); }
+.qada-card-icon { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 16px; color: var(--qada-accent); background: #c6a15b15; border: 1px solid #c6a15b30; }
+.qada-card-meta { color: var(--qada-text-muted); font-size: .8125rem; line-height: 1.7; }
+.qada-istighfar-body, .qada-istighfar-trackers { display: flex; align-items: center; justify-content: center; gap: clamp(14px, 2vw, 28px); padding: 5px 0 12px; }
+.qada-istighfar-trackers { flex-wrap: wrap; }
+.qada-istighfar-orbit { position: relative; flex-shrink: 0; padding: 8px; border-radius: 50%; background: radial-gradient(circle, #c6a15b10, transparent 68%); }
+.qada-istighfar-orbit::before { content: ''; position: absolute; inset: 0; border: 1px dashed #c6a15b30; border-radius: 50%; pointer-events: none; }
+.qada-ring-percent { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); border: 1px solid #c6a15b45; border-radius: 99px; background: var(--qada-surface-1); color: var(--qada-accent); padding: 3px 13px; font-size: .8125rem; font-weight: 700; }
+.qada-istighfar-details { min-width: 0; }
+.qada-istighfar-invocation { font-family: var(--font-spiritual-serif, 'Amiri', serif); font-size: clamp(1.5rem, 2.2vw, 2rem); line-height: 1.6; margin-bottom: 8px; color: var(--qada-accent); }
+.qada-istighfar-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-block: 1px solid #c6a15b20; padding-block: 14px; }
+.qada-istighfar-stats > div + div { border-inline-start: 1px solid #c6a15b25; padding-inline-start: 12px; }
+.qada-istighfar-stats dt { font-size: .8125rem; color: var(--qada-text-muted); }
+.qada-istighfar-stats dd { margin-top: 5px; font-size: 1.25rem; font-weight: 700; text-align: start; overflow-wrap: anywhere; }
+.qada-istighfar-stats > div:last-child dd { color: var(--qada-accent); }
+.qada-istighfar-add { margin-top: auto; display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; border-radius: 16px; padding: 14px; font-size: .875rem; font-weight: 700; color: #fff9eb; background: #26352a; box-shadow: 0 5px 15px #17251c10; }
+.dark .qada-istighfar-add { color: #18231c; background: linear-gradient(120deg, #d6b56f, #c6a15b); }
+.qada-companion-copy { min-width: 0; }
+.qada-companion-copy p { min-height: 2.8em; line-height: 1.7; }
+.qada-companion-voice { position: absolute; left: 0; bottom: 8px; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; border: 1px solid #c6a15b60; color: var(--qada-text); background: var(--qada-surface-1); cursor: pointer; pointer-events: auto; z-index: 2; }
+.qada-companion-voice:focus-visible { outline: 2px solid var(--qada-accent); outline-offset: 3px; }
+.qada-companion-voice:disabled { opacity: .6; cursor: default; }
+.qada-companion-voice[aria-pressed="true"] { background: #c6a15b28; }
+.qada-companion-copy small { display: block; font-size: 12px; line-height: 1.6; color: var(--qada-text-muted); }
+.qada-companion-mouth { transform-box: fill-box; transform-origin: center; animation: qada-mouth .22s ease-in-out infinite alternate; }
+@keyframes qada-mouth { to { transform: scaleY(1.9); } }
+@keyframes qada-surface-reveal { from { opacity: .4; } to { opacity: 1; } }
+.qada-progress-overview > section { min-width: 0; height: 100%; }
+.qada-progress-overview .qada-istighfar-trackers { min-height: 154px; gap: 12px; }
+.qada-progress-overview .qada-istighfar-orbit { padding: 3px; }
+.qada-progress-overview .qada-istighfar-invocation { font-size: 1.25rem; margin-bottom: 0; }
+@media (max-width: 1439px) {
+  .qada-companion { width: 112px; left: 6px; }
+  .qada-companion-character { width: 70px; height: 84px; }
+  .qada-companion-copy { padding: 9px 7px; border-radius: 15px; }
+  .qada-companion-copy p { font-size: 12px; }
+  .qada-companion-voice { left: -2px; bottom: 0; }
+  .qada-experience:not(.qada-reading-mode) > main { padding-bottom: 170px; }
+}
+@media (max-width: 639px) {
+  .qada-lantern { width: 42px; opacity: .22; right: -8px; }
+  .qada-welcome { padding: 18px !important; }
+  .qada-prayer-tiles > button { min-height: 104px; border-radius: 14px; }
+  .qada-surface-card { border-radius: 22px; }
+  .qada-istighfar-card { padding: 20px; }
+}
+@media (max-width: 359px) {
+  .qada-istighfar-trackers { gap: 8px; }
+  .qada-istighfar-invocation br { display: none; }
+}
+@keyframes qada-light-drift { to { transform: translate3d(30px, 35px, 0) scale(1.12); opacity: .65; } }
+@keyframes qada-lantern-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes qada-card-arrive { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+@keyframes qada-wave { 0%,100% { transform: rotate(0); } 25%,65% { transform: rotate(-18deg); } 45%,85% { transform: rotate(8deg); } }
+@keyframes qada-sparkle { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .qada-experience *, .qada-experience *::after, .qada-surface-card { animation: none !important; transition: none !important; }
+}
+
 input[type='time']::-webkit-calendar-picker-indicator {
   opacity: 0.6;
   cursor: pointer;
@@ -907,4 +1094,13 @@ input[type='time']::-webkit-calendar-picker-indicator {
   .qada-scroll-thin {
     transition: none;
   }
+}
+/* Reading occupies the viewport without the app header or mascot; the global
+   navigation remains available so readers can leave the Mushaf at any time. */
+.qada-reading-mode { height: 100dvh; min-height: 0; overflow: hidden; }
+.qada-experience > .qada-reader-main { padding: 0; height: 100dvh; }
+.qada-fullscreen-reader {
+  height: 100dvh;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    calc(68px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { X, Share, PlusSquare, Download, CheckCircle } from 'lucide-react';
+import { X, Share, PlusSquare, CheckCircle } from 'lucide-react';
 import { usePwaInstall } from '../context/PwaInstallContext';
 import { ModalPortal } from './ui/ModalPortal';
 
@@ -39,6 +39,7 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
   const isIOS =
     typeof window !== 'undefined' &&
     /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  const isAndroid = typeof window !== 'undefined' && /android/i.test(window.navigator.userAgent);
 
   if (!isOpen) return null;
 
@@ -66,9 +67,7 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
         </button>
 
         <div className="text-center mb-5 mt-1">
-          <div className="w-14 h-14 rounded-2xl bg-[#F0EEE6] dark:bg-[#1C1D1A] text-[#5A5A40] dark:text-[#C8C7B9] flex items-center justify-center mx-auto mb-3">
-            <Download className="w-7 h-7" />
-          </div>
+          <img src="/icons/qada-192-v2.png" alt="شعار قضاء" width={64} height={64} className="rounded-2xl mx-auto mb-3 shadow-md" />
           <h3 id={titleId} className="font-bold text-lg font-brand-serif text-[#2D2D2A] dark:text-[#EAE7E0]">
             تثبيت تطبيق قضاء على هاتفك
           </h3>
@@ -120,12 +119,13 @@ export const InstallModal: React.FC<InstallModalProps> = ({ isOpen, onClose }) =
             <p role="status" className="font-medium text-center">
               نافذة التثبيت المباشر غير متاحة بعد.
             </p>
-            <p>اترك الصفحة مفتوحة قليلاً ثم أعد المحاولة. عند إتاحة التثبيت، سيفتح الزر نافذة المتصفح مباشرة.</p>
+            <p>{isAndroid ? 'افتح قضاء في Chrome مباشرة، ثم اختر من قائمة المتصفح «تثبيت التطبيق» إذا ظهر الخيار. قد تختلف الخيارات حسب المتصفح والجهاز.' : 'اترك الصفحة مفتوحة قليلاً ثم أعد المحاولة. عند إتاحة التثبيت، سيفتح الزر نافذة المتصفح مباشرة.'}</p>
             <button type="button" onClick={handleInstallClick} disabled={busy}
               className="w-full py-3 rounded-2xl bg-[#C6A15B] text-[#18231C] font-semibold disabled:opacity-60">
               إعادة محاولة التثبيت
             </button>
             <p className="text-xs">استخدم Chrome على أندرويد خارج المتصفح المدمج في التطبيقات. إذا كان قضاء مثبتاً بالفعل، افتحه من أيقونته على جهازك.</p>
+            {isAndroid && <p className="text-xs leading-6">إذا ظهرت شارة Chrome صغيرة فوق الأيقونة، فقد أضاف المتصفح اختصارًا بدل تطبيق مثبت. قضاء يستخدم الشعار الظاهر أعلاه؛ شارة المتصفح يضيفها Android ولا يمكن إخفاؤها من الموقع.</p>}
           </div>
         )}
 

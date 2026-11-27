@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { Toast } from './components/Toast';
-import { DailyReminderModal } from './components/DailyReminderModal';
 import { IslamicGeometricBg } from './components/IslamicGeometricBg';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -13,46 +12,36 @@ import { DhikrPage } from './pages/DhikrPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
 import { InfoPage } from './pages/InfoPage';
-import { OfflineStatus } from './components/OfflineStatus';
 import { AdSlot } from './components/AdSlot';
 import { PwaInstallProvider } from './context/PwaInstallContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccountPage } from './pages/AccountPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { NotificationSettings } from './components/NotificationSettings';
+import { QadaCompanion } from './components/QadaCompanion';
+import { QadaGuide } from './components/QadaGuide';
+import { AppWelcome } from './components/AppWelcome';
+import { FeatureHelpHost } from './components/guide/FeatureHelp';
+import { MotionConfig } from 'motion/react';
+import { StreakProvider } from './context/StreakContext';
+import { AchievementCelebration } from './components/streak/StreakFeatures';
+import { AppStreakExperience } from './components/streak/AppStreakExperience';
+import { hasSeenLaunchPrompt, markLaunchPromptSeen } from './services/startupState';
+import './app-unified.css';
+import './app-pages.css';
 
 const INFO_PATHS = new Set(['/about', '/privacy', '/guides', '/guides/offline', '/guides/backup']);
 
-const MainAppContent: React.FC = () => {
+const MainAppContent: React.FC<{ welcomeVisible: boolean }> = ({ welcomeVisible }) => {
   const { settings, loading, activeTab, setActiveTab } = useApp();
+  if (loading) return null;
 
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center text-center p-4 anim-fade-in"
-        style={{ background: 'var(--qada-bg)' }}
-      >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 animate-pulse"
-          style={{ background: 'var(--qada-primary-soft)', color: 'var(--qada-primary)' }}
-        >
-          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M12 3c-4 4-8 8-8 14a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4c0-6-4-10-8-14z" />
-            <path d="M12 3v4" />
-          </svg>
-        </div>
-        <h2
-          className="font-bold text-2xl font-brand-serif"
-          style={{ color: 'var(--qada-text)' }}
-        >
-          قضاء
-        </h2>
-        <p
-          className="text-xs mt-1"
-          style={{ color: 'var(--qada-text-muted)' }}
-        >
-          جاري تحميل البيانات...
-        </p>
-      </div>
-    );
+  if (window.location.pathname === '/app/notifications') {
+    return <div className="qada-experience qada-notifications-page min-h-screen pt-20 pb-12 px-3" style={{ background: 'var(--qada-bg)', color: 'var(--qada-text)' }}>
+      <Header />
+      <main className="qada-help-content max-w-4xl mx-auto space-y-4"><a href="/app" className="block text-right">العودة إلى التطبيق ←</a><NotificationSettings /></main>
+      <FeatureHelpHost />
+    </div>;
   }
 
   if (!settings || !settings.hasCompletedOnboarding) {
@@ -60,15 +49,16 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col relative pb-20"
+    <MotionConfig reducedMotion="user"><div
+      className={`qada-experience min-h-screen flex flex-col relative ${activeTab === 'quran' ? 'qada-reading-mode' : 'pb-20'}`}
       style={{ background: 'var(--qada-bg)', color: 'var(--qada-text)' }}
     >
       <IslamicGeometricBg />
 
-      <Header />
+      {activeTab !== 'quran' && <Header />}
 
-      <main className={`relative z-10 flex-grow pt-16 px-3 sm:px-4 lg:px-8 mx-auto w-full transition-all duration-300 ${activeTab === 'quran' ? 'max-w-3xl lg:max-w-5xl' : 'max-w-md md:max-w-3xl lg:max-w-6xl'}`}>
+      <main className={activeTab === 'quran' ? 'qada-reader-main relative z-10 w-full' : 'relative z-10 flex-grow pt-16 px-3 sm:px-4 lg:px-8 mx-auto w-full max-w-md md:max-w-3xl lg:max-w-6xl'}>
+        {activeTab !== 'quran' && <QadaCompanion />}
         {activeTab === 'dashboard' && <DashboardPage />}
         {activeTab === 'ibadat' && <IbadatPage />}
         {activeTab === 'quran' && <QuranPage />}
@@ -79,8 +69,9 @@ const MainAppContent: React.FC = () => {
       <Navigation currentTab={activeTab} onSelectTab={setActiveTab} />
 
       <Toast />
-      <DailyReminderModal />
-    </div>
+      {!welcomeVisible && <><QadaGuide />{settings.hasSeenAppGuide && <AppStreakExperience />}</>}
+      <FeatureHelpHost />
+    </div></MotionConfig>
   );
 };
 
@@ -97,6 +88,18 @@ const RootViewRouter: React.FC = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'app'>(() => {
     return checkIsAppPath() ? 'app' : 'landing';
   });
+  const { session, loading: authLoading } = useAuth();
+  const { loading: dataLoading } = useApp();
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => hasSeenLaunchPrompt('welcome'));
+  const [welcomeComplete, setWelcomeComplete] = useState(() => hasSeenLaunchPrompt('welcome'));
+  const finishWelcome = useCallback(() => { markLaunchPromptSeen('welcome'); setWelcomeDismissed(true); }, []);
+  const appReady = !authLoading && (!session || !dataLoading);
+
+  // Greet immediately while the session and saved records restore behind it.
+  // Once dismissed, background synchronization must never replay the greeting.
+  useEffect(() => {
+    if (welcomeDismissed && appReady) setWelcomeComplete(true);
+  }, [welcomeDismissed, appReady]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -107,25 +110,34 @@ const RootViewRouter: React.FC = () => {
   }, []);
 
   const handleEnterApp = useCallback(() => {
+    const destination = session ? '/app' : '/account?mode=login';
     try {
-      window.history.pushState(null, '', '/app');
+      window.history.pushState(null, '', destination);
     } catch {
       // Fallback in case of sandboxed iframe
-      window.location.hash = '#/app';
+      window.location.hash = destination;
     }
-    setCurrentView('app');
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, []);
+    window.location.reload();
+  }, [session]);
 
   if (currentView === 'landing') {
     return <LandingPage onEnterApp={handleEnterApp} />;
   }
 
-  return <MainAppContent />;
+  return <>
+    {appReady && (session ? <MainAppContent welcomeVisible={!welcomeComplete} /> : <AccountPage />)}
+    {!welcomeComplete && <AppWelcome onComplete={finishWelcome} />}
+  </>;
 };
 
 export default function App() {
   const [path, setPath] = useState(() => window.location.pathname.replace(/\/$/, '') || '/');
+  useEffect(() => {
+    // Portaled dialogs and account/profile routes share the application theme.
+    const appRoute = path.startsWith('/app') || path === '/profile' || path === '/account';
+    document.documentElement.classList.toggle('qada-app-theme', appRoute);
+    return () => document.documentElement.classList.remove('qada-app-theme');
+  }, [path]);
   useEffect(() => {
     const update = () => setPath(window.location.pathname.replace(/\/$/, '') || '/');
     window.addEventListener('popstate', update);
@@ -138,13 +150,15 @@ export default function App() {
     return <InfoPage path={path}><AdSlot /></InfoPage>;
   }
   if (path === '/account') return <AuthProvider><AccountPage /></AuthProvider>;
+  if (path === '/profile') return <AuthProvider><PwaInstallProvider><StreakProvider><AppProvider><ProfilePage /><AchievementCelebration /></AppProvider></StreakProvider></PwaInstallProvider></AuthProvider>;
   return (
     <AuthProvider>
     <PwaInstallProvider>
+      <StreakProvider>
       <AppProvider>
-        <OfflineStatus />
         <RootViewRouter />
       </AppProvider>
+      </StreakProvider>
     </PwaInstallProvider>
     </AuthProvider>
   );

@@ -1,4 +1,5 @@
 export type PrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+export type QadaPlan = Partial<Record<PrayerKey, number>>;
 
 export interface PrayerMeta {
   key: PrayerKey;
@@ -42,6 +43,7 @@ export interface AdhkarItem {
   source: string; // e.g. "صحيح مسلم" / "القرآن الكريم"
   sourceReference: string; // e.g. "2693" / "سورة البقرة: 255"
   sourceInfo?: string; // short verified note shown in the ⓘ source sheet
+  sourceUrl?: string; // direct reference for checking the original text
   isQuran?: boolean; // render with mushaf typography
   audioUrl?: string; // optional recitation URL; empty = no audio for this dhikr
 }
@@ -74,18 +76,32 @@ export type AdhkarReminderSettings = Record<AdhkarCategory, AdhkarReminderSettin
 
 export type Gender = 'male' | 'female';
 
+export type CalculationMethod = 'age_estimate' | 'percentage_estimate' | 'exact_period';
+
+export interface ExactPeriodSettings {
+  mode: 'duration' | 'dates';
+  amount?: number;
+  unit?: 'days' | 'weeks' | 'months' | 'years';
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface PeriodEntry {
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
 }
 
 export interface UserSettings {
+  qadaPlan?: QadaPlan;
   hasCompletedOnboarding: boolean;
+  hasSeenAppGuide?: boolean;
   userName?: string;
   gender: Gender;
   pubertyAge: number;
   currentAge: number;
   prayerFrequency: number; // 0 to 100 %
+  calculationMethod?: CalculationMethod;
+  exactPeriod?: ExactPeriodSettings;
   // Menstruation settings (women only)
   menstruationCalculationMode?: 'average' | 'detailed';
   averageMenstruationDays?: number; // days per month (default 7)
@@ -146,6 +162,12 @@ export interface IstighfarRecord {
   timestamp: number;
 }
 
+export interface IstighfarOperation {
+  operationId: string;
+  amount: number;
+  createdAt: string;
+}
+
 export interface IstighfarData {
   hasCompletedSetup: boolean;
   startAge: number; // age when started istighfar
@@ -160,6 +182,8 @@ export interface IstighfarData {
   historicalTotalTarget: number; // trackedYears * 365 * dailyTarget
   historicalCompleted: number; // estimated previously done: trackedYears * 365 * estimatedPreviousDaily
   historicalRemaining: number; // historicalTotalTarget - historicalCompleted - (applied today's counts)
+  /** Idempotent historical additions used to merge offline devices safely. */
+  operations?: IstighfarOperation[];
   createdAt: string;
   updatedAt: string;
 }

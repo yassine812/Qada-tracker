@@ -15,7 +15,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!authClient) return;
     let active = true;
-    // A slow auth service does not block guest/offline use.
+    // Keep the account screen responsive while the authentication service loads.
     const timer = window.setTimeout(() => { if (active) setLoading(false); }, 8000);
     const { data: { subscription } } = authClient.auth.onAuthStateChange((event, next) => {
       if (!active) return;
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const mode = params.get('mode') === 'recovery' ? '?mode=recovery' : '';
         window.history.replaceState(null, '', `/account${mode}`);
       }
-    }).catch(() => { if (active) { setLoading(false); setError('تعذّر الاتصال بخدمة الحسابات. يمكنك المتابعة دون حساب.'); } });
+    }).catch(() => { if (active) { setLoading(false); setError('تعذّر الاتصال بخدمة الحسابات. حاول لاحقًا.'); } });
     return () => { active = false; window.clearTimeout(timer); subscription.unsubscribe(); };
   }, []);
   return <Context.Provider value={{ session, loading, recovery, error }}>{children}</Context.Provider>;

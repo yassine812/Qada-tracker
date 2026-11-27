@@ -8,6 +8,13 @@ import React from 'react';
 export const IslamicGeometricBg: React.FC = () => {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <div className="qada-ambient-light qada-ambient-light-one" />
+      <div className="qada-ambient-light qada-ambient-light-two" />
+      <svg className="qada-lantern" viewBox="0 0 80 240" fill="none">
+        <path d="M40 0v95m-9 12 9-12 9 12M22 120l18-13 18 13-4 47-14 14-14-14z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M30 124h20l-3 38-7 9-7-9z" fill="currentColor" opacity=".4" />
+        <path d="M40 180v13m-5 0h10M22 120h36M26 167h28" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
       {/* Main geometric pattern: 8-pointed star tessellation */}
       <svg
         className="absolute inset-0 w-full h-full"

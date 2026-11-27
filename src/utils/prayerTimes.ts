@@ -96,15 +96,22 @@ export function getPrayerSettings(): PrayerSettings {
   return DEFAULT_SETTINGS;
 }
 
+/** Whether the user has already chosen or confirmed a location on this device. */
+export function hasSavedPrayerSettings(): boolean {
+  try { return Boolean(localStorage.getItem(PRAYER_SETTINGS_KEY)); }
+  catch { return false; }
+}
+
 export function savePrayerSettings(settings: PrayerSettings): void {
   try {
     localStorage.setItem(PRAYER_SETTINGS_KEY, JSON.stringify(settings));
+    window.dispatchEvent(new Event('qada-prayer-settings-changed'));
   } catch {
     // ignore
   }
 }
 
-function getCalculationParameters(method: PrayerSettings['method']): CalculationParameters {
+export function getCalculationParameters(method: PrayerSettings['method']): CalculationParameters {
   switch (method) {
     case 'Egyptian':
       return CalculationMethod.Egyptian();
